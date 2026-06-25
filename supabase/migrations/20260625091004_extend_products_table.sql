@@ -1,0 +1,20 @@
+
+-- Add new columns to products table
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS short_description TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS long_description TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS brand_id UUID REFERENCES brands(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS subcategory TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS wholesale_price NUMERIC DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS barcode TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS weight NUMERIC DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS colors TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS sizes TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS primary_image_index INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS is_best_selling BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Migrate existing description to short_description if short_description is empty
+UPDATE products SET short_description = LEFT(description, 200) WHERE short_description = '' AND description != '';
+UPDATE products SET long_description = description WHERE long_description = '' AND description != '';

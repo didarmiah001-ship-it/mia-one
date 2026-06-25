@@ -1,0 +1,50 @@
+{
+  "name": "MIA ONE - Everything You Need, One App",
+  "short_name": "MIA ONE",
+  "description": "Premium Shopping Experience. Everything You Need, One App.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
+  "categories": ["shopping", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/mia-one-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/mia-one-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Categories",
+      "short_name": "Categories",
+      "url": "/?page=categories",
+      "icons": [{"src": "/mia-one-logo.svg", "sizes": "any"}]
+    },
+    {
+      "name": "My Cart",
+      "short_name": "Cart",
+      "url": "/?page=cart",
+      "icons": [{"src": "/mia-one-logo.svg", "sizes": "any"}]
+    },
+    {
+      "name": "My Orders",
+      "short_name": "Orders",
+      "url": "/?page=orders",
+      "icons": [{"src": "/mia-one-logo.svg", "sizes": "any"}]
+    }
+  ]
+}

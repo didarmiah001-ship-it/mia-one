@@ -1,0 +1,208 @@
+import { useParams, useNavigate } from '../lib/router';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Heart, Star, Minus, Plus, ShoppingCart, Truck } from 'lucide-react';
+import { useData } from '../lib/data';
+import { useStore } from '../store/StoreContext';
+import { ProductCard } from '../components/ProductCard';
+import { appConfig } from '../lib/config';
+
+export function ProductDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { state, dispatch } = useStore();
+  const { products } = useData();
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+
+  const product = products.find(p => p.id === id);
+  const isWishlisted = product ? state.wishlist.some(i => i.product.id === product.id) : false;
+
+  useEffect(() => {
+    if (product) {
+      dispatch({ type: 'ADD_RECENTLY_VIEWED', product });
+    }
+  }, [product, dispatch]);
+
+  if (!product) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-white/40">Product not found</p>
+      </div>
+    );
+  }
+
+  const relatedProducts = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const discount = product.discount_price
+    ? Math.round(((product.price - product.discount_price) / product.price) * 100)
+    : 0;
+
+  return (
+    <div className="page-transition pb-24">
+      {/* Header */}
+      <header className="sticky top-0 z-30 glass px-4 py-3">
+        <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
+            <ArrowLeft size={18} className="text-white/70" />
+          </button>
+          <button
+            onClick={() => dispatch({ type: 'TOGGLE_WISHLIST', product })}
+            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center"
+          >
+            <Heart size={18} className={isWishlisted ? 'fill-mia-pink text-mia-pink' : 'text-white/70'} />
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-lg md:max-w-2xl mx-auto">
+        {/* Gallery */}
+        <div className="px-4 mt-2">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-mia-navy mb-3">
+            <img
+              src={product.images[selectedImage]}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          {product.images.length > 1 && (
+            <div className="flex gap-2">
+              {product.images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImage(idx)}
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                    idx === selectedImage ? 'border-mia-orange' : 'border-transparent opacity-50'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="px-4 mt-5">
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-xl font-bold text-white leading-tight">{product.name}</h1>
+            {discount > 0 && (
+              <span className="shrink-0 px-2 py-0.5 bg-mia-pink/20 text-mia-pink text-xs font-bold rounded-full">
+                -{discount}%
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1">
+              <Star size={14} className="fill-mia-orange text-mia-orange" />
+              <span className="text-sm font-medium text-white">{product.rating}</span>
+            </div>
+            <span className="text-xs text-white/30">({product.reviews_count} reviews)</span>
+            <span className="text-xs text-white/20">|</span>
+            <span className={`text-xs ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 mt-4">
+            {product.discount_price ? (
+              <>
+                <span className="text-2xl font-bold text-mia-orange">৳{product.discount_price}</span>
+                <span className="text-base text-white/30 line-through">৳{product.price}</span>
+              </>
+            ) : (
+              <span className="text-2xl font-bold text-white">৳{product.price}</span>
+            )}
+          </div>
+
+          {/* Quantity */}
+          <div className="flex items-center gap-4 mt-5">
+            <span className="text-sm text-white/60">Quantity:</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+              >
+                <Minus size={14} className="text-white/60" />
+              </button>
+              <span className="w-8 text-center text-sm font-medium text-white">{quantity}</span>
+              <button
+                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+              >
+                <Plus size={14} className="text-white/60" />
+              </button>
+            </div>
+          </div>
+
+          {/* Delivery */}
+          <div className="flex items-center gap-3 mt-5 p-3 rounded-xl bg-white/5">
+            <Truck size={18} className="text-mia-blue shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-white/80">Free delivery on orders above {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+              <p className="text-[11px] text-white/40 mt-0.5">Estimated delivery: {appConfig.delivery.estimatedDays}</p>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-white/90 mb-2">Description</h3>
+            <p className="text-sm text-white/50 leading-relaxed">{product.description}</p>
+          </div>
+
+          {/* Specifications */}
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-white/90 mb-2">Specifications</h3>
+            <div className="space-y-2">
+              {Object.entries(product.specifications).map(([key, value]) => (
+                <div key={key} className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-xs text-white/40">{key}</span>
+                  <span className="text-xs text-white/70">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="fixed bottom-16 left-0 right-0 z-30 glass px-4 py-3 border-t border-white/5">
+          <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3">
+            <button
+              onClick={() => {
+                for (let i = 0; i < quantity; i++) {
+                  dispatch({ type: 'ADD_TO_CART', product });
+                }
+                navigate('/cart');
+              }}
+              className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+            >
+              <ShoppingCart size={16} />
+              Add to Cart
+            </button>
+            <button
+              onClick={() => {
+                for (let i = 0; i < quantity; i++) {
+                  dispatch({ type: 'ADD_TO_CART', product });
+                }
+                navigate('/checkout');
+              }}
+              className="flex-1 py-3 rounded-xl text-sm font-medium text-white flex items-center justify-center glow-btn"
+              style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
+            >
+              Buy Now
+            </button>
+          </div>
+        </div>
+
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <section className="px-4 mt-8">
+            <h3 className="text-sm font-semibold text-white/90 mb-3">Related Products</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {relatedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}

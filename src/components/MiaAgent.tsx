@@ -1,0 +1,129 @@
+import { useState } from 'react';
+import { X, ShoppingBag, MapPin, Package, Info, Headphones, ChevronRight } from 'lucide-react';
+import { appConfig } from '../lib/config';
+
+export function MiaAgent() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const quickActions = [
+    { icon: ShoppingBag, label: 'Place an Order', color: '#FF8A00' },
+    { icon: Package, label: 'Track My Order', color: '#00D1FF' },
+    { icon: Info, label: 'Product Information', color: '#7B2CFF' },
+    { icon: MapPin, label: 'Delivery Information', color: '#FF2EC9' },
+    { icon: Headphones, label: 'Customer Support', color: '#FF8A00' },
+  ];
+
+  return (
+    <>
+      {/* Floating Button with logo */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-2xl flex items-center justify-center breathe-neon overflow-hidden"
+        style={{
+          boxShadow: '0 0 20px rgba(255, 138, 0, 0.3), 0 0 40px rgba(123, 44, 255, 0.15)',
+        }}
+      >
+        {/* Outer ring pulse */}
+        <span className="absolute inset-[-4px] rounded-2xl opacity-40"
+          style={{
+            background: 'conic-gradient(from 0deg, #FF8A00, #FF2EC9, #7B2CFF, #00D1FF, #FF8A00)',
+            animation: 'rotate-glow 3s linear infinite',
+            filter: 'blur(4px)',
+          }}
+        />
+        <span className="absolute inset-0 rounded-2xl flex items-center justify-center">
+          <img src={appConfig.logo} alt="MIA" className="w-full h-full object-contain" />
+        </span>
+        {/* Online indicator */}
+        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full z-10 neon-pulse"
+          style={{ background: '#00D1FF', boxShadow: '0 0 8px #00D1FF' }}
+        />
+      </button>
+
+      {/* Panel */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsOpen(false)} />
+          <div
+            className="relative w-full max-w-lg mx-auto rounded-t-3xl p-6 page-transition"
+            style={{
+              background: 'linear-gradient(180deg, rgba(20, 24, 32, 0.98), rgba(13, 17, 23, 0.99))',
+              borderTop: '1px solid rgba(255, 138, 0, 0.15)',
+              boxShadow: '0 -8px 40px rgba(255, 138, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
+            }}
+          >
+            {/* Top accent line */}
+            <div className="absolute top-0 left-1/4 right-1/4 h-[2px] rounded-full"
+              style={{ background: 'linear-gradient(90deg, transparent, #FF8A00, #FF2EC9, transparent)' }} />
+
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:rotate-90 hover:scale-110"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <X size={14} className="text-white/60" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-xl rotate-gradient opacity-60 blur-[1px]" />
+                <div className="absolute inset-[2px] rounded-xl flex items-center justify-center"
+                  style={{ boxShadow: '0 0 12px rgba(255,138,0,0.2)' }}>
+                  <img src={appConfig.logo} alt="MIA ONE" className="w-full h-full object-contain" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">MIA Agent</h3>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 neon-pulse" />
+                  <span className="text-[11px] text-green-400">Online now</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl p-4 mb-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 138, 0, 0.03), rgba(0, 209, 255, 0.03))',
+                border: '1px solid rgba(255, 138, 0, 0.08)',
+              }}>
+              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-line">
+                {appConfig.support.welcomeMessage}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={action.label}
+                    onClick={() => {
+                      if (action.label === 'Customer Support') {
+                        window.open(appConfig.support.whatsappUrl, '_blank');
+                      }
+                      setIsOpen(false);
+                    }}
+                    className="menu-glow w-full flex items-center gap-3 p-3.5 rounded-xl transition-all duration-300 hover:translate-x-1"
+                    style={{ border: '1px solid rgba(255,255,255,0.03)' }}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
+                      style={{
+                        backgroundColor: `${action.color}12`,
+                        border: `1px solid ${action.color}20`,
+                      }}
+                    >
+                      <Icon size={18} style={{ color: action.color }} />
+                    </div>
+                    <span className="text-sm text-white/80 flex-1 text-left">{action.label}</span>
+                    <ChevronRight size={14} style={{ color: `${action.color}60` }} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

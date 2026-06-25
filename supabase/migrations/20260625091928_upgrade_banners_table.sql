@@ -1,0 +1,12 @@
+-- Add new columns to banners table for full banner management system
+ALTER TABLE banners
+  ADD COLUMN IF NOT EXISTS desktop_image TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS mobile_image  TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS button_text   TEXT DEFAULT 'Shop Now',
+  ADD COLUMN IF NOT EXISTS button_link   TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS priority      INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS starts_at     TIMESTAMPTZ DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS ends_at       TIMESTAMPTZ DEFAULT NULL;
+
+-- Backfill: copy existing image_url into desktop_image if desktop_image is empty
+UPDATE banners SET desktop_image = image_url WHERE image_url IS NOT NULL AND image_url <> '' AND (desktop_image IS NULL OR desktop_image = '');
