@@ -586,6 +586,58 @@ export async function adminCreateNotification(notif: any) {
   return { data, error: error?.message ?? null };
 }
 
+// ── Notification Campaigns ─────────────────────────────────────────────────────
+
+export async function adminFetchCampaigns() {
+  const { data } = await supabase
+    .from('notification_campaigns')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  return data || [];
+}
+
+export async function adminCreateCampaign(campaign: {
+  title: string;
+  message: string;
+  type: string;
+  category: string;
+  channel: string;
+  target: string;
+  link?: string;
+  image_url?: string;
+}) {
+  const { data, error } = await supabase
+    .from('notification_campaigns')
+    .insert({ ...campaign, status: 'draft' })
+    .select()
+    .single();
+  return { data, error: error?.message ?? null };
+}
+
+export async function adminDeleteCampaign(id: string) {
+  const { error } = await supabase.from('notification_campaigns').delete().eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+export async function adminSendCampaign(campaignId: string, payload: {
+  title: string;
+  message: string;
+  type: string;
+  category: string;
+  channel: string;
+  target: string;
+  link?: string;
+}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await supabase.functions.invoke('send-notification', {
+    body: { ...payload, campaign_id: campaignId },
+    headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+  });
+  if (res.error) return { error: res.error.message, data: null };
+  return { error: null, data: res.data };
+}
+
 export async function adminDeleteNotification(id: string) {
   const { error } = await supabase.from('notifications').delete().eq('id', id);
   return { error: error?.message ?? null };
