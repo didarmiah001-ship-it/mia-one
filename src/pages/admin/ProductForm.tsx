@@ -352,7 +352,7 @@ export function ProductForm({ editing, categories, brands, onClose, onSaved }: P
 
           {/* Pricing */}
           <Section title="Pricing" open={sections.pricing} onToggle={() => toggle('pricing')}>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-[11px] text-white/40 block mb-1">Retail Price (৳) <span className="text-red-400">*</span></label>
                 <input required type="number" min="0.01" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0.00" className="admin-input" />

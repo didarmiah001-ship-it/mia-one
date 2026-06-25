@@ -203,19 +203,19 @@ export function AdminReports() {
   return (
     <div id="ana-root" className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3 no-print">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 no-print">
         <div>
           <h2 className="text-base font-bold text-white">Analytics Dashboard</h2>
           <p className="text-[11px] text-white/30 mt-0.5">Sales · Revenue · Orders · Customers · Products</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Period selector */}
           <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
             {PERIODS.map(p => (
               <button
                 key={p.key}
                 onClick={() => setPeriod(p.key)}
-                className="px-3.5 py-2 text-xs font-medium transition-all"
+                className="px-3 py-2 text-xs font-medium transition-all"
                 style={period === p.key
                   ? { background: 'rgba(255,138,0,0.15)', color: '#FF8A00' }
                   : { background: 'transparent', color: 'rgba(255,255,255,0.4)' }
@@ -227,7 +227,7 @@ export function AdminReports() {
           </div>
 
           <button onClick={() => load(period)} disabled={loading}
-            className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/8 transition-colors"
+            className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/8 transition-colors shrink-0"
             style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
             <RefreshCw size={14} className={`text-mia-gray ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -237,11 +237,12 @@ export function AdminReports() {
             <button
               onClick={() => setExportOpen(v => !v)}
               disabled={!data}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-40 shrink-0"
               style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 4px 16px rgba(255,138,0,0.25)' }}
             >
-              <Download size={14} /> Export
-              <ChevronDown size={12} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+              <Download size={13} />
+              <span className="hidden sm:inline">Export</span>
+              <ChevronDown size={11} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
             </button>
             {exportOpen && (
               <div className="absolute right-0 top-full mt-2 z-50 w-44 rounded-2xl overflow-hidden py-1.5"

@@ -34,9 +34,9 @@ export function AdminReviews() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
         <h2 className="text-base font-bold text-white">Reviews <span className="text-white/30 text-sm font-normal">({filtered.length})</span></h2>
-        <div className="relative">
+        <div className="relative w-full sm:w-56">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search reviews..." className="w-56 pl-9 pr-3 py-2 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search reviews..." className="w-full pl-9 pr-3 py-2 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
         </div>
       </div>
 

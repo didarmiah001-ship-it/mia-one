@@ -114,7 +114,7 @@ export function AdminCoupons() {
             </div>
             <form onSubmit={handleSubmit} className="space-y-3">
               <input required value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="COUPON CODE" className="admin-input font-mono tracking-wider" />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="admin-input">
                   <option value="percentage">Percentage (%)</option>
                   <option value="fixed">Fixed (৳)</option>

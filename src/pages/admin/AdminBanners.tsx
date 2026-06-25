@@ -278,7 +278,7 @@ export function AdminBanners() {
               {/* Schedule */}
               <div className="space-y-2">
                 <p className="text-[11px] text-white/40 font-medium">Schedule (optional)</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <p className="text-[10px] text-white/25 mb-1">Start Date & Time</p>
                     <input type="datetime-local" value={form.starts_at} onChange={e => setForm(f => ({ ...f, starts_at: e.target.value }))} className="admin-input" />
