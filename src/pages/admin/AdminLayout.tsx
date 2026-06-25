@@ -28,7 +28,7 @@ const sections = [
   { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'coupons', label: 'Coupons', icon: Ticket },
   { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'reports', label: 'Reports', icon: BarChart2 },
+  { id: 'reports', label: 'Analytics', icon: BarChart2 },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

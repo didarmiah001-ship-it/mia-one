@@ -843,6 +843,151 @@ export async function adminUpdatePaymentStatus(
 
 // ── Reports ────────────────────────────────────────────────────────────────────
 
+export type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+function getAnalyticsDateRange(period: AnalyticsPeriod): { start: Date; prevStart: Date } {
+  const now = new Date();
+  const D = 86400000;
+  switch (period) {
+    case 'daily':
+      return { start: new Date(now.getTime() - 30 * D), prevStart: new Date(now.getTime() - 60 * D) };
+    case 'weekly':
+      return { start: new Date(now.getTime() - 84 * D), prevStart: new Date(now.getTime() - 168 * D) };
+    case 'monthly':
+      return { start: new Date(now.getTime() - 365 * D), prevStart: new Date(now.getTime() - 730 * D) };
+    case 'yearly':
+      return { start: new Date('2020-01-01T00:00:00Z'), prevStart: new Date('2015-01-01T00:00:00Z') };
+  }
+}
+
+function buildTimeBuckets(period: AnalyticsPeriod) {
+  const now = new Date();
+  const buckets: { label: string; start: Date; end: Date }[] = [];
+  if (period === 'daily') {
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      buckets.push({
+        label: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+        start: d,
+        end: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1),
+      });
+    }
+  } else if (period === 'weekly') {
+    for (let i = 11; i >= 0; i--) {
+      const s = new Date(now.getTime() - i * 7 * 86400000);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date(s.getTime() + 7 * 86400000);
+      buckets.push({ label: s.toLocaleDateString('en', { month: 'short', day: 'numeric' }), start: s, end: e });
+    }
+  } else if (period === 'monthly') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({
+        label: d.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
+        start: d,
+        end: new Date(d.getFullYear(), d.getMonth() + 1, 1),
+      });
+    }
+  } else {
+    const y = now.getFullYear();
+    for (let yr = y - 4; yr <= y; yr++) {
+      buckets.push({ label: String(yr), start: new Date(yr, 0, 1), end: new Date(yr + 1, 0, 1) });
+    }
+  }
+  return buckets;
+}
+
+export async function adminGetAnalytics(period: AnalyticsPeriod) {
+  const { start, prevStart } = getAnalyticsDateRange(period);
+
+  const [ordersRes, prevOrdersRes, customersRes, prevCustomersRes, productsRes] = await Promise.all([
+    supabase.from('orders').select('id, total, status, payment_method, created_at, items')
+      .gte('created_at', start.toISOString()).order('created_at', { ascending: true }),
+    supabase.from('orders').select('id, total, status, created_at')
+      .gte('created_at', prevStart.toISOString()).lt('created_at', start.toISOString()),
+    supabase.from('profiles').select('id, created_at').eq('role', 'customer')
+      .gte('created_at', start.toISOString()),
+    supabase.from('profiles').select('id').eq('role', 'customer')
+      .gte('created_at', prevStart.toISOString()).lt('created_at', start.toISOString()),
+    supabase.from('products').select('id, name, image, price, stock').eq('is_active', true),
+  ]);
+
+  const orders      = ordersRes.data      || [];
+  const prevOrders  = prevOrdersRes.data  || [];
+  const customers   = customersRes.data   || [];
+  const prevCusts   = prevCustomersRes.data || [];
+  const products    = productsRes.data    || [];
+
+  const revenue    = orders.reduce((s, o) => s + Number(o.total || 0), 0);
+  const prevRevenue = prevOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+  const avgOrder   = orders.length > 0 ? revenue / orders.length : 0;
+  const prevAvgOrder = prevOrders.length > 0 ? prevRevenue / prevOrders.length : 0;
+
+  const pct = (cur: number, prev: number) =>
+    prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100);
+
+  const buckets = buildTimeBuckets(period);
+  const timeSeries = buckets.map(b => {
+    const bOrders = orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= b.start && d < b.end;
+    });
+    const bCusts = customers.filter(c => {
+      const d = new Date(c.created_at);
+      return d >= b.start && d < b.end;
+    });
+    return {
+      label:     b.label,
+      revenue:   bOrders.reduce((s, o) => s + Number(o.total || 0), 0),
+      orders:    bOrders.length,
+      customers: bCusts.length,
+    };
+  });
+
+  const paymentMethods = ['cash_on_delivery', 'bkash', 'nagad', 'stripe', 'sslcommerz', 'bank_transfer']
+    .map(m => ({
+      method:  m,
+      count:   orders.filter(o => (o as any).payment_method === m).length,
+      revenue: orders.filter(o => (o as any).payment_method === m).reduce((s, o) => s + Number(o.total || 0), 0),
+    }))
+    .filter(m => m.count > 0)
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const statuses = ['placed', 'processing', 'packed', 'out_for_delivery', 'delivered', 'cancelled']
+    .map(s => ({ status: s, count: orders.filter(o => o.status === s).length }));
+
+  const productMap: Record<string, { name: string; qty: number; revenue: number; image?: string }> = {};
+  orders.forEach(o => {
+    const items = Array.isArray(o.items) ? o.items : [];
+    items.forEach((item: any) => {
+      const id = item.product_id || item.id || 'unknown';
+      if (!productMap[id]) productMap[id] = { name: item.name || 'Unknown', qty: 0, revenue: 0, image: item.image };
+      productMap[id].qty     += Number(item.quantity || 1);
+      productMap[id].revenue += Number(item.price || 0) * Number(item.quantity || 1);
+    });
+  });
+  const topProducts = Object.entries(productMap)
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10);
+
+  return {
+    kpis: {
+      revenue,         revenueChange: pct(revenue, prevRevenue),
+      orders: orders.length, ordersChange: pct(orders.length, prevOrders.length),
+      customers: customers.length, customersChange: pct(customers.length, prevCusts.length),
+      avgOrder,        avgOrderChange: pct(avgOrder, prevAvgOrder),
+    },
+    timeSeries,
+    paymentMethods,
+    statuses,
+    topProducts,
+    lowStock: products.filter(p => p.stock < 5),
+    rawOrders: orders,
+    rawCustomers: customers,
+  };
+}
+
 export async function adminGetReports() {
   const [orders, products, customers] = await Promise.all([
     supabase.from('orders').select('total, status, created_at, payment_method'),
