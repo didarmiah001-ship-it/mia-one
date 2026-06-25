@@ -426,7 +426,7 @@ export function AdminOrders() {
       </div>
 
       {/* Status Pipeline */}
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+      <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {[
           { key: 'all', label: 'All', color: '#94a3b8' },
           ...ALL_STATUSES.filter(s => !['placed', 'out_for_delivery'].includes(s.key))
@@ -434,13 +434,13 @@ export function AdminOrders() {
           const count = s.key === 'all' ? orders.length : (statusCounts[s.key] || 0);
           return (
             <button key={s.key} onClick={() => setStatusFilter(s.key)}
-              className="flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl text-center transition-all"
+              className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl text-center transition-all"
               style={statusFilter === s.key
                 ? { background: `${s.color}15`, border: `1px solid ${s.color}35` }
                 : { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }
               }>
-              <span className="text-base font-bold" style={{ color: statusFilter === s.key ? s.color : 'rgba(255,255,255,0.7)' }}>{count}</span>
-              <span className="text-[9px] font-medium leading-tight" style={{ color: statusFilter === s.key ? s.color : 'rgba(255,255,255,0.3)' }}>{s.label}</span>
+              <span className="text-base font-bold leading-none" style={{ color: statusFilter === s.key ? s.color : 'rgba(255,255,255,0.7)' }}>{count}</span>
+              <span className="text-[9px] font-medium leading-tight mt-0.5 text-center" style={{ color: statusFilter === s.key ? s.color : 'rgba(255,255,255,0.3)' }}>{s.label}</span>
             </button>
           );
         })}
@@ -448,12 +448,12 @@ export function AdminOrders() {
 
       {/* Search + Filter bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-48">
+        <div className="relative flex-1 min-w-0">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search order #, customer, phone..."
+            placeholder="Search order #, customer, phone…"
             className="w-full pl-9 pr-3 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40"
           />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={12} className="text-white/30" /></button>}

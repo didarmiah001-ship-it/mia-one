@@ -122,12 +122,74 @@ export function AdminProducts() {
         </select>
       </div>
 
-      {/* Table */}
+      {/* Table — desktop */}
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="glow-card h-16 shimmer" />)}</div>
       ) : (
-        <div className="glow-card overflow-hidden">
-          <div className="overflow-x-auto">
+        <>
+          {/* Mobile card list */}
+          <div className="lg:hidden space-y-2">
+            {filtered.length === 0 && (
+              <div className="glow-card py-16 text-center">
+                <Package size={28} className="mx-auto mb-2 text-white/15" />
+                <p className="text-sm text-white/25">No products found</p>
+              </div>
+            )}
+            {filtered.map(p => {
+              const primaryImg = p.images?.[p.primary_image_index] || p.image;
+              return (
+                <div
+                  key={p.id}
+                  className="glow-card p-3 flex items-center gap-3"
+                  style={{ opacity: p.is_active ? 1 : 0.5 }}
+                >
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"
+                    style={{ background: '#141820', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    {primaryImg
+                      ? <img src={primaryImg} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      : <div className="w-full h-full flex items-center justify-center"><Package size={16} className="text-white/15" /></div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-semibold truncate">{p.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {p.discount_price
+                        ? <span className="text-xs font-bold text-mia-orange">৳{p.discount_price}</span>
+                        : <span className="text-xs text-white/70">৳{p.price}</span>
+                      }
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
+                        p.stock === 0 ? 'text-red-400 bg-red-500/10' : p.stock < 5 ? 'text-yellow-400 bg-yellow-500/10' : 'text-white/40 bg-white/5'}`}>
+                        {p.stock === 0 ? 'Out' : `${p.stock} left`}
+                      </span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${p.is_active ? 'text-green-400 bg-green-500/10' : 'text-white/30 bg-white/5'}`}>
+                        {p.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    {p.category && <p className="text-[10px] text-white/30 mt-0.5">{p.category}</p>}
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button onClick={() => openEdit(p)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors">
+                      <Edit2 size={13} className="text-white/50" />
+                    </button>
+                    <button onClick={() => handleToggleActive(p)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ background: p.is_active ? 'rgba(239,68,68,0.05)' : 'rgba(34,197,94,0.05)' }}>
+                      {p.is_active ? <EyeOff size={13} className="text-red-400/60" /> : <Eye size={13} className="text-green-400/60" />}
+                    </button>
+                    <button onClick={() => setConfirmDelete(p)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/5 hover:bg-red-500/10 transition-colors">
+                      <Trash2 size={13} className="text-red-400/60" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden lg:block glow-card overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -235,7 +297,8 @@ export function AdminProducts() {
               </tbody>
             </table>
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       {showForm && (
