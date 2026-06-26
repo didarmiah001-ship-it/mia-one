@@ -39,10 +39,14 @@ export function ProductDetailPage() {
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
+  const totalPrice = product.discount_price
+    ? product.discount_price * quantity
+    : product.price * quantity;
+
   return (
     <div className="min-h-screen bg-mia-black">
       {/* Scrollable Content Area */}
-      <div className="pb-[180px]">
+      <div className="pb-[200px]">
         {/* Header */}
         <header className="sticky top-0 z-30 glass px-4 py-3">
           <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
@@ -169,75 +173,102 @@ export function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Fixed Purchase Bar — above BottomNav */}
+      {/* Fixed Checkout Bar — above BottomNav */}
       <div
-        className="fixed left-0 right-0 z-40 px-4 glass border-t border-white/5"
+        className="fixed left-0 right-0 z-40"
         style={{
           bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
-          paddingTop: '12px',
-          paddingBottom: '12px',
         }}
       >
-        <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3 items-center">
-          {/* QTY Box */}
-          <div className="flex flex-col items-center justify-center rounded-xl bg-white/5 border border-white/10 shrink-0" style={{ width: '72px', height: '56px' }}>
-            <span className="text-[10px] text-white/40 font-medium uppercase tracking-wide">QTY</span>
-            <div className="flex items-center gap-1.5 mt-0.5">
+        {/* White background bar */}
+        <div
+          className="w-full"
+          style={{
+            background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)',
+            borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
+            paddingTop: '12px',
+            paddingBottom: '12px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+          }}
+        >
+          <div className="max-w-lg md:max-w-2xl mx-auto">
+            {/* Top row: Total Price */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-gray-600">Total</span>
+              <span className="text-xl font-bold text-gray-900">৳{totalPrice.toLocaleString()}</span>
+            </div>
+
+            {/* Bottom row: QTY, Buy Now, Add to Cart */}
+            <div className="flex gap-3 items-center">
+              {/* Quantity Selector */}
+              <div className="flex items-center rounded-xl border border-gray-200 bg-gray-50 shrink-0 overflow-hidden" style={{ height: '52px' }}>
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-10 h-full flex items-center justify-center hover:bg-gray-100 transition-colors"
+                  disabled={product.stock === 0}
+                >
+                  <Minus size={16} className="text-gray-600" />
+                </button>
+                <div className="px-3 min-w-[40px] text-center flex flex-col items-center justify-center border-x border-gray-200 h-full bg-white">
+                  <span className="text-xs text-gray-500">QTY</span>
+                  <span className="text-sm font-bold text-gray-900">{quantity}</span>
+                </div>
+                <button
+                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                  className="w-10 h-full flex items-center justify-center hover:bg-gray-100 transition-colors"
+                  disabled={product.stock === 0}
+                >
+                  <Plus size={16} className="text-gray-600" />
+                </button>
+              </div>
+
+              {/* Proceed to Checkout / Buy Now */}
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
+                onClick={() => {
+                  if (product.stock === 0) return;
+                  dispatch({ type: 'ADD_TO_CART', product, quantity });
+                  navigate('/cart');
+                }}
                 disabled={product.stock === 0}
+                className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  height: '52px',
+                  background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',
+                  boxShadow: '0 4px 16px rgba(255, 138, 0, 0.4)',
+                }}
               >
-                <Minus size={12} className="text-white/60" />
+                <span>Proceed to Checkout</span>
               </button>
-              <span className="text-sm font-bold text-white min-w-[16px] text-center">{quantity}</span>
+
+              {/* Add to Cart */}
               <button
-                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
+                onClick={() => {
+                  if (product.stock === 0) return;
+                  dispatch({ type: 'ADD_TO_CART', product, quantity });
+                  setAddedToCart(true);
+                  showToast('Added to cart', 'success');
+                  setTimeout(() => setAddedToCart(false), 2000);
+                }}
                 disabled={product.stock === 0}
+                className="rounded-xl border-2 text-sm font-semibold flex items-center justify-center active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                style={{
+                  height: '52px',
+                  width: '52px',
+                  borderColor: addedToCart ? '#22c55e' : '#FF8A00',
+                  color: addedToCart ? '#22c55e' : '#FF8A00',
+                  background: addedToCart ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255, 138, 0, 0.08)',
+                }}
               >
-                <Plus size={12} className="text-white/60" />
+                {addedToCart ? (
+                  <CheckCircle2 size={20} />
+                ) : (
+                  <ShoppingCart size={20} />
+                )}
               </button>
             </div>
           </div>
-
-          {/* Buy Now */}
-          <button
-            onClick={() => {
-              if (product.stock === 0) return;
-              dispatch({ type: 'ADD_TO_CART', product, quantity });
-              navigate('/cart');
-            }}
-            disabled={product.stock === 0}
-            className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-[0.98] transition-all glow-btn disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              height: '56px',
-              background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',
-              boxShadow: '0 4px 20px rgba(255,138,0,0.35)',
-            }}
-          >
-            <span>Buy Now</span>
-          </button>
-
-          {/* Add to Cart */}
-          <button
-            onClick={() => {
-              if (product.stock === 0) return;
-              dispatch({ type: 'ADD_TO_CART', product, quantity });
-              setAddedToCart(true);
-              showToast('Added to cart', 'success');
-              setTimeout(() => setAddedToCart(false), 2000);
-            }}
-            disabled={product.stock === 0}
-            className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ height: '56px' }}
-          >
-            {addedToCart ? (
-              <><CheckCircle2 size={16} className="text-green-400" /><span className="text-green-400">Added!</span></>
-            ) : (
-              <><ShoppingCart size={16} aria-hidden="true" /><span>Add to Cart</span></>
-            )}
-          </button>
         </div>
       </div>
     </div>
