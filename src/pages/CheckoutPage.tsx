@@ -3,7 +3,7 @@ import { useNavigate } from '../lib/router';
 import {
   ArrowLeft, Banknote, Smartphone, CreditCard, Building2, Globe,
   MapPin, User, Phone, ChevronDown, Tag, CheckCircle2, Loader2, X, Lock,
-  ShieldCheck, Zap, AlertCircle, Edit3, Plus,
+  ShieldCheck, Zap, AlertCircle, Edit3, Plus, Truck,
 } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import { useAuth } from '../lib/auth';
@@ -254,39 +254,49 @@ export function CheckoutPage() {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
-  // Get thanas for selected district
-  const availableThanas = form.district ? BANGLADESH_THANAS[form.district] || [] : [];
-  const deliveryInfo = form.district ? DELIVERY_ZONES[form.district] || { charge: appConfig.delivery.deliveryCharge, zone: 'Outside Dhaka' } : { charge: appConfig.delivery.deliveryCharge, zone: 'Select District' };
+  // Get thanas for selected district - with safe fallback
+  const availableThanas = form.district && BANGLADESH_THANAS[form.district] ? BANGLADESH_THANAS[form.district] : [];
+  const deliveryInfo = form.district && DELIVERY_ZONES[form.district] ? DELIVERY_ZONES[form.district] : { charge: appConfig.delivery.deliveryCharge, zone: 'Outside Dhaka' };
 
-  const areaCharge = deliveryInfo.charge;
-  const subtotal = Math.round(state.cart.reduce((s, i) => s + (i.product.discount_price || i.product.price) * i.quantity, 0));
-  const deliveryCharge = subtotal >= appConfig.delivery.freeDeliveryThreshold ? 0 : areaCharge;
+  const areaCharge = deliveryInfo?.charge ?? appConfig.delivery.deliveryCharge;
+  // Safe subtotal calculation with null checks
+  const subtotal = Math.round((state?.cart || []).reduce((s, i) => s + (i?.product?.discount_price || i?.product?.price || 0) * (i?.quantity || 0), 0));
+  const deliveryCharge = subtotal >= (appConfig?.delivery?.freeDeliveryThreshold || 0) ? 0 : areaCharge;
   const discount = couponApplied?.discount ?? 0;
   const total = Math.round(Math.max(0, subtotal + deliveryCharge - discount));
 
   useEffect(() => {
-    if (profile) setForm(f => ({ ...f, full_name: profile.full_name || '' }));
+    if (profile?.full_name) setForm(f => ({ ...f, full_name: profile.full_name }));
   }, [profile]);
 
+  const applyAddress = (a: any) => {
+    if (!a) return;
+    setForm(f => ({
+      ...f,
+      full_name: a.full_name || f.full_name,
+      phone: a.phone || f.phone,
+      address: a.address || f.address,
+      district: a.district || f.district,
+      thana: a.thana || f.thana,
+      notes: a.notes || f.notes,
+    }));
+  };
+
   useEffect(() => {
-    if (user) {
-      fetchAddresses(user.id).then(a => {
-        setSavedAddresses(a);
-        const def = a.find((x: any) => x.is_default);
-        if (def) applyAddress(def);
-      });
+    if (user?.id) {
+      fetchAddresses(user.id)
+        .then(a => {
+          if (Array.isArray(a) && a.length > 0) {
+            setSavedAddresses(a);
+            const def = a.find((x: any) => x?.is_default);
+            if (def) applyAddress(def);
+          }
+        })
+        .catch(() => {
+          // Silently handle address fetch errors
+        });
     }
   }, [user]);
-
-  const applyAddress = (a: any) => setForm(f => ({
-    ...f,
-    full_name: a.full_name || f.full_name,
-    phone: a.phone || f.phone,
-    address: a.address || f.address,
-    district: a.district || f.district,
-    thana: a.thana || f.thana,
-    notes: a.notes || f.notes,
-  }));
 
   // Validate form fields
   const validateField = (field: string, value: string) => {
@@ -340,12 +350,12 @@ export function CheckoutPage() {
     setSubmitting(true);
     setError('');
 
-    const orderItems = state.cart.map(item => ({
-      product_id: item.product.id,
-      name: item.product.name,
-      price: item.product.discount_price || item.product.price,
-      quantity: item.quantity,
-      image: item.product.image,
+    const orderItems = (state?.cart || []).map(item => ({
+      product_id: item?.product?.id || '',
+      name: item?.product?.name || '',
+      price: item?.product?.discount_price || item?.product?.price || 0,
+      quantity: item?.quantity || 0,
+      image: item?.product?.image || '',
     }));
 
     const orderPayload = {
@@ -402,7 +412,7 @@ export function CheckoutPage() {
 
     // For Stripe — redirect to payment page with intent creation there
     if (paymentMethod === 'stripe') {
-      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
+      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...(state?.cart || [])], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
       dispatch({ type: 'CLEAR_CART' });
       setSubmitting(false);
       navigate(`/payment?order_id=${orderId}&order_number=${orderNumber}&total=${total}&method=stripe&payment_id=${paymentId}`);
@@ -425,7 +435,7 @@ export function CheckoutPage() {
         return;
       }
 
-      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
+      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...(state?.cart || [])], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
       dispatch({ type: 'CLEAR_CART' });
       setSubmitting(false);
       // Redirect to SSLCommerz gateway
@@ -434,7 +444,7 @@ export function CheckoutPage() {
     }
 
     // For manual payments (COD / bKash / Nagad / bank_transfer)
-    dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
+    dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...(state?.cart || [])], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
     dispatch({ type: 'CLEAR_CART' });
     setSubmitting(false);
 
@@ -447,7 +457,7 @@ export function CheckoutPage() {
     navigate(`/order-success?id=${orderId}&number=${orderNumber}&total=${total}&method=${paymentMethod}`);
   };
 
-  if (state.cart.length === 0) { navigate('/cart'); return null; }
+  if (!state?.cart || state.cart.length === 0) { navigate('/cart'); return null; }
 
   const inputClass = 'w-full px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors rounded-xl bg-white/[0.03] border border-white/[0.06] focus:border-mia-orange/40';
 
@@ -517,16 +527,16 @@ export function CheckoutPage() {
                 </button>
                 {showAddressPicker && (
                   <div className="mt-3 space-y-2">
-                    {savedAddresses.map((a: any) => (
-                      <button key={a.id} onClick={() => { applyAddress(a); setShowAddressPicker(false); }}
+                    {(savedAddresses || []).map((a: any) => (
+                      <button key={a?.id || Math.random()} onClick={() => { applyAddress(a); setShowAddressPicker(false); }}
                         className="w-full text-left p-3 rounded-xl transition-all hover:scale-[1.01]"
                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-semibold text-mia-orange">{a.label || 'Address'}</span>
-                          {a.is_default && <span className="text-[9px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">Default</span>}
+                          <span className="text-xs font-semibold text-mia-orange">{a?.label || 'Address'}</span>
+                          {a?.is_default && <span className="text-[9px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">Default</span>}
                         </div>
-                        <p className="text-xs text-white/70">{a.full_name} · {a.phone}</p>
-                        <p className="text-xs text-white/40 truncate">{a.address}, {a.district}</p>
+                        <p className="text-xs text-white/70">{a?.full_name || ''} · {a?.phone || ''}</p>
+                        <p className="text-xs text-white/40 truncate">{a?.address || ''}, {a?.district || ''}</p>
                       </button>
                     ))}
                   </div>
@@ -866,14 +876,14 @@ export function CheckoutPage() {
             <div className="glow-card p-4">
               <h3 className="text-sm font-semibold text-white mb-3">Order Summary</h3>
               <div className="space-y-2 max-h-40 overflow-y-auto">
-                {state.cart.map(item => (
-                  <div key={item.product.id} className="flex items-center gap-2.5">
-                    <img src={item.product.image} alt={item.product.name} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                {(state?.cart || []).map(item => (
+                  <div key={item?.product?.id || Math.random()} className="flex items-center gap-2.5">
+                    <img src={item?.product?.image || ''} alt={item?.product?.name || ''} className="w-9 h-9 rounded-lg object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white/70 truncate">{item.product.name}</p>
-                      <p className="text-[10px] text-white/35">×{item.quantity}</p>
+                      <p className="text-xs text-white/70 truncate">{item?.product?.name || ''}</p>
+                      <p className="text-[10px] text-white/35">×{item?.quantity || 0}</p>
                     </div>
-                    <span className="text-xs font-semibold text-white/80">৳{(item.product.discount_price || item.product.price) * item.quantity}</span>
+                    <span className="text-xs font-semibold text-white/80">৳{((item?.product?.discount_price || item?.product?.price || 0) * (item?.quantity || 0))}</span>
                   </div>
                 ))}
               </div>
