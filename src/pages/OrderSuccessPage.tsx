@@ -37,6 +37,8 @@ export function OrderSuccessPage() {
   const orderNumber = searchParams.get('number') || searchParams.get('id') || 'N/A';
   const total = searchParams.get('total') || '0';
   const method = searchParams.get('method') || 'cash_on_delivery';
+  // 'via_payment_page' = user already submitted TxID on PaymentPage
+  const viaPP = searchParams.get('via_pp') === '1';
 
   const [copied, setCopied] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -123,28 +125,30 @@ export function OrderSuccessPage() {
           </div>
         </div>
 
-        {/* Payment instructions */}
-        {method !== 'cash_on_delivery' && (
-          <div className="glow-card p-4 mb-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-10 blur-2xl" style={{ background: `radial-gradient(circle, ${paymentInfo.color}, transparent)` }} />
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${paymentInfo.color}12`, border: `1px solid ${paymentInfo.color}20` }}>
+        {/* Payment instructions / status */}
+        {method === 'cash_on_delivery' && (
+          <div className="glow-card p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.2)' }}>
                 <PayIcon size={15} style={{ color: paymentInfo.color }} />
               </div>
-              <span className="text-sm font-semibold text-white">Payment Instructions</span>
+              <span className="text-sm font-semibold text-white">{paymentInfo.label}</span>
             </div>
-            <p className="text-xs text-white/55 leading-relaxed whitespace-pre-line">{paymentInfo.instructions}</p>
-            <div className="mt-3 px-3 py-2 rounded-xl text-xs" style={{ background: `${paymentInfo.color}08`, border: `1px solid ${paymentInfo.color}15` }}>
-              <span className="text-white/50">Reference: </span>
-              <span className="font-mono font-semibold" style={{ color: paymentInfo.color }}>{orderNumber}</span>
-            </div>
+            <p className="text-xs text-white/55 leading-relaxed">{paymentInfo.instructions}</p>
           </div>
         )}
 
-        {method === 'cash_on_delivery' && (
-          <div className="px-4 py-3 rounded-xl text-xs mb-4" style={{ background: 'rgba(255,138,0,0.05)', border: '1px solid rgba(255,138,0,0.12)' }}>
-            <p className="text-mia-orange font-medium mb-0.5">Cash on Delivery</p>
-            <p className="text-white/50">{paymentInfo.instructions}</p>
+        {(method === 'bkash' || method === 'nagad' || method === 'bank_transfer' || method === 'stripe') && (
+          <div className="glow-card p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${paymentInfo.color}12`, border: `1px solid ${paymentInfo.color}25` }}>
+                <PayIcon size={15} style={{ color: paymentInfo.color }} />
+              </div>
+              <span className="text-sm font-semibold text-white">Payment Under Verification</span>
+            </div>
+            <p className="text-xs text-white/50 leading-relaxed">
+              Your payment details have been received. We'll verify and confirm your order within <span className="text-mia-orange font-medium">1–2 business hours</span>. Track status in <span className="text-mia-orange cursor-pointer" onClick={() => navigate('/transactions')}>Transaction History</span>.
+            </p>
           </div>
         )}
 

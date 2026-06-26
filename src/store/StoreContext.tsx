@@ -9,7 +9,7 @@ interface StoreState {
 }
 
 type StoreAction =
-  | { type: 'ADD_TO_CART'; product: Product }
+  | { type: 'ADD_TO_CART'; product: Product; quantity?: number }
   | { type: 'REMOVE_FROM_CART'; productId: string }
   | { type: 'UPDATE_CART_QTY'; productId: string; quantity: number }
   | { type: 'CLEAR_CART' }
@@ -55,18 +55,19 @@ function storeReducer(state: StoreState, action: StoreAction): StoreState {
       return { ...state, ...action.state };
 
     case 'ADD_TO_CART': {
+      const addQty = action.quantity ?? 1;
       const existing = state.cart.find(i => i.product.id === action.product.id);
       if (existing) {
         return {
           ...state,
           cart: state.cart.map(i =>
             i.product.id === action.product.id
-              ? { ...i, quantity: i.quantity + 1 }
+              ? { ...i, quantity: i.quantity + addQty }
               : i
           ),
         };
       }
-      return { ...state, cart: [...state.cart, { product: action.product, quantity: 1 }] };
+      return { ...state, cart: [...state.cart, { product: action.product, quantity: addQty }] };
     }
 
     case 'REMOVE_FROM_CART':

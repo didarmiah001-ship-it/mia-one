@@ -330,7 +330,7 @@ export function PaymentPage() {
     setPaymentStatus('success');
     setStatusMessage('Payment submitted successfully! We\'ll verify and confirm your order shortly.');
     setTimeout(() => {
-      navigate(`/order-success?id=${orderId}&number=${orderNumber}&total=${total}&method=${method}`);
+      navigate(`/order-success?id=${orderId}&number=${orderNumber}&total=${total}&method=${method}&via_pp=1`);
     }, 2500);
   };
 

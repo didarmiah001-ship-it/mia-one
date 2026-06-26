@@ -89,6 +89,12 @@ export function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const steps = [
+    { label: 'Cart', done: true },
+    { label: 'Delivery', done: step === 'payment', active: step === 'info' },
+    { label: 'Payment', done: false, active: step === 'payment' },
+  ];
+
   // Delivery form
   const [form, setForm] = useState({
     full_name: '',
@@ -265,19 +271,35 @@ export function CheckoutPage() {
     <div className="page-transition pb-28">
       <header className="sticky top-0 z-30 glass px-4 py-3">
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => step === 'payment' ? setStep('info') : navigate(-1 as any)}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
+          <button onClick={() => step === 'payment' ? setStep('info') : navigate('/cart')}
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-base font-bold text-white">
               {step === 'info' ? 'Delivery Info' : 'Review & Pay'}
             </h1>
-            <div className="flex items-center gap-1 mt-0.5">
-              {[0, 1].map(i => (
-                <div key={i} className="h-1 w-10 rounded-full transition-all duration-300"
-                  style={{ background: i === 0 || step === 'payment' ? 'linear-gradient(90deg, #FF8A00, #FF2EC9)' : 'rgba(255,255,255,0.1)' }} />
+            {/* 3-step progress */}
+            <div className="flex items-center gap-1.5 mt-1.5">
+              {steps.map((s, i) => (
+                <div key={s.label} className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold transition-all"
+                      style={s.done || s.active
+                        ? { background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', color: '#fff' }
+                        : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)' }}>
+                      {s.done && !s.active ? '✓' : i + 1}
+                    </div>
+                    <span className="text-[10px] font-medium transition-colors"
+                      style={{ color: s.active ? '#FF8A00' : s.done ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)' }}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className="w-6 h-px transition-all" style={{ background: s.done ? 'rgba(255,138,0,0.4)' : 'rgba(255,255,255,0.08)' }} />
+                  )}
+                </div>
               ))}
             </div>
           </div>

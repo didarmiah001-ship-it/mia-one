@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from '../lib/router';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Heart, Star, Minus, Plus, ShoppingCart, Truck } from 'lucide-react';
+import { ArrowLeft, Heart, Star, Minus, Plus, ShoppingCart, Truck, CheckCircle2 } from 'lucide-react';
 import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { ProductCard } from '../components/ProductCard';
@@ -13,6 +13,7 @@ export function ProductDetailPage() {
   const { products } = useData();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   const product = products.find(p => p.id === id);
   const isWishlisted = product ? state.wishlist.some(i => i.product.id === product.id) : false;
@@ -184,24 +185,28 @@ export function ProductDetailPage() {
           <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3">
             <button
               onClick={() => {
-                for (let i = 0; i < quantity; i++) {
-                  dispatch({ type: 'ADD_TO_CART', product });
-                }
-                navigate('/cart');
+                if (product.stock === 0) return;
+                dispatch({ type: 'ADD_TO_CART', product, quantity });
+                setAddedToCart(true);
+                setTimeout(() => setAddedToCart(false), 2000);
               }}
-              className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-95 transition-all"
+              disabled={product.stock === 0}
+              className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ height: '52px' }}
             >
-              <ShoppingCart size={16} aria-hidden="true" />
-              <span>Add to Cart</span>
+              {addedToCart ? (
+                <><CheckCircle2 size={16} className="text-green-400" /><span className="text-green-400">Added!</span></>
+              ) : (
+                <><ShoppingCart size={16} aria-hidden="true" /><span>Add to Cart</span></>
+              )}
             </button>
             <button
               onClick={() => {
-                for (let i = 0; i < quantity; i++) {
-                  dispatch({ type: 'ADD_TO_CART', product });
-                }
+                if (product.stock === 0) return;
+                dispatch({ type: 'ADD_TO_CART', product, quantity });
                 navigate('/checkout');
               }}
+              disabled={product.stock === 0}
               className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-95 transition-all glow-btn"
               style={{
                 height: '52px',
