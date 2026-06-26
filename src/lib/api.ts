@@ -223,7 +223,7 @@ export async function fetchOrders(userId: string) {
 }
 
 export async function createOrder(order: {
-  user_id: string;
+  user_id: string | null;
   items: any[];
   subtotal: number;
   delivery_charge: number;
@@ -733,7 +733,7 @@ export async function fetchUserCoupons() {
 
 export async function createPayment(payment: {
   order_id: string;
-  user_id: string;
+  user_id: string | null;
   method: string;
   amount: number;
   currency?: string;

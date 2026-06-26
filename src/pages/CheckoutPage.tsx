@@ -359,7 +359,7 @@ export function CheckoutPage() {
     }));
 
     const orderPayload = {
-      user_id: user?.id || '00000000-0000-0000-0000-000000000000',
+      user_id: user?.id || null,
       items: orderItems,
       subtotal,
       delivery_charge: deliveryCharge,
@@ -384,25 +384,24 @@ export function CheckoutPage() {
     let orderNumber = orderId;
     let dbOrderId = '';
 
-    if (user) {
-      const { data, error: orderErr } = await createOrder(orderPayload);
-      if (orderErr || !data) {
-        setError('Failed to place order. Please try again.');
-        setSubmitting(false);
-        return;
-      }
-      dbOrderId = data.id;
-      orderId = data.id;
-      orderNumber = data.order_number || data.id;
-      if (couponApplied?.code) await incrementCouponUsage(couponApplied.code);
+    // Always create order in database (both authenticated and guest)
+    const { data, error: orderErr } = await createOrder(orderPayload);
+    if (orderErr || !data) {
+      setError(orderErr || 'Failed to place order. Please try again.');
+      setSubmitting(false);
+      return;
     }
+    dbOrderId = data.id;
+    orderId = data.id;
+    orderNumber = data.order_number || data.id;
+    if (couponApplied?.code) await incrementCouponUsage(couponApplied.code);
 
     // Create payment record
     let paymentId = '';
-    if (user && dbOrderId) {
+    if (dbOrderId) {
       const { data: pmtData } = await createPayment({
         order_id: dbOrderId,
-        user_id: user.id,
+        user_id: user?.id || null,
         method: paymentMethod,
         amount: total,
         currency: 'BDT',
