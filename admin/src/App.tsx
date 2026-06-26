@@ -25,6 +25,7 @@ function AppShell() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
+  // Redirect logic — only runs once auth state is fully resolved
   useEffect(() => {
     if (loading) return;
 
@@ -33,34 +34,24 @@ function AppShell() {
       return;
     }
 
-    // Profile is fetched async after user — wait for it before deciding
-    if (!profile) return;
-
     if (!isAdmin) {
       if (pathname !== '/unauthorized') navigate('/unauthorized');
       return;
     }
 
-    if (isAdmin && pathname === '/login') {
-      navigate('/');
-    }
+    // Signed-in admin on the login page → go to dashboard
+    if (pathname === '/login') navigate('/');
   }, [user, profile, loading, isAdmin, pathname, navigate]);
 
-  // Show spinner while auth resolves or while profile is loading for a signed-in user
-  if (loading || (user && !profile)) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
 
-  // Not logged in: show login (guard will redirect, but show login to avoid flash)
-  if (!user) {
-    return <LoginPage />;
-  }
+  // Not authenticated
+  if (!user) return <LoginPage />;
 
-  // Logged in but not admin
-  if (!isAdmin) {
-    return <UnauthorizedPage />;
-  }
+  // Authenticated but not admin
+  if (!isAdmin) return <UnauthorizedPage />;
 
+  // Authenticated admin
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
