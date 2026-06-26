@@ -40,7 +40,7 @@ export function ProductDetailPage() {
     : 0;
 
   return (
-    <div className="page-transition pb-52">
+    <div className="page-transition">
       {/* Header */}
       <header className="sticky top-0 z-30 glass px-4 py-3">
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
@@ -236,6 +236,9 @@ export function ProductDetailPage() {
             </div>
           </section>
         )}
+
+        {/* Spacer for fixed bottom bar + nav */}
+        <div className="h-36" />
       </div>
     </div>
   );
