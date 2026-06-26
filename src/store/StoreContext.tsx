@@ -24,7 +24,25 @@ function loadPersistedState(): Partial<StoreState> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+
+    // Sanitize cart: merge duplicate product IDs, ensure quantity >= 1
+    if (Array.isArray(parsed.cart)) {
+      const merged: CartItem[] = [];
+      for (const item of parsed.cart) {
+        if (!item?.product?.id) continue;
+        const qty = typeof item.quantity === 'number' && item.quantity > 0 ? item.quantity : 1;
+        const existing = merged.find(m => m.product.id === item.product.id);
+        if (existing) {
+          existing.quantity += qty;
+        } else {
+          merged.push({ product: item.product, quantity: qty });
+        }
+      }
+      parsed.cart = merged;
+    }
+
+    return parsed;
   } catch {
     return {};
   }
