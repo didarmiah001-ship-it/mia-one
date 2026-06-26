@@ -1,6 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: [
+    './index.html',
+    './admin/index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+    './admin/src/**/*.{js,ts,jsx,tsx}',
+  ],
   theme: {
     extend: {
       colors: {
@@ -14,6 +19,14 @@ export default {
           card: '#141820',
           surface: '#1A1F2E',
         },
+        // Flat aliases used by the admin panel (e.g. text-mia-orange)
+        'mia-orange': '#FF8A00',
+        'mia-pink':   '#FF2EC9',
+        'mia-purple': '#7B2CFF',
+        'mia-blue':   '#00D1FF',
+        'mia-black':  '#0A0A0F',
+        'mia-dark':   '#13131A',
+        'mia-card':   '#1A1A24',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
