@@ -449,9 +449,25 @@ export async function adminDeleteCategory(id: string) {
   return { error: error?.message ?? null };
 }
 
-export async function adminCreateBanner(banner: { title: string; subtitle: string; color: string }) {
+export async function adminCreateBanner(banner: any) {
   const { data, error } = await supabase.from('banners').insert(banner).select().single();
   return { data, error: error?.message ?? null };
+}
+
+export async function adminUploadBannerImage(
+  file: File,
+  slot: 'desktop' | 'mobile'
+): Promise<{ url: string | null; error: string | null }> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const path = `${slot}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from('banner-images').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type,
+  });
+  if (error) return { url: null, error: error.message };
+  const { data } = supabase.storage.from('banner-images').getPublicUrl(path);
+  return { url: data.publicUrl, error: null };
 }
 
 export async function adminUpdateBanner(id: string, updates: any) {
