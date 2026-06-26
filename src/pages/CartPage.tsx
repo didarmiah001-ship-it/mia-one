@@ -63,7 +63,7 @@ export function CartPage() {
             <div key={item.product.id} className="glow-card p-3 flex gap-3 group">
               {/* Image */}
               <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-white/5">
-                <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                <img src={item.product.image || item.product.images?.[0] || appConfig.logo} alt={item.product.name} className="w-full h-full object-cover" />
               </div>
 
               {/* Details */}

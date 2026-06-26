@@ -48,6 +48,7 @@ function AppShell() {
   // Redirect logic — only runs once auth state is fully resolved
   useEffect(() => {
     if (loading) return;
+    if (user && !profile) return; // wait for profile to load
 
     if (!user) {
       if (pathname !== '/login') navigate('/login');
@@ -67,6 +68,9 @@ function AppShell() {
 
   // Not authenticated
   if (!user) return <LoginPage />;
+
+  // Profile still loading (user exists but profile not yet fetched)
+  if (user && !profile) return <LoadingScreen />;
 
   // Authenticated but not admin
   if (!isAdmin) return <UnauthorizedPage />;

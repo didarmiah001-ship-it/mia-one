@@ -20,11 +20,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [p, c, b] = await Promise.all([fetchProducts(), fetchCategories(), fetchBanners()]);
-    setProducts(p);
-    setCategories(c);
-    setBanners(b);
-    setLoading(false);
+    try {
+      const [p, c, b] = await Promise.all([fetchProducts(), fetchCategories(), fetchBanners()]);
+      setProducts(p);
+      setCategories(c);
+      setBanners(b);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);

@@ -266,7 +266,7 @@ export async function validateCoupon(code: string, subtotal: number): Promise<{ 
 }
 
 export async function incrementCouponUsage(code: string) {
-  await supabase.rpc('increment_coupon_usage', { coupon_code: code }).maybeSingle();
+  await supabase.rpc('increment_coupon_usage', { coupon_code: code });
 }
 
 export async function fetchAddresses(userId: string) {
@@ -395,7 +395,7 @@ export async function cancelOrder(orderId: string, userId: string) {
     .from('orders')
     .select('status, user_id')
     .eq('id', orderId)
-    .single();
+    .maybeSingle();
 
   if (!order || order.user_id !== userId) return { error: 'Unauthorized' };
   if (!['placed', 'pending', 'confirmed'].includes(order.status)) {

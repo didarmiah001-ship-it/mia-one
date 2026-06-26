@@ -31,7 +31,7 @@ export interface Order {
   items: CartItem[];
   total: number;
   delivery_charge: number;
-  status: 'placed' | 'processing' | 'packed' | 'out_for_delivery' | 'delivered';
+  status: 'placed' | 'processing' | 'packed' | 'out_for_delivery' | 'delivered' | 'cancelled';
   payment_method: string;
   address: OrderAddress;
   created_at: string;

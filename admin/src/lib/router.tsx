@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
 
 interface RouterContextValue {
   path: string;
@@ -22,16 +22,40 @@ function parsePath(fullPath: string) {
 }
 
 export function RouterProvider({ children }: { children: ReactNode }) {
-  const [history, setHistory] = useState<string[]>(['/']);
+  const [history, setHistory] = useState<string[]>(() => [
+    window.location.pathname + window.location.search,
+  ]);
+
   const current = history[history.length - 1];
   const { path, query } = parsePath(current);
 
   const navigate = useCallback((to: string | number) => {
     if (typeof to === 'number') {
-      setHistory(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
+      setHistory(prev => {
+        if (prev.length <= 1) return prev;
+        const next = prev.slice(0, -1);
+        window.history.replaceState(null, '', next[next.length - 1]);
+        return next;
+      });
     } else {
+      window.history.pushState(null, '', to);
       setHistory(prev => [...prev, to]);
     }
+  }, []);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const onPopState = () => {
+      const loc = window.location.pathname + window.location.search;
+      setHistory(prev => {
+        if (prev.length > 1 && prev[prev.length - 2] === loc) {
+          return prev.slice(0, -1);
+        }
+        return [loc];
+      });
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const value = useMemo(() => ({ path, query, navigate }), [path, query, navigate]);

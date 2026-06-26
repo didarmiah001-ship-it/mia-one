@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
 
 interface RouterState {
   path: string;
@@ -29,20 +29,49 @@ function parsePath(fullPath: string): RouterState {
 }
 
 export function RouterProvider({ children }: { children: ReactNode }) {
-  const [history, setHistory] = useState<string[]>(['/']);
+  const [history, setHistory] = useState<string[]>(() => [
+    window.location.pathname + window.location.search,
+  ]);
+
   const current = history[history.length - 1];
   const state = parsePath(current);
 
   const navigate = useCallback((to: string | number) => {
     if (typeof to === 'number') {
-      setHistory(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
+      setHistory(prev => {
+        if (prev.length <= 1) return prev;
+        const next = prev.slice(0, -1);
+        window.history.replaceState(null, '', next[next.length - 1]);
+        return next;
+      });
     } else {
+      window.history.pushState(null, '', to);
       setHistory(prev => [...prev, to]);
     }
   }, []);
 
   const goBack = useCallback(() => {
-    setHistory(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    setHistory(prev => {
+      if (prev.length <= 1) return prev;
+      const next = prev.slice(0, -1);
+      window.history.replaceState(null, '', next[next.length - 1]);
+      return next;
+    });
+  }, []);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const onPopState = () => {
+      const loc = window.location.pathname + window.location.search;
+      setHistory(prev => {
+        if (prev.length > 1 && prev[prev.length - 2] === loc) {
+          return prev.slice(0, -1);
+        }
+        return [loc];
+      });
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const value = useMemo(() => ({
@@ -85,7 +114,13 @@ export function useSearchParams(): [URLSearchParams, (params: Record<string, str
   const ctx = useContext(RouterContext);
   if (!ctx) throw new Error('useSearchParams must be inside RouterProvider');
   const params = useMemo(() => new URLSearchParams(ctx.query), [ctx.query]);
-  const setParams = useCallback((_newParams: Record<string, string>) => {}, []);
+  const setParams = useCallback((newParams: Record<string, string>) => {
+    const sp = new URLSearchParams(newParams);
+    const path = ctx.path + (sp.toString() ? '?' + sp.toString() : '');
+    window.history.pushState(null, '', path);
+    // Trigger re-render via navigate — reuse navigate reference
+    ctx.navigate(path);
+  }, [ctx]);
   return [params, setParams];
 }
 
@@ -118,7 +153,6 @@ export function Routes({ children }: { children: ReactNode }) {
     }
   }
 
-  // 404 fallback: find a '*' catch-all route
   const fallback = routes.find(r => r.path === '*');
   if (fallback) return <>{fallback.element}</>;
 
@@ -130,21 +164,16 @@ export function Route(_props: { path: string; element: ReactNode }) {
 }
 
 function matchRoute(pattern: string, path: string): { params: Record<string, string> } | null {
-  // Wildcard
   if (pattern === '*') return { params: {} };
 
   const patternParts = pattern.split('/').filter(Boolean);
   const pathParts = path.split('/').filter(Boolean);
 
-  // Pattern with trailing optional param: if pattern ends in :param
-  // allow it to match even if path has one fewer segment (param becomes empty string)
   const lastPatternPart = patternParts[patternParts.length - 1];
   const hasOptionalTrailing = lastPatternPart?.startsWith(':');
 
   if (patternParts.length !== pathParts.length) {
-    // Allow match when path has one fewer segment than pattern and last pattern segment is a param
     if (hasOptionalTrailing && pathParts.length === patternParts.length - 1) {
-      // match with empty param for the trailing segment
       const params: Record<string, string> = {};
       for (let i = 0; i < patternParts.length - 1; i++) {
         if (patternParts[i].startsWith(':')) {
