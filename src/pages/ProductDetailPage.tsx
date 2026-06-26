@@ -5,12 +5,14 @@ import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { ProductCard } from '../components/ProductCard';
 import { appConfig } from '../lib/config';
+import { useToast } from '../components/Toast';
 
 export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { state, dispatch } = useStore();
   const { products } = useData();
+  const { showToast } = useToast();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
@@ -124,26 +126,6 @@ export function ProductDetailPage() {
             )}
           </div>
 
-          {/* Quantity */}
-          <div className="flex items-center gap-4 mt-5">
-            <span className="text-sm text-white/60">Quantity:</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
-              >
-                <Minus size={14} className="text-white/60" />
-              </button>
-              <span className="w-8 text-center text-sm font-medium text-white">{quantity}</span>
-              <button
-                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
-              >
-                <Plus size={14} className="text-white/60" />
-              </button>
-            </div>
-          </div>
-
           {/* Delivery */}
           <div className="flex items-center gap-3 mt-5 p-3 rounded-xl bg-white/5">
             <Truck size={18} className="text-mia-blue shrink-0" />
@@ -173,7 +155,7 @@ export function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Buttons — fixed above BottomNav */}
+        {/* Bottom Purchase Bar — fixed above BottomNav */}
         <div
           className="fixed left-0 right-0 z-30 px-4 glass border-t border-white/5"
           style={{
@@ -182,24 +164,30 @@ export function ProductDetailPage() {
             paddingBottom: '12px',
           }}
         >
-          <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3">
-            <button
-              onClick={() => {
-                if (product.stock === 0) return;
-                dispatch({ type: 'ADD_TO_CART', product, quantity });
-                setAddedToCart(true);
-                setTimeout(() => setAddedToCart(false), 2000);
-              }}
-              disabled={product.stock === 0}
-              className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ height: '52px' }}
-            >
-              {addedToCart ? (
-                <><CheckCircle2 size={16} className="text-green-400" /><span className="text-green-400">Added!</span></>
-              ) : (
-                <><ShoppingCart size={16} aria-hidden="true" /><span>Add to Cart</span></>
-              )}
-            </button>
+          <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3 items-center">
+            {/* QTY Box */}
+            <div className="flex flex-col items-center justify-center rounded-xl bg-white/5 border border-white/10 shrink-0" style={{ width: '72px', height: '56px' }}>
+              <span className="text-[10px] text-white/40 font-medium uppercase tracking-wide">QTY</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
+                  disabled={product.stock === 0}
+                >
+                  <Minus size={12} className="text-white/60" />
+                </button>
+                <span className="text-sm font-bold text-white min-w-[16px] text-center">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                  className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
+                  disabled={product.stock === 0}
+                >
+                  <Plus size={12} className="text-white/60" />
+                </button>
+              </div>
+            </div>
+
+            {/* Buy Now */}
             <button
               onClick={() => {
                 if (product.stock === 0) return;
@@ -207,14 +195,34 @@ export function ProductDetailPage() {
                 navigate('/cart');
               }}
               disabled={product.stock === 0}
-              className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-95 transition-all glow-btn"
+              className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-[0.98] transition-all glow-btn disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
-                height: '52px',
+                height: '56px',
                 background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',
                 boxShadow: '0 4px 20px rgba(255,138,0,0.35)',
               }}
             >
-              <span className="relative z-[1]">Buy Now</span>
+              <span>Buy Now</span>
+            </button>
+
+            {/* Add to Cart */}
+            <button
+              onClick={() => {
+                if (product.stock === 0) return;
+                dispatch({ type: 'ADD_TO_CART', product, quantity });
+                setAddedToCart(true);
+                showToast('Added to cart', 'success');
+                setTimeout(() => setAddedToCart(false), 2000);
+              }}
+              disabled={product.stock === 0}
+              className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ height: '56px' }}
+            >
+              {addedToCart ? (
+                <><CheckCircle2 size={16} className="text-green-400" /><span className="text-green-400">Added!</span></>
+              ) : (
+                <><ShoppingCart size={16} aria-hidden="true" /><span>Add to Cart</span></>
+              )}
             </button>
           </div>
         </div>
