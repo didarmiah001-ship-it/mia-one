@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#0A0A0F" />
@@ -26,14 +26,20 @@
     <!-- SEO -->
     <title>MIA ONE - Everything You Need, One App</title>
     <meta name="description" content="MIA ONE - Premium Shopping Experience. Everything You Need, One App. Shop groceries, electronics, fashion, beauty and more." />
-    <meta name="keywords" content="MIA ONE, shopping, ecommerce, grocery, electronics, fashion, online shop" />
+    <meta name="keywords" content="MIA ONE, shopping, ecommerce, grocery, electronics, fashion, online shop, Bangladesh" />
+    <link rel="canonical" href="https://mia-one.app/" />
+    <meta name="robots" content="index, follow" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mia-one.app/" />
     <meta property="og:title" content="MIA ONE - Everything You Need, One App" />
     <meta property="og:description" content="Premium Shopping Experience. Shop groceries, electronics, fashion, beauty and more." />
     <meta property="og:image" content="/mia-one-logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:site_name" content="MIA ONE" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -42,17 +48,47 @@
     <meta name="twitter:image" content="/mia-one-logo.png" />
 
     <!-- Icons — PNG only -->
-    <link rel="icon" type="image/png" sizes="48x48"  href="/mia-one-logo.png" />
-    <link rel="icon" type="image/png" sizes="96x96"  href="/mia-one-logo.png" />
+    <link rel="icon" type="image/png" sizes="48x48"   href="/mia-one-logo.png" />
+    <link rel="icon" type="image/png" sizes="96x96"   href="/mia-one-logo.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/mia-one-logo.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/mia-one-logo.png" />
 
-    <!-- PWA Manifest (v2) -->
-    <link rel="manifest" href="/manifest.json?v=2" />
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json?v=3" />
 
-    <!-- Preconnect for fonts -->
+    <!-- Performance: preconnect to external origins used at startup -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Preload LCP resource (splash screen logo shown before any JS runs) -->
+    <link rel="preload" as="image" href="/mia-one-logo.png" fetchpriority="high" />
+
+    <!-- DNS-prefetch for Supabase API -->
+    <link rel="dns-prefetch" href="https://supabase.co" />
+
+    <!-- Structured Data — WebApplication (Shopping) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "MIA ONE",
+      "url": "https://mia-one.app/",
+      "description": "MIA ONE - Premium Shopping Experience. Everything You Need, One App.",
+      "applicationCategory": "ShoppingApplication",
+      "operatingSystem": "Web, Android, iOS",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BDT"
+      },
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://mia-one.app/mia-one-logo.png",
+        "width": 512,
+        "height": 512
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

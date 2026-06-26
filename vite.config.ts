@@ -3,13 +3,11 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     {
       name: 'admin-mpa',
-      // Dev server: intercept /admin/* and serve admin/index.html through Vite's pipeline
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
           const url = req.url ?? '';
@@ -17,21 +15,16 @@ export default defineConfig({
             url === '/admin' ||
             url === '/admin/' ||
             (url.startsWith('/admin/') && !/\.[a-zA-Z0-9]+$/.test(url.split('?')[0]));
-
           if (!isAdminPath) return next();
-
           try {
             let html = readFileSync(resolve(__dirname, 'admin/index.html'), 'utf-8');
             html = await server.transformIndexHtml('/admin/index.html', html);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.statusCode = 200;
             res.end(html);
-          } catch (e) {
-            next(e);
-          }
+          } catch (e) { next(e); }
         });
       },
-      // Preview server: same treatment after build
       configurePreviewServer(server) {
         server.middlewares.use((req, res, next) => {
           const url = req.url ?? '';
@@ -39,17 +32,13 @@ export default defineConfig({
             url === '/admin' ||
             url === '/admin/' ||
             (url.startsWith('/admin/') && !/\.[a-zA-Z0-9]+$/.test(url.split('?')[0]));
-
           if (!isAdminPath) return next();
-
           try {
             const html = readFileSync(resolve(__dirname, 'dist/admin/index.html'), 'utf-8');
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.statusCode = 200;
             res.end(html);
-          } catch (e) {
-            next(e);
-          }
+          } catch (e) { next(e); }
         });
       },
     },
@@ -59,16 +48,31 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 600,
+    cssCodeSplit: true,
     rollupOptions: {
       input: {
         main:  resolve(__dirname, 'index.html'),
         admin: resolve(__dirname, 'admin/index.html'),
       },
+      output: {
+        // Stable chunk names for long-term HTTP caching
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('react-dom') || id.includes('react/') || id.includes('scheduler')) {
+            return 'react-vendor';
+          }
+          if (id.includes('@supabase')) {
+            return 'supabase';
+          }
+          if (id.includes('lucide-react')) {
+            return 'icons';
+          }
+          return 'vendor';
+        },
+      },
     },
   },
   server: {
-    hmr: {
-      overlay: false,
-    },
+    hmr: { overlay: false },
   },
 });

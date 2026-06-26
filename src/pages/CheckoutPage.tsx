@@ -111,10 +111,10 @@ export function CheckoutPage() {
   const [couponLoading, setCouponLoading] = useState(false);
 
   const areaCharge = DELIVERY_AREAS[form.area] ?? appConfig.delivery.deliveryCharge;
-  const subtotal = state.cart.reduce((s, i) => s + (i.product.discount_price || i.product.price) * i.quantity, 0);
+  const subtotal = Math.round(state.cart.reduce((s, i) => s + (i.product.discount_price || i.product.price) * i.quantity, 0));
   const deliveryCharge = subtotal >= appConfig.delivery.freeDeliveryThreshold ? 0 : areaCharge;
   const discount = couponApplied?.discount ?? 0;
-  const total = Math.max(0, subtotal + deliveryCharge - discount);
+  const total = Math.round(Math.max(0, subtotal + deliveryCharge - discount));
 
   useEffect(() => {
     if (profile) setForm(f => ({ ...f, full_name: profile.full_name || '' }));
@@ -559,7 +559,7 @@ export function CheckoutPage() {
       </div>
 
       {step === 'payment' && (
-        <div className="fixed bottom-[72px] left-0 right-0 px-4 pb-2 z-20">
+        <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,0px))] left-0 right-0 px-4 pb-2 z-20">
           <div className="max-w-lg md:max-w-2xl mx-auto">
             <button onClick={handlePlaceOrder} disabled={submitting}
               className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn disabled:opacity-50 flex items-center justify-center gap-2"
@@ -570,7 +570,7 @@ export function CheckoutPage() {
                   ? <><Lock size={14} /> Pay Securely — ৳{total}</>
                   : paymentMethod === 'sslcommerz'
                     ? <><Zap size={14} /> Pay via SSLCommerz — ৳{total}</>
-                    : `Place Order — ৳{total}`}
+                    : <>Place Order — ৳{total}</>}
             </button>
             <p className="text-center text-[10px] text-white/20 mt-1.5 flex items-center justify-center gap-1">
               <Lock size={9} /> 256-bit SSL encrypted

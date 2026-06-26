@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   ArrowLeft, Bell, Globe, Shield, Trash2, ChevronRight,
   Volume2, Smartphone, Info, ExternalLink, MessageCircle,
+  FileText, RotateCcw, Phone,
 } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useAuth } from '../lib/auth';
@@ -235,6 +236,31 @@ export function SettingsPage() {
           />
         </Section>
 
+        {/* Legal */}
+        <Section title="Legal">
+          {([
+            { label: 'Privacy Policy', path: '/privacy-policy', icon: Shield, color: '#7B2CFF' },
+            { label: 'Terms & Conditions', path: '/terms', icon: FileText, color: '#00D1FF' },
+            { label: 'Refund Policy', path: '/refund-policy', icon: RotateCcw, color: '#22C55E' },
+            { label: 'Contact Us', path: '/contact', icon: Phone, color: '#FF8A00' },
+          ] as const).map(item => (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `${item.color}10`, border: `1px solid ${item.color}18` }}>
+                <item.icon size={16} style={{ color: item.color }} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm text-white/80 font-medium">{item.label}</p>
+              </div>
+              <ChevronRight size={14} className="text-white/15 shrink-0" />
+            </button>
+          ))}
+        </Section>
+
         {/* About */}
         <Section title="About">
           <SettingRow
@@ -290,7 +316,7 @@ export function SettingsPage() {
 
         <div className="flex flex-col items-center gap-1 py-4">
           <img src={appConfig.logo} alt="MIA ONE" className="w-8 h-8 object-contain opacity-20" />
-          <p className="text-[10px] text-white/15">{appConfig.brand.name} &copy; {new Date().getFullYear()}</p>
+          <p className="text-[10px] text-white/15">{appConfig.name} &copy; {new Date().getFullYear()}</p>
         </div>
       </div>
 

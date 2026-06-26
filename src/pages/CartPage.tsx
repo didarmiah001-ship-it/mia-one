@@ -7,10 +7,10 @@ export function CartPage() {
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
 
-  const subtotal = state.cart.reduce(
+  const subtotal = Math.round(state.cart.reduce(
     (sum, item) => sum + (item.product.discount_price || item.product.price) * item.quantity,
     0
-  );
+  ));
   const deliveryCharge = subtotal >= appConfig.delivery.freeDeliveryThreshold ? 0 : appConfig.delivery.deliveryCharge;
   const total = subtotal + deliveryCharge;
   const totalItems = state.cart.reduce((s, i) => s + i.quantity, 0);
@@ -58,7 +58,7 @@ export function CartPage() {
         {/* Cart Items */}
         {state.cart.map(item => {
           const price = item.product.discount_price || item.product.price;
-          const lineTotal = price * item.quantity;
+          const lineTotal = Math.round(price * item.quantity);
           return (
             <div key={item.product.id} className="glow-card p-3 flex gap-3 group">
               {/* Image */}
@@ -119,7 +119,7 @@ export function CartPage() {
         {deliveryCharge > 0 && (
           <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs" style={{ background: 'rgba(255,138,0,0.05)', border: '1px solid rgba(255,138,0,0.12)' }}>
             <Tag size={12} className="text-mia-orange shrink-0" />
-            <span className="text-white/50">Add <span className="text-mia-orange font-semibold">৳{appConfig.delivery.freeDeliveryThreshold - subtotal}</span> more for free delivery</span>
+          <span className="text-[11px] text-white/30 leading-none">Add <span className="text-mia-orange font-semibold">৳{appConfig.delivery.freeDeliveryThreshold - subtotal}</span> more for free delivery</span>
           </div>
         )}
         {deliveryCharge === 0 && (
@@ -152,7 +152,7 @@ export function CartPage() {
       {/* Sticky checkout button */}
       <div
         className="fixed left-0 right-0 px-4 z-20"
-        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))', paddingBottom: '8px' }}
+        style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))', paddingBottom: '8px' }}
       >
         <div className="max-w-lg md:max-w-2xl mx-auto">
           <button

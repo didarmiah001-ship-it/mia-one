@@ -17,7 +17,9 @@ export function BottomNav() {
   const cartCount = state.cart.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50"
+    <nav
+      aria-label="Main navigation"
+      className="fixed bottom-0 left-0 right-0 z-50"
       style={{
         background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.8) 0%, rgba(13, 17, 23, 0.95) 100%)',
         backdropFilter: 'blur(24px) saturate(1.5)',
@@ -25,7 +27,8 @@ export function BottomNav() {
         boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
-      <div className="max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-around py-2 px-4"
+      <div
+        className="max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-around py-2 px-4"
         style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}
       >
         {navItems.map(item => {
@@ -35,6 +38,8 @@ export function BottomNav() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
+              aria-label={item.path === '/cart' && cartCount > 0 ? `${item.label} (${cartCount} items)` : item.label}
+              aria-current={isActive ? 'page' : undefined}
               className="relative flex flex-col items-center gap-0.5 py-1 px-3 transition-all duration-400"
             >
               <div
@@ -49,6 +54,7 @@ export function BottomNav() {
               >
                 <Icon
                   size={22}
+                  aria-hidden="true"
                   className="transition-all duration-300"
                   style={isActive ? {
                     color: item.color,
@@ -57,7 +63,8 @@ export function BottomNav() {
                 />
                 {item.path === '/cart' && cartCount > 0 && (
                   <span
-                    className="absolute -top-1 -right-1 w-4.5 h-4.5 text-white text-[9px] font-bold rounded-full flex items-center justify-center neon-pulse"
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1 text-white text-[9px] font-bold rounded-full flex items-center justify-center neon-pulse"
                     style={{
                       background: 'linear-gradient(135deg, #FF2EC9, #FF8A00)',
                       width: '18px',
@@ -71,12 +78,14 @@ export function BottomNav() {
               </div>
               <span
                 className="text-[10px] font-medium transition-all duration-300"
+                aria-hidden="true"
                 style={{ color: isActive ? item.color : 'rgba(255,255,255,0.25)' }}
               >
                 {item.label}
               </span>
               {isActive && (
                 <div
+                  aria-hidden="true"
                   className="absolute -bottom-2 w-6 h-0.5 rounded-full"
                   style={{
                     background: `linear-gradient(90deg, transparent, ${item.color}, transparent)`,

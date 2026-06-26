@@ -468,3 +468,100 @@ textarea:focus {
   background: rgba(255, 138, 0, 0.03);
   border-color: rgba(255, 138, 0, 0.1);
 }
+
+/* ===== CROSS-BROWSER COMPATIBILITY ===== */
+
+/* Backdrop-filter fallback for browsers that don't support it */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background: rgba(10, 10, 15, 0.97);
+  }
+  .glow-card {
+    background: rgba(20, 24, 32, 0.98);
+  }
+}
+
+/* Input normalization across browsers */
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-results-button,
+input[type='search']::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Prevent text size adjustment on orientation change (iOS) */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better default focus ring for keyboard users */
+:focus-visible {
+  outline: 2px solid rgba(255, 138, 0, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Suppress focus ring for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Better text rendering on Windows */
+* {
+  text-rendering: optimizeLegibility;
+}
+
+/* Prevent image drag */
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Summary/details cross-browser */
+details > summary {
+  cursor: pointer;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Safe area insets for notched devices */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* will-change hints for animated elements */
+.page-transition {
+  will-change: transform, opacity;
+}
+
+.glow-card {
+  will-change: transform, box-shadow;
+}
+

@@ -37,7 +37,7 @@ export function ProductDetailPage() {
     : 0;
 
   return (
-    <div className="page-transition pb-24">
+    <div className="page-transition pb-52">
       {/* Header */}
       <header className="sticky top-0 z-30 glass px-4 py-3">
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
@@ -172,10 +172,14 @@ export function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Buttons — fixed above BottomNav + iOS safe area */}
+        {/* Buttons — fixed above BottomNav */}
         <div
-          className="fixed left-0 right-0 z-30 glass px-4 py-3 border-t border-white/5"
-          style={{ bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
+          className="fixed left-0 right-0 z-30 px-4 glass border-t border-white/5"
+          style={{
+            bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
+            paddingTop: '12px',
+            paddingBottom: '12px',
+          }}
         >
           <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3">
             <button
@@ -185,9 +189,10 @@ export function ProductDetailPage() {
                 }
                 navigate('/cart');
               }}
-              className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white flex items-center justify-center gap-2 hover:bg-white/10 transition-all leading-none"
+              className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-95 transition-all"
+              style={{ height: '52px' }}
             >
-              <ShoppingCart size={16} />
+              <ShoppingCart size={16} aria-hidden="true" />
               <span>Add to Cart</span>
             </button>
             <button
@@ -197,8 +202,12 @@ export function ProductDetailPage() {
                 }
                 navigate('/checkout');
               }}
-              className="flex-1 h-12 rounded-xl text-sm font-semibold text-white flex items-center justify-center leading-none glow-btn"
-              style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
+              className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-95 transition-all glow-btn"
+              style={{
+                height: '52px',
+                background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',
+                boxShadow: '0 4px 20px rgba(255,138,0,0.35)',
+              }}
             >
               <span className="relative z-[1]">Buy Now</span>
             </button>

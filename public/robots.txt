@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+Allow: /categories
+Allow: /search
+Allow: /login
+Allow: /signup
+Allow: /contact
+Allow: /privacy-policy
+Allow: /terms
+Allow: /refund-policy
+
+# Block authenticated/personal pages from indexing
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /profile
+Disallow: /edit-profile
+Disallow: /addresses
+Disallow: /notifications
+Disallow: /coupons
+Disallow: /settings
+Disallow: /payment
+Disallow: /transactions
+Disallow: /order-success
+Disallow: /admin/
+
+Sitemap: https://mia-one.app/sitemap.xml

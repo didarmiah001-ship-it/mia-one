@@ -1,0 +1,68 @@
+import { Home, Search, ArrowLeft } from 'lucide-react';
+import { useNavigate } from '../lib/router';
+
+export function NotFoundPage() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center px-6 pb-24 text-center">
+      {/* Ambient glows */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-[0.05] blur-3xl"
+          style={{ background: 'radial-gradient(circle, #FF8A00, transparent)' }} />
+        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 rounded-full opacity-[0.04] blur-3xl"
+          style={{ background: 'radial-gradient(circle, #7B2CFF, transparent)' }} />
+      </div>
+
+      <div className="relative z-10 max-w-sm">
+        {/* 404 number */}
+        <div
+          className="text-[96px] sm:text-[120px] font-black leading-none mb-2 select-none"
+          style={{
+            background: 'linear-gradient(135deg, #FF8A00 0%, #FF2EC9 50%, #7B2CFF 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            filter: 'drop-shadow(0 0 40px rgba(255,138,0,0.2))',
+          }}
+          aria-label="404"
+        >
+          404
+        </div>
+
+        <h1 className="text-xl font-bold text-white mb-3">Page Not Found</h1>
+        <p className="text-sm text-white/40 mb-10 leading-relaxed">
+          The page you're looking for doesn't exist or has been moved.<br />
+          Let's get you back on track.
+        </p>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 4px 20px rgba(255,138,0,0.3)' }}
+          >
+            <Home size={16} />
+            Back to Home
+          </button>
+          <button
+            onClick={() => navigate('/search')}
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-medium text-white/60"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <Search size={16} />
+            Search Products
+          </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center justify-center gap-2 w-full py-3 text-sm text-white/30 hover:text-white/60 transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Go Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
