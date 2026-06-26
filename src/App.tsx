@@ -7,6 +7,7 @@ import { ToastProvider } from './components/Toast';
 import { SplashScreen } from './components/SplashScreen';
 import { BottomNav } from './components/BottomNav';
 import { RippleEffect } from './components/RippleEffect';
+import { PWAUpdateBanner } from './components/PWAUpdateBanner';
 import { HomePage } from './pages/HomePage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
@@ -54,6 +55,7 @@ function CustomerShell() {
         <Route path="/transactions" element={<TransactionHistoryPage />} />
       </Routes>
       <RippleEffect />
+      <PWAUpdateBanner />
       <BottomNav />
     </div>
   );

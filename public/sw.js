@@ -1,10 +1,10 @@
-const CACHE_NAME = 'mia-one-v2';
+const CACHE_NAME = 'mia-one-v3';
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_URLS = [
   '/',
   '/offline.html',
-  '/mia-one-logo.svg',
+  '/mia-one-logo.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -13,7 +13,8 @@ self.addEventListener('install', (event) => {
       return cache.addAll(PRECACHE_URLS);
     })
   );
-  self.skipWaiting();
+  // Do NOT call skipWaiting() here — let the app prompt the user before activating
+  // (first-install will still activate normally since there is no existing controller)
 });
 
 self.addEventListener('activate', (event) => {
@@ -27,6 +28,13 @@ self.addEventListener('activate', (event) => {
     })
   );
   self.clients.claim();
+});
+
+// Listen for the app telling us to take over immediately
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
