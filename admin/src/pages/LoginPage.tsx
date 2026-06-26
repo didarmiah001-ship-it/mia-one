@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, Eye, EyeOff, AlertTriangle, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 export function LoginPage() {
@@ -47,18 +47,16 @@ export function LoginPage() {
       <div className="w-full max-w-sm relative z-10 animate-fade-in">
         {/* Logo mark */}
         <div className="flex flex-col items-center gap-4 mb-8">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,138,0,0.15), rgba(255,46,201,0.06))',
-              border: '1px solid rgba(255,138,0,0.3)',
-              boxShadow: '0 0 40px rgba(255,138,0,0.1)',
-            }}
-          >
-            <Shield size={28} className="text-mia-orange" />
+          <div className="relative">
+            <img
+              src="/mia-admin-logo.png"
+              alt="MIA Admin"
+              className="w-20 h-20 object-contain"
+              style={{ filter: 'drop-shadow(0 0 20px rgba(255,138,0,0.4)) drop-shadow(0 0 40px rgba(255,46,201,0.2))' }}
+            />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white tracking-tight">Admin Panel</h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">MIA Admin</h1>
             <p className="text-sm text-white/30 mt-1">MIA ONE — Private Access</p>
           </div>
         </div>

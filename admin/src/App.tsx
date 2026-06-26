@@ -9,12 +9,32 @@ import { AdminLayout } from './pages/AdminLayout';
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-12 h-12 rounded-2xl animate-breathe"
-          style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
-        />
-        <span className="text-white/30 text-sm">Verifying access…</span>
+      <div className="flex flex-col items-center gap-5">
+        {/* Logo */}
+        <div className="relative">
+          <img
+            src="/mia-admin-logo.png"
+            alt="MIA Admin"
+            className="w-20 h-20 object-contain drop-shadow-2xl"
+            style={{ filter: 'drop-shadow(0 0 24px rgba(255,138,0,0.35))' }}
+          />
+          {/* Pulse ring */}
+          <div
+            className="absolute inset-0 rounded-2xl animate-ping"
+            style={{ background: 'rgba(255,138,0,0.12)', animationDuration: '2s' }}
+          />
+        </div>
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-white font-bold text-base tracking-tight">MIA Admin</span>
+          <span className="text-white/25 text-sm">Verifying access…</span>
+        </div>
+        {/* Loading bar */}
+        <div className="w-32 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <div
+            className="h-full rounded-full animate-loading-bar"
+            style={{ background: 'linear-gradient(90deg, #FF8A00, #FF2EC9)' }}
+          />
+        </div>
       </div>
     </div>
   );

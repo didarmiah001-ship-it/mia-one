@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { useNavigate, useParams, useLocation } from '../lib/router';
 import {
-  LayoutDashboard, Package, Tag, Image, ShoppingCart, Users, LogOut, Shield,
+  LayoutDashboard, Package, Tag, Image, ShoppingCart, Users, LogOut,
   Ticket, Bell, Zap, BarChart2, Settings, Star, Menu, X, ChevronLeft,
   ChevronRight as ChevronRightIcon, CreditCard,
 } from 'lucide-react';
@@ -109,21 +109,25 @@ function Sidebar({
         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.2)' }}>
-              <Shield size={15} className="text-mia-orange" />
-            </div>
+            <img
+              src="/mia-admin-logo.png"
+              alt="MIA Admin"
+              className="w-9 h-9 object-contain shrink-0"
+              style={{ filter: 'drop-shadow(0 0 8px rgba(255,138,0,0.4))' }}
+            />
             <div>
-              <p className="text-xs font-bold text-white leading-none">Admin Panel</p>
-              <p className="text-[10px] text-white/25 mt-0.5">MIA ONE</p>
+              <p className="text-xs font-bold text-white leading-none">MIA Admin</p>
+              <p className="text-[10px] text-white/25 mt-0.5">Admin Panel</p>
             </div>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center mx-auto"
-            style={{ background: 'rgba(255,138,0,0.1)' }}>
-            <Shield size={15} className="text-mia-orange" />
-          </div>
+          <img
+            src="/mia-admin-logo.png"
+            alt="MIA"
+            className="w-9 h-9 object-contain mx-auto"
+            style={{ filter: 'drop-shadow(0 0 8px rgba(255,138,0,0.4))' }}
+          />
         )}
         <button
           onClick={onCollapse}
@@ -302,9 +306,12 @@ export function AdminLayout() {
               >
                 <Menu size={18} className="text-white/70" />
               </button>
-              <div>
-                <p className="text-xs text-white/30 leading-none">Admin</p>
-                <h1 className="text-sm font-bold text-white leading-tight">{activeLabel}</h1>
+              <div className="flex items-center gap-2">
+                <img src="/mia-admin-logo.png" alt="MIA" className="w-7 h-7 object-contain" />
+                <div>
+                  <p className="text-[10px] text-white/30 leading-none">Admin</p>
+                  <h1 className="text-sm font-bold text-white leading-tight">{activeLabel}</h1>
+                </div>
               </div>
             </div>
             <button
@@ -330,10 +337,10 @@ export function AdminLayout() {
               {profile?.full_name && (
                 <span className="text-xs text-white/40 font-medium">{profile.full_name}</span>
               )}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
                 style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.15)' }}>
-                <Shield size={11} className="text-mia-orange" />
-                <span className="text-xs font-medium text-mia-orange">Administrator</span>
+                <img src="/mia-admin-logo.png" alt="" className="w-4 h-4 object-contain" />
+                <span className="text-xs font-semibold text-[#FF8A00]">Administrator</span>
               </div>
             </div>
           </header>

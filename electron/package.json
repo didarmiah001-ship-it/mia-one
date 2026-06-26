@@ -1,0 +1,82 @@
+{
+  "name": "mia-admin",
+  "version": "1.0.0",
+  "description": "MIA ONE Admin Panel — Windows Desktop Application",
+  "main": "main.js",
+  "author": "MIA ONE",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build:web": "cd .. && npm run build",
+    "pack": "electron-builder --dir",
+    "dist:win": "npm run build:web && electron-builder --win",
+    "dist:win:installer": "npm run build:web && electron-builder --win nsis",
+    "dist:win:portable": "npm run build:web && electron-builder --win portable",
+    "dist:win:all": "npm run build:web && electron-builder --win nsis portable"
+  },
+  "build": {
+    "appId": "com.miaone.admin",
+    "productName": "MIA Admin",
+    "copyright": "Copyright © 2024 MIA ONE. All rights reserved.",
+    "asar": true,
+    "directories": {
+      "buildResources": "assets",
+      "output": "../electron-dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "!node_modules/.cache"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist",
+        "to": "dist",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MIA Admin",
+      "installerIcon": "assets/icon.png",
+      "uninstallerIcon": "assets/icon.png",
+      "installerHeaderIcon": "assets/icon.png",
+      "artifactName": "MIA Admin Setup ${version}.exe",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "MIA Admin Portable ${version}.exe"
+    },
+    "publish": null
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^29.4.0",
+    "electron-builder": "^24.13.3"
+  }
+}
