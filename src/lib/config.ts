@@ -4,7 +4,7 @@ export const appConfig = {
   shortName: 'MIA ONE',
   slogan: 'Everything You Need, One App',
   description: 'MIA ONE - Premium Shopping Experience. Everything You Need, One App.',
-  logo: '/mia-one-logo.svg',
+  logo: '/mia-one-logo.png',
 
   // Colors (Logo Color Palette)
   colors: {

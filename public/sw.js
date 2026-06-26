@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mia-one-v1';
+const CACHE_NAME = 'mia-one-v2';
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_URLS = [

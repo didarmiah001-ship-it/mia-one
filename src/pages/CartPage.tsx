@@ -99,8 +99,12 @@ export function CartPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-white/70">৳{lineTotal}</span>
                     <button
-                      onClick={() => dispatch({ type: 'REMOVE_FROM_CART', productId: item.product.id })}
-                      className="w-7 h-7 rounded-lg bg-red-500/8 flex items-center justify-center hover:bg-red-500/20 transition-colors border border-red-500/15"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch({ type: 'REMOVE_FROM_CART', productId: item.product.id });
+                      }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-red-500/20 active:bg-red-500/30"
+                      style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}
                     >
                       <Trash2 size={11} className="text-red-400" />
                     </button>
@@ -146,7 +150,10 @@ export function CartPage() {
       </div>
 
       {/* Sticky checkout button */}
-      <div className="fixed bottom-[72px] left-0 right-0 px-4 pb-2 z-20">
+      <div
+        className="fixed left-0 right-0 px-4 z-20"
+        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))', paddingBottom: '8px' }}
+      >
         <div className="max-w-lg md:max-w-2xl mx-auto">
           <button
             onClick={() => navigate('/checkout')}

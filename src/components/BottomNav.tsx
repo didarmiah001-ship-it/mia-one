@@ -25,7 +25,9 @@ export function BottomNav() {
         boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
-      <div className="max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-around py-2 px-4">
+      <div className="max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-around py-2 px-4"
+        style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}
+      >
         {navItems.map(item => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;

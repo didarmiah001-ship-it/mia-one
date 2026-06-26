@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
-  ArrowLeft, Bell, Moon, Globe, Shield, Trash2, ChevronRight,
-  Volume2, Smartphone, Info, ExternalLink,
+  ArrowLeft, Bell, Globe, Shield, Trash2, ChevronRight,
+  Volume2, Smartphone, Info, ExternalLink, MessageCircle,
 } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useAuth } from '../lib/auth';
 import { appConfig } from '../lib/config';
+import { MiaAgent } from '../components/MiaAgent';
 
 const SETTINGS_KEY = 'mia-one-settings';
 
@@ -105,6 +106,7 @@ export function SettingsPage() {
   const { user, signOut } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAgent, setShowAgent] = useState(false);
   const [appVersion] = useState('1.0.0');
 
   useEffect(() => {
@@ -208,6 +210,31 @@ export function SettingsPage() {
           </button>
         </Section>
 
+        {/* Support */}
+        <Section title="Support">
+          <button
+            onClick={() => setShowAgent(true)}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
+            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.18)' }}>
+              <MessageCircle size={16} className="text-mia-orange" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm text-white/80 font-medium">MIA Agent</p>
+              <p className="text-[11px] text-white/30 mt-0.5">Chat support, order help &amp; more</p>
+            </div>
+            <ChevronRight size={14} className="text-white/15 shrink-0" />
+          </button>
+          <SettingRow
+            icon={Info}
+            color="#94A3B8"
+            label="Support Email"
+            sublabel={appConfig.support.email}
+            right={<ExternalLink size={13} className="text-white/15 shrink-0" />}
+          />
+        </Section>
+
         {/* About */}
         <Section title="About">
           <SettingRow
@@ -216,13 +243,6 @@ export function SettingsPage() {
             label="App Version"
             sublabel={`MIA ONE v${appVersion}`}
             right={<span className="text-[11px] text-white/20 font-mono">{appVersion}</span>}
-          />
-          <SettingRow
-            icon={Info}
-            color="#94A3B8"
-            label="Support"
-            sublabel={appConfig.support.email}
-            right={<ExternalLink size={13} className="text-white/15 shrink-0" />}
           />
         </Section>
 
@@ -273,6 +293,8 @@ export function SettingsPage() {
           <p className="text-[10px] text-white/15">{appConfig.brand.name} &copy; {new Date().getFullYear()}</p>
         </div>
       </div>
+
+      <MiaAgent isOpen={showAgent} onClose={() => setShowAgent(false)} />
     </div>
   );
 }

@@ -56,11 +56,20 @@ export function ProductDetailPage() {
       <div className="max-w-lg md:max-w-2xl mx-auto">
         {/* Gallery */}
         <div className="px-4 mt-2">
-          <div className="aspect-square rounded-2xl overflow-hidden bg-mia-navy mb-3">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-mia-navy mb-3 flex items-center justify-center">
             <img
               src={product.images[selectedImage]}
               alt={product.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                const t = e.currentTarget;
+                t.onerror = null;
+                t.style.display = 'none';
+                const parent = t.parentElement;
+                if (parent) {
+                  parent.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,0.2)"><svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><path d=\'m21 15-5-5L5 21\'/></svg><span style=\'font-size:12px\'>Image unavailable</span></div>';
+                }
+              }}
             />
           </div>
           {product.images.length > 1 && (
@@ -163,8 +172,11 @@ export function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="fixed bottom-16 left-0 right-0 z-30 glass px-4 py-3 border-t border-white/5">
+        {/* Buttons — fixed above BottomNav + iOS safe area */}
+        <div
+          className="fixed left-0 right-0 z-30 glass px-4 py-3 border-t border-white/5"
+          style={{ bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
+        >
           <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3">
             <button
               onClick={() => {
@@ -173,10 +185,10 @@ export function ProductDetailPage() {
                 }
                 navigate('/cart');
               }}
-              className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+              className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white flex items-center justify-center gap-2 hover:bg-white/10 transition-all leading-none"
             >
               <ShoppingCart size={16} />
-              Add to Cart
+              <span>Add to Cart</span>
             </button>
             <button
               onClick={() => {
@@ -185,10 +197,10 @@ export function ProductDetailPage() {
                 }
                 navigate('/checkout');
               }}
-              className="flex-1 py-3 rounded-xl text-sm font-medium text-white flex items-center justify-center glow-btn"
+              className="flex-1 h-12 rounded-xl text-sm font-semibold text-white flex items-center justify-center leading-none glow-btn"
               style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
             >
-              Buy Now
+              <span className="relative z-[1]">Buy Now</span>
             </button>
           </div>
         </div>

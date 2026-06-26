@@ -2,6 +2,7 @@
   "name": "MIA ONE - Everything You Need, One App",
   "short_name": "MIA ONE",
   "description": "Premium Shopping Experience. Everything You Need, One App.",
+  "version": "2.0",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -13,18 +14,15 @@
   "dir": "ltr",
   "prefer_related_applications": false,
   "icons": [
-    {
-      "src": "/mia-one-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/mia-one-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
+    { "src": "/mia-one-logo.png", "sizes": "48x48",   "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "72x72",   "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "96x96",   "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/mia-one-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [],
   "shortcuts": [
@@ -32,19 +30,19 @@
       "name": "Categories",
       "short_name": "Categories",
       "url": "/?page=categories",
-      "icons": [{"src": "/mia-one-logo.svg", "sizes": "any"}]
+      "icons": [{ "src": "/mia-one-logo.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "My Cart",
       "short_name": "Cart",
       "url": "/?page=cart",
-      "icons": [{"src": "/mia-one-logo.svg", "sizes": "any"}]
+      "icons": [{ "src": "/mia-one-logo.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "My Orders",
       "short_name": "Orders",
       "url": "/?page=orders",
-      "icons": [{"src": "/mia-one-logo.svg", "sizes": "any"}]
+      "icons": [{ "src": "/mia-one-logo.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

@@ -21,6 +21,18 @@ export function ProductCard({ product }: { product: Product }) {
           src={product.image}
           alt={product.name}
           className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
+          onError={(e) => {
+            const t = e.currentTarget;
+            t.onerror = null;
+            t.style.display = 'none';
+            const parent = t.parentElement;
+            if (parent && !parent.querySelector('.img-fallback')) {
+              const fb = document.createElement('div');
+              fb.className = 'img-fallback absolute inset-0 flex flex-col items-center justify-center gap-2';
+              fb.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+              parent.appendChild(fb);
+            }
+          }}
         />
         {/* Image overlay glow on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
