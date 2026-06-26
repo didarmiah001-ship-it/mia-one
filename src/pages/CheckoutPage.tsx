@@ -3,7 +3,7 @@ import { useNavigate } from '../lib/router';
 import {
   ArrowLeft, Banknote, Smartphone, CreditCard, Building2, Globe,
   MapPin, User, Phone, ChevronDown, Tag, CheckCircle2, Loader2, X, Lock,
-  ShieldCheck, Zap,
+  ShieldCheck, Zap, AlertCircle, Edit3, Plus,
 } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import { useAuth } from '../lib/auth';
@@ -13,16 +13,151 @@ import {
   createPayment, initiateSSLCommerzPayment,
 } from '../lib/api';
 
-const DELIVERY_AREAS: Record<string, number> = {
-  'Dhaka City': 60,
-  'Outside Dhaka': 120,
-  'Chittagong': 120,
-  'Sylhet': 120,
-  'Rajshahi': 120,
-  'Khulna': 120,
-  'Barishal': 120,
-  'Mymensingh': 100,
-  'Rangpur': 120,
+// Bangladesh Districts and Thanas
+const BANGLADESH_DISTRICTS = [
+  'Bagerhat', 'Bandarban', 'Barguna', 'Barishal', 'Bhola', 'Bogra', 'Brahmanbaria',
+  'Chandpur', 'Chattogram', 'Chuadanga', 'Cox\'s Bazar', 'Cumilla', 'Dhaka', 'Dinajpur',
+  'Faridpur', 'Feni', 'Gaibandha', 'Gazipur', 'Gopalganj', 'Habiganj', 'Jamalpur',
+  'Jashore', 'Jhalokati', 'Jhenaidah', 'Joypurhat', 'Khagrachari', 'Khulna', 'Kishoreganj',
+  'Kurigram', 'Kushtia', 'Lakshmipur', 'Lalmonirhat', 'Madaripur', 'Magura', 'Manikganj',
+  'Meherpur', 'Moulvibazar', 'Munshiganj', 'Mymensingh', 'Naogaon', 'Narail', 'Narayanganj',
+  'Narsingdi', 'Natore', 'Nawabganj', 'Netrokona', 'Nilphamari', 'Noakhali', 'Pabna',
+  'Panchagarh', 'Patuakhali', 'Pirojpur', 'Rajbari', 'Rajshahi', 'Rangamati', 'Rangpur',
+  'Satkhira', 'Shariatpur', 'Sherpur', 'Sirajganj', 'Sunamganj', 'Sylhet', 'Tangail', 'Thakurgaon'
+];
+
+const BANGLADESH_THANAS: Record<string, string[]> = {
+  'Dhaka': ['Dhanmondi', 'Gulshan', 'Mirpur', 'Mohammadpur', 'Motijheel', 'Pallabi', 'Sabujbagh', 'Tejgaon', 'Uttara', 'Wari', 'Cantonment', 'Kafrul', 'Adabor', 'Badda', 'Khilgaon', 'Demra', 'Shyampur', 'Sutrapur', 'Kotwali', 'Ramna', 'Hazaribagh', 'Lalbagh', 'Chawkbazar', 'Bangsal', 'Shahjahanpur', 'Shahbag', 'New Market', 'Kalabagan', 'Jatrabari', 'Kadamtali', 'Gendaria', 'Sutrapur', 'Wari'],
+  'Gazipur': ['Gazipur Sadar', 'Kaliakair', 'Kaliganj', 'Kapasia', 'Sreepur', 'Tongi'],
+  'Narayanganj': ['Narayanganj Sadar', 'Fatulla', 'Bandar', 'Araihazar', 'Sonargaon', 'Rupganj', 'Siddhirganj', 'Chashara', 'Narayanganj City'],
+  'Mymensingh': ['Mymensingh Sadar', 'Trishal', 'Bhaluka', 'Muktagacha', 'Navagram', 'Phulpur', 'Gafargaon', 'Hossainpur', 'Gouripur', 'Dhobaura', 'Ishwarganj', 'Gauripur', 'Nandail', 'Fulbaria', 'Tarakanda', 'Hakimpur'],
+  'Chattogram': ['Chattogram Sadar', 'Agrabad', 'Pahartali', 'Kotwali', 'Halishahar', 'Panchlaish', 'Chandgaon', 'Bandar', 'Double Mooring', 'Karnaphuli', 'Bakalia', 'Bayazid', 'Patenga', 'Satkania', 'Banshkhali', 'Sandwip', 'Mirsharai', 'Fatikchhari', 'Raozan', 'Hathazari', 'Sitakunda', 'Rangunia', 'Boalkhali', 'Anwara', 'Swandwip', 'Chakaria', 'Cox\'s Bazar Sadar', 'Kutubdia', 'Ukhia', 'Teknaf', 'Maheshkhali', 'Ramu', 'Chakaria'],
+  'Cumilla': ['Cumilla Sadar', 'Chandina', 'Daudkandi', 'Homna', 'Laksam', 'Muradnagar', 'Nangalkot', 'Debidwar', 'Brahmanpara', 'Burichang', 'Manoharganj', 'Meghna', 'Chauddagram', 'Titas', 'Montanagar', 'Shalidaha'],
+  'Sylhet': ['Sylhet Sadar', 'Beanibazar', 'Bishwanath', 'Balaganj', 'South Surma', 'Dakshin Surma', 'Fenchuganj', 'Golapganj', 'Gowainghat', 'Jaintiapur', 'Kanaighat', 'Zakiganj', 'Companiganj', 'Osmani Nagar'],
+  'Rajshahi': ['Rajshahi Sadar', 'Bagha', 'Bagmara', 'Charghat', 'Durgapur', 'Godagari', 'Mohanpur', 'Pabanagar Sadar', 'Puthia', 'Tanore', 'Boalia', 'Rajpara', 'Shah Makhdum', 'Motihar'],
+  'Khulna': ['Khulna Sadar', 'Sonadanga', 'Khalishpur', 'Daulatpur', 'Khan Jahan Ali', 'Bataghata', 'Dumuria', 'Digholia', 'Koyra', 'Paikgachha', 'Rupsa', 'Terokhada'],
+  'Barishal': ['Barishal Sadar', 'Bakerganj', 'Babalakandi', 'Gaurnadi', 'Hizla', 'Mehendiganj', 'Muladi', 'Banaripara', 'Uzirpur', 'Agailjhara', 'Gournadi'],
+  'Rangpur': ['Rangpur Sadar', 'Badarganj', 'Gangachara', 'Haridevpur', 'Kaunia', 'Pirgachha', 'Pirganj', 'Mithapukur', 'Taraganj', 'Rangpur City'],
+  'Bogra': ['Bogra Sadar', 'Adamdighi', 'Bogra Sadar Upazila', 'Dhunat', 'Dhupchanchia', 'Gabtali', 'Kahaloo', 'Nandigram', 'Sariakandi', 'Shajahanpur', 'Sherpur', 'Shibganj', 'Sonatala'],
+  'Dinajpur': ['Dinajpur Sadar', 'Birampur', 'Birganj', 'Biral', 'Bochaganj', 'Chirirbandar', 'Fulbari', 'Ghoraghat', 'Hakimpur', 'Kaharole', 'Khanshama', 'Nawabganj', 'Parbatipur', 'Phulbari', 'Setabganj'],
+  'Faridpur': ['Faridpur Sadar', 'Alfadanga', 'Boalmari', 'Charbhadrasan', 'Madukhali', 'Nagarkanda', 'Saltha', 'Bhanga', 'Sadarpur'],
+  'Jashore': ['Jashore Sadar', 'Abhaynagar', 'Bagherpara', 'Chaugachha', 'Keshabpur', 'Manirampur', 'Sharsha', 'Jhikargachha', 'Chowgacha'],
+  'Sirajganj': ['Sirajganj Sadar', 'Belkuchi', 'Chauhali', 'Kamarkhanda', 'Kazipur', 'Raiganj', 'Shahjadpur', 'Tarash', 'Ullahpara', 'Dhanbari'],
+  'Kushtia': ['Kushtia Sadar', 'Bheramara', 'Daulatpur', 'Khoksa', 'Kumarkhali', 'Mirpur', 'Darsana'],
+  'Munshiganj': ['Munshiganj Sadar', 'Gazaria', 'Lohajang', 'Sreenagar', 'Tongibari', 'Sirajdikhan'],
+  'Narsingdi': ['Narsingdi Sadar', 'Belabo', 'Monohardi', 'Palash', 'Raipura', 'Shibpur', 'Narsingdi City'],
+  'Tangail': ['Tangail Sadar', 'Basail', 'Delduar', 'Dhanbari', 'Ghatail', 'Gopalpur', 'Kalihati', 'Madhupur', 'Mirzapur', 'Nagarpur', 'Sakhipur', 'Dhanbari'],
+  'Jamalpur': ['Jamalpur Sadar', 'Bakshiganj', 'Dewanganj', 'Islampur', 'Madarganj', 'Melandaha', 'Sarishabari'],
+  'Netrokona': ['Netrokona Sadar', 'Atpara', 'Barhatta', 'Durgapur', 'Kalmakanda', 'Kendua', 'Khaliajuri', 'Madan', 'Mohanganj', 'Purbadhala'],
+  'Sherpur': ['Sherpur Sadar', 'Jhenaigati', 'Nakla', 'Nalitabari', 'Sreebardi'],
+  'Kishoreganj': ['Kishoreganj Sadar', 'Austagram', 'Bajitpur', 'Bhairab', 'Hossainpur', 'Itna', 'Karakandi', 'Katiadi', 'Kuliarchar', 'Mithamain', 'Nikli', 'Pakundia', 'Tarail'],
+  'Brahmanbaria': ['Brahmanbaria Sadar', 'Ashuganj', 'Bancharampur', 'Bijoypur', 'Kasba', 'Nabiganj', 'Nasirnagar', 'Sarail', 'Akhaura'],
+  'Chandpur': ['Chandpur Sadar', 'Faridganj', 'Haimchar', 'Haziganj', 'Kachua', 'Matlab', 'Shahrasti'],
+  'Feni': ['Feni Sadar', 'Chhagalnaiya', 'Daganbhuiyan', 'Parshuram', 'Phulgazi', 'Sonagazi'],
+  'Lakshmipur': ['Lakshmipur Sadar', 'Kamalnagar', 'Raipur', 'Ramgati', 'Ramganj'],
+  'Noakhali': ['Noakhali Sadar', 'Begumganj', 'Chatkhil', 'Companiganj', 'Hatiya', 'Kabirhat', 'Senbagh', 'Subarnachar'],
+  'Patuakhali': ['Patuakhali Sadar', 'Bauphal', 'Dashmina', 'Dumki', 'Galachipa', 'Kaluapara', 'Mirzaganj', 'Rangabali'],
+  'Pirojpur': ['Pirojpur Sadar', 'Bhandaria', 'Kawkhali', 'Mathbaria', 'Nazirpur', 'Nesarabad', 'Indurkani'],
+  'Barguna': ['Barguna Sadar', 'Amtali', 'Betagi', 'Patharghata', 'Taltali'],
+  'Bhola': ['Bhola Sadar', 'Borhanuddin', 'Char Fasson', 'Daulatkhan', 'Lalmohan', 'Manpura', 'Tazumuddin'],
+  'Jhalokati': ['Jhalokati Sadar', 'Kathalia', 'Nalchity', 'Rajapur'],
+  'Satkhira': ['Satkhira Sadar', 'Assasuni', 'Debhata', 'Kalaroa', 'Kaliganj', 'Shyamnagar', 'Tala'],
+  'Narail': ['Narail Sadar', 'Kalia', 'Lohagara', 'Naragati'],
+  'Magura': ['Magura Sadar', 'Mohammadpur', 'Shalikha', 'Sreepur'],
+  'Meherpur': ['Meherpur Sadar', 'Gangni', 'Mujibnagar'],
+  'Nawabganj': ['Nawabganj Sadar', 'Bholahat', 'Gomastapur', 'Nachole', 'Shibganj'],
+  'Naogaon': ['Naogaan Sadar', 'Atrai', 'Badalgachhi', 'Dhamurhat', 'Manda', 'Mahadevpur', 'Niamatpur', 'Patnitala', 'Raninagar', 'Sapahar', 'Porsha', 'Dhamoirhat'],
+  'Natore': ['Natore Sadar', 'Baraigram', 'Gurudaspur', 'Lalpur', 'Bagatipara', 'Singra', 'Naldanga'],
+  'Pabna': ['Pabna Sadar', 'Atgharia', 'Bera', 'Bhangura', 'Chatmohar', 'Faridpur', 'Ishwardi', 'Santhia', 'Sathia', 'Sujanagar'],
+  'Rajbari': ['Rajbari Sadar', 'Baliakandi', 'Goalanda', 'Pangsha', 'Kalukhali'],
+  'Shariatpur': ['Shariatpur Sadar', 'Bhedarganj', 'Damudya', 'Goshairhat', 'Naria', 'Janjira', 'Zanjira'],
+  'Madaripur': ['Madaripur Sadar', 'Kalkini', 'Rajoir', 'Shibchar'],
+  'Gopalganj': ['Gopalganj Sadar', 'Kashiani', 'Kotalipara', 'Muksudpur', 'Tungipara'],
+  'Bagerhat': ['Bagerhat Sadar', 'Chitalmagi', 'Fakirhat', 'Kachua', 'Mollahat', 'Mongla', 'Morrelganj', 'Rampal', 'Sarankhola'],
+  'Khagrachari': ['Khagrachari Sadar', 'Dighinala', 'Lakshmichhari', 'Manikchhari', 'Matiranga', 'Panchhari', 'Ramgarh'],
+  'Rangamati': ['Rangamati Sadar', 'Barkal', 'Kaukhali', 'Baghaichhari', 'Belaichhari', 'Jurachhari', 'Kaptai', 'Langadu', 'Naniarchar', 'Rajasthali'],
+  'Bandarban': ['Bandarban Sadar', 'Ali Kadam', 'Lama', 'Naikhongchhari', 'Rowangchhari', 'Ruma', 'Thanchi'],
+  'Sunamganj': ['Sunamganj Sadar', 'Bishwamvarpur', 'Chhatak', 'Derai', 'Dhairabazar', 'Dowarabazar', 'Jagannathpur', 'Jamalganj', 'Sullah', 'Tahirpur', 'Dakshin Sunamganj'],
+  'Habiganj': ['Habiganj Sadar', 'Ajmiriganj', 'Baniachang', 'Chunarughat', 'Lakhai', 'Madhabpur', 'Nabiganj', 'Shaistaganj'],
+  'Moulvibazar': ['Moulvibazar Sadar', 'Barlekha', 'Juri', 'Kulaura', 'Rajnagar', 'Sreemangal', 'Kamalganj'],
+  'Cox\'s Bazar': ['Cox\'s Bazar Sadar', 'Chakaria', 'Kutubdia', 'Maheshkhali', 'Ramu', 'Teknaf', 'Ukhia', 'Pekua'],
+  'Kurigram': ['Kurigram Sadar', 'Bhurungamari', 'Char Rajibpur', 'Chilmari', 'Phulbari', 'Hatibandha', 'Nageshwari', 'Rajarhat', 'Raiganj', 'Ulipur', 'Roumari'],
+  'Lalmonirhat': ['Lalmonirhat Sadar', 'Aditmari', 'Hatibandha', 'Kaliganj', 'Patgram'],
+  'Nilphamari': ['Nilphamari Sadar', 'Dimla', 'Domar', 'Jaldhaka', 'Kishoreganj', 'Saidpur', 'Panchagarh Sadar', 'Atwari', 'Boda', 'Debiganj', 'Tetulia'],
+  'Gaibandha': ['Gaibandha Sadar', 'Fulchhari', 'Gobindaganj', 'Palashbari', 'Sadullapur', 'Sughatta', 'Sundarganj'],
+  'Thakurgaon': ['Thakurgaon Sadar', 'Baliadangi', 'Haripur', 'Pirganj', 'Ranishankail'],
+  'Panchagarh': ['Panchagarh Sadar', 'Atwari', 'Boda', 'Debiganj', 'Tetulia'],
+  'Dinajpur': ['Dinajpur Sadar', 'Birampur', 'Birganj', 'Biral', 'Bochaganj', 'Chirirbandar', 'Phulbari', 'Ghoraghat', 'Hakimpur', 'Kaharole', 'Khansama', 'Nawabganj'],
+  'Joypurhat': ['Joypurhat Sadar', 'Akkelpur', 'Kalai', 'Khetlal', 'Panchbibi'],
+  'Bhola': ['Bhola Sadar', 'Borhanuddin', 'Char Fasson', 'Daulatkhan', 'Lalmohan', 'Manpura', 'Tazumuddin'],
+};
+
+// Delivery charges based on location
+const DELIVERY_ZONES: Record<string, { charge: number; zone: string }> = {
+  'Dhaka': { charge: 60, zone: 'Dhaka City' },
+  'Gazipur': { charge: 70, zone: 'Dhaka Suburb' },
+  'Narayanganj': { charge: 70, zone: 'Dhaka Suburb' },
+  'Munshiganj': { charge: 80, zone: 'Dhaka Suburb' },
+  'Narsingdi': { charge: 90, zone: 'Dhaka Division' },
+  'Manikganj': { charge: 90, zone: 'Dhaka Division' },
+  'Tangail': { charge: 100, zone: 'Dhaka Division' },
+  'Faridpur': { charge: 110, zone: 'Dhaka Division' },
+  'Rajbari': { charge: 110, zone: 'Dhaka Division' },
+  'Gopalganj': { charge: 120, zone: 'Dhaka Division' },
+  'Madaripur': { charge: 120, zone: 'Dhaka Division' },
+  'Shariatpur': { charge: 120, zone: 'Dhaka Division' },
+  'Kishoreganj': { charge: 110, zone: 'Dhaka Division' },
+  'Mymensingh': { charge: 100, zone: 'Mymensingh' },
+  'Jamalpur': { charge: 120, zone: 'Mymensingh' },
+  'Sherpur': { charge: 130, zone: 'Mymensingh' },
+  'Netrokona': { charge: 130, zone: 'Mymensingh' },
+  'Chattogram': { charge: 120, zone: 'Chattogram' },
+  'Cox\'s Bazar': { charge: 140, zone: 'Chattogram' },
+  'Cumilla': { charge: 110, zone: 'Chattogram' },
+  'Brahmanbaria': { charge: 120, zone: 'Chattogram' },
+  'Chandpur': { charge: 130, zone: 'Chattogram' },
+  'Feni': { charge: 130, zone: 'Chattogram' },
+  'Lakshmipur': { charge: 130, zone: 'Chattogram' },
+  'Noakhali': { charge: 130, zone: 'Chattogram' },
+  'Rangamati': { charge: 140, zone: 'Chattogram' },
+  'Khagrachari': { charge: 150, zone: 'Chattogram' },
+  'Bandarban': { charge: 150, zone: 'Chattogram' },
+  'Khulna': { charge: 120, zone: 'Khulna' },
+  'Bagerhat': { charge: 130, zone: 'Khulna' },
+  'Satkhira': { charge: 130, zone: 'Khulna' },
+  'Jashore': { charge: 120, zone: 'Khulna' },
+  'Narail': { charge: 130, zone: 'Khulna' },
+  'Magura': { charge: 130, zone: 'Khulna' },
+  'Meherpur': { charge: 130, zone: 'Khulna' },
+  ' Chuadanga': { charge: 130, zone: 'Khulna' },
+  'Jhenaidah': { charge: 130, zone: 'Khulna' },
+  'Kushtia': { charge: 130, zone: 'Khulna' },
+  'Rajshahi': { charge: 120, zone: 'Rajshahi' },
+  'Natore': { charge: 130, zone: 'Rajshahi' },
+  'Naogaon': { charge: 130, zone: 'Rajshahi' },
+  'Nawabganj': { charge: 130, zone: 'Rajshahi' },
+  'Pabna': { charge: 130, zone: 'Rajshahi' },
+  'Sirajganj': { charge: 120, zone: 'Rajshahi' },
+  'Bogra': { charge: 130, zone: 'Rajshahi' },
+  'Joypurhat': { charge: 130, zone: 'Rajshahi' },
+  'Dinajpur': { charge: 140, zone: 'Rangpur' },
+  'Rangpur': { charge: 130, zone: 'Rangpur' },
+  'Nilphamari': { charge: 130, zone: 'Rangpur' },
+  'Panchagarh': { charge: 140, zone: 'Rangpur' },
+  'Thakurgaon': { charge: 140, zone: 'Rangpur' },
+  'Kurigram': { charge: 140, zone: 'Rangpur' },
+  'Lalmonirhat': { charge: 140, zone: 'Rangpur' },
+  'Gaibandha': { charge: 130, zone: 'Rangpur' },
+  'Sylhet': { charge: 120, zone: 'Sylhet' },
+  'Sunamganj': { charge: 130, zone: 'Sylhet' },
+  'Moulvibazar': { charge: 130, zone: 'Sylhet' },
+  'Habiganj': { charge: 130, zone: 'Sylhet' },
+  'Barishal': { charge: 120, zone: 'Barishal' },
+  'Bhola': { charge: 130, zone: 'Barishal' },
+  'Patuakhali': { charge: 130, zone: 'Barishal' },
+  'Pirojpur': { charge: 130, zone: 'Barishal' },
+  'Barguna': { charge: 140, zone: 'Barishal' },
+  'Jhalokati': { charge: 130, zone: 'Barishal' },
 };
 
 const PAYMENT_METHODS = [
@@ -95,15 +230,18 @@ export function CheckoutPage() {
     { label: 'Payment', done: false, active: step === 'payment' },
   ];
 
-  // Delivery form
+  // Delivery form with Bangladesh address fields
   const [form, setForm] = useState({
     full_name: '',
     phone: '',
     address: '',
-    area: 'Dhaka City',
-    city: 'Dhaka',
+    district: '',
+    thana: '',
     notes: '',
   });
+
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [showAddressPicker, setShowAddressPicker] = useState(false);
@@ -116,7 +254,11 @@ export function CheckoutPage() {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
-  const areaCharge = DELIVERY_AREAS[form.area] ?? appConfig.delivery.deliveryCharge;
+  // Get thanas for selected district
+  const availableThanas = form.district ? BANGLADESH_THANAS[form.district] || [] : [];
+  const deliveryInfo = form.district ? DELIVERY_ZONES[form.district] || { charge: appConfig.delivery.deliveryCharge, zone: 'Outside Dhaka' } : { charge: appConfig.delivery.deliveryCharge, zone: 'Select District' };
+
+  const areaCharge = deliveryInfo.charge;
   const subtotal = Math.round(state.cart.reduce((s, i) => s + (i.product.discount_price || i.product.price) * i.quantity, 0));
   const deliveryCharge = subtotal >= appConfig.delivery.freeDeliveryThreshold ? 0 : areaCharge;
   const discount = couponApplied?.discount ?? 0;
@@ -141,10 +283,44 @@ export function CheckoutPage() {
     full_name: a.full_name || f.full_name,
     phone: a.phone || f.phone,
     address: a.address || f.address,
-    area: a.area || f.area,
-    city: a.city || f.city,
+    district: a.district || f.district,
+    thana: a.thana || f.thana,
     notes: a.notes || f.notes,
   }));
+
+  // Validate form fields
+  const validateField = (field: string, value: string) => {
+    if (!value.trim()) {
+      return `${field.replace('_', ' ')} is required`;
+    }
+    if (field === 'phone' && value.length < 10) {
+      return 'Enter a valid phone number';
+    }
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    const requiredFields = ['full_name', 'phone', 'address', 'district', 'thana'];
+    requiredFields.forEach(field => {
+      const error = validateField(field, form[field as keyof typeof form] as string);
+      if (error) errors[field] = error;
+    });
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle form field changes and clear errors
+  const handleFormChange = (field: string, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors(e => ({ ...e, [field]: '' }));
+    }
+    // Reset thana when district changes
+    if (field === 'district') {
+      setForm(f => ({ ...f, thana: '' }));
+    }
+  };
 
   const handleCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -157,7 +333,7 @@ export function CheckoutPage() {
   };
 
   const removeCoupon = () => { setCouponApplied(null); setCouponInput(''); setCouponError(''); };
-  const isFormValid = form.full_name.trim() && form.phone.trim() && form.address.trim() && form.area;
+  const isFormValid = form.full_name.trim() && form.phone.trim() && form.address.trim() && form.district && form.thana;
 
   const handlePlaceOrder = async () => {
     if (!isFormValid) return;
@@ -181,9 +357,17 @@ export function CheckoutPage() {
       total,
       status: 'placed',
       payment_method: paymentMethod,
-      address: { full_name: form.full_name, phone: form.phone, address: form.address, area: form.area, city: form.city, notes: form.notes },
+      address: {
+        full_name: form.full_name,
+        phone: form.phone,
+        address: form.address,
+        district: form.district,
+        thana: form.thana,
+        area: `${form.thana}, ${form.district}`,
+        notes: form.notes
+      },
       coupon_code: couponApplied?.code ?? null,
-      city: form.city,
+      city: form.district,
     };
 
     let orderId = generateOrderId();
@@ -218,7 +402,7 @@ export function CheckoutPage() {
 
     // For Stripe — redirect to payment page with intent creation there
     if (paymentMethod === 'stripe') {
-      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, area: form.area, notes: form.notes }, created_at: new Date().toISOString() } });
+      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
       dispatch({ type: 'CLEAR_CART' });
       setSubmitting(false);
       navigate(`/payment?order_id=${orderId}&order_number=${orderNumber}&total=${total}&method=stripe&payment_id=${paymentId}`);
@@ -232,7 +416,7 @@ export function CheckoutPage() {
         amount: total,
         customer_name: form.full_name,
         customer_phone: form.phone,
-        customer_address: `${form.address}, ${form.area}`,
+        customer_address: `${form.address}, ${form.thana}, ${form.district}`,
       });
 
       if (sslErr || !gateway_url) {
@@ -241,7 +425,7 @@ export function CheckoutPage() {
         return;
       }
 
-      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, area: form.area, notes: form.notes }, created_at: new Date().toISOString() } });
+      dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
       dispatch({ type: 'CLEAR_CART' });
       setSubmitting(false);
       // Redirect to SSLCommerz gateway
@@ -250,7 +434,7 @@ export function CheckoutPage() {
     }
 
     // For manual payments (COD / bKash / Nagad / bank_transfer)
-    dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, area: form.area, notes: form.notes }, created_at: new Date().toISOString() } });
+    dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...state.cart], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
     dispatch({ type: 'CLEAR_CART' });
     setSubmitting(false);
 
@@ -321,6 +505,7 @@ export function CheckoutPage() {
         {/* ── STEP 1: Delivery Info ── */}
         {step === 'info' && (
           <>
+            {/* Saved Addresses */}
             {savedAddresses.length > 0 && (
               <div className="glow-card p-4">
                 <button onClick={() => setShowAddressPicker(!showAddressPicker)}
@@ -337,11 +522,11 @@ export function CheckoutPage() {
                         className="w-full text-left p-3 rounded-xl transition-all hover:scale-[1.01]"
                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-semibold text-mia-orange">{a.label}</span>
+                          <span className="text-xs font-semibold text-mia-orange">{a.label || 'Address'}</span>
                           {a.is_default && <span className="text-[9px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">Default</span>}
                         </div>
                         <p className="text-xs text-white/70">{a.full_name} · {a.phone}</p>
-                        <p className="text-xs text-white/40 truncate">{a.address}, {a.area}</p>
+                        <p className="text-xs text-white/40 truncate">{a.address}, {a.district}</p>
                       </button>
                     ))}
                   </div>
@@ -349,71 +534,207 @@ export function CheckoutPage() {
               </div>
             )}
 
-            <div className="glow-card p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <User size={14} className="text-mia-orange" /> Customer Information
-              </h3>
-              <div className="relative">
-                <User size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                <input type="text" placeholder="Full Name *" value={form.full_name}
-                  onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-                  className={`${inputClass} pl-10`} />
-              </div>
-              <div className="relative">
-                <Phone size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                <input type="tel" placeholder="Phone Number *" value={form.phone}
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                  className={`${inputClass} pl-10`} />
-              </div>
-            </div>
-
-            <div className="glow-card p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <MapPin size={14} className="text-mia-blue" /> Shipping Address
-              </h3>
-              <textarea placeholder="Full Address * (House, Road, Area)" value={form.address}
-                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                rows={2} className={`${inputClass} resize-none`} />
-              <div>
-                <p className="text-[11px] text-white/40 mb-2 font-medium">Delivery Area *</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {Object.entries(DELIVERY_AREAS).map(([area, charge]) => (
-                    <button key={area} type="button" onClick={() => setForm(f => ({ ...f, area }))}
-                      className="px-3 py-2 rounded-xl text-xs font-medium transition-all text-left"
-                      style={form.area === area
-                        ? { background: 'rgba(0,209,255,0.1)', border: '1px solid rgba(0,209,255,0.3)', color: '#00D1FF' }
-                        : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
-                      <p className="font-semibold">{area}</p>
-                      <p className="text-[10px] opacity-60 mt-0.5">
-                        {subtotal >= appConfig.delivery.freeDeliveryThreshold ? 'Free' : `৳${charge}`}
-                      </p>
-                    </button>
-                  ))}
+            {/* Premium Shipping Address Card */}
+            <div className="glow-card p-5">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <MapPin size={18} className="text-mia-orange" /> Shipping Address
+                </h3>
+                <div className="flex items-center gap-1 text-[10px] text-white/30 bg-white/5 px-2 py-1 rounded-lg">
+                  <Lock size={10} />
+                  <span>Secure</span>
                 </div>
               </div>
-              <input type="text" placeholder="City" value={form.city}
-                onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                className={inputClass} />
-              <textarea placeholder="Delivery Notes (optional)" value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                rows={2} className={`${inputClass} resize-none`} />
-            </div>
 
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl"
-              style={{ background: 'rgba(0,209,255,0.04)', border: '1px solid rgba(0,209,255,0.1)' }}>
-              <div className="flex items-center gap-2">
-                <MapPin size={13} className="text-mia-blue" />
-                <span className="text-xs text-white/60">Delivery to {form.area}</span>
+              <div className="space-y-4">
+                {/* Full Name */}
+                <div>
+                  <label className="text-xs font-medium text-white/50 mb-1.5 block">
+                    Full Name <span className="text-mia-orange">*</span>
+                  </label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={form.full_name}
+                      onChange={e => handleFormChange('full_name', e.target.value)}
+                      autoComplete="name"
+                      className={`w-full pl-11 pr-4 py-3.5 text-sm text-white placeholder:text-white/30 focus:outline-none transition-all rounded-2xl bg-white/[0.04] border ${
+                        formErrors.full_name ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
+                      }`}
+                    />
+                    {formErrors.full_name && (
+                      <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+                        <AlertCircle size={10} /> {formErrors.full_name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Phone Number with Country Code */}
+                <div>
+                  <label className="text-xs font-medium text-white/50 mb-1.5 block">
+                    Phone Number <span className="text-mia-orange">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="flex items-center px-3 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] shrink-0">
+                      <span className="text-sm font-medium text-white/70">+88</span>
+                    </div>
+                    <div className="flex-1 relative">
+                      <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                      <input
+                        type="tel"
+                        placeholder="01XXXXXXXXX"
+                        value={form.phone}
+                        onChange={e => handleFormChange('phone', e.target.value.replace(/[^0-9]/g, ''))}
+                        autoComplete="tel"
+                        maxLength={11}
+                        className={`w-full pl-11 pr-4 py-3.5 text-sm text-white placeholder:text-white/30 focus:outline-none transition-all rounded-2xl bg-white/[0.04] border ${
+                          formErrors.phone ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  {formErrors.phone && (
+                    <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={10} /> {formErrors.phone}
+                    </p>
+                  )}
+                </div>
+
+                {/* Full Address */}
+                <div>
+                  <label className="text-xs font-medium text-white/50 mb-1.5 block">
+                    Full Address <span className="text-mia-orange">*</span>
+                  </label>
+                  <textarea
+                    placeholder="House No. / Building / Road / Area"
+                    value={form.address}
+                    onChange={e => handleFormChange('address', e.target.value)}
+                    autoComplete="street-address"
+                    rows={2}
+                    className={`w-full px-4 py-3.5 text-sm text-white placeholder:text-white/30 focus:outline-none transition-all rounded-2xl bg-white/[0.04] border resize-none ${
+                      formErrors.address ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
+                    }`}
+                  />
+                  {formErrors.address && (
+                    <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={10} /> {formErrors.address}
+                    </p>
+                  )}
+                </div>
+
+                {/* District Dropdown */}
+                <div>
+                  <label className="text-xs font-medium text-white/50 mb-1.5 block">
+                    District <span className="text-mia-orange">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={form.district}
+                      onChange={e => handleFormChange('district', e.target.value)}
+                      className={`w-full px-4 py-3.5 text-sm text-white focus:outline-none transition-all rounded-2xl bg-white/[0.04] border appearance-none cursor-pointer ${
+                        formErrors.district ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
+                      } ${!form.district ? 'text-white/30' : ''}`}
+                    >
+                      <option value="" disabled className="bg-mia-navy text-white/50">Select District</option>
+                      {BANGLADESH_DISTRICTS.map(d => (
+                        <option key={d} value={d} className="bg-mia-navy text-white">{d}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+                  </div>
+                  {formErrors.district && (
+                    <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={10} /> {formErrors.district}
+                    </p>
+                  )}
+                </div>
+
+                {/* Thana/Upazila Dropdown */}
+                <div>
+                  <label className="text-xs font-medium text-white/50 mb-1.5 block">
+                    Thana / Upazila <span className="text-mia-orange">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={form.thana}
+                      onChange={e => handleFormChange('thana', e.target.value)}
+                      disabled={!form.district || availableThanas.length === 0}
+                      className={`w-full px-4 py-3.5 text-sm text-white focus:outline-none transition-all rounded-2xl bg-white/[0.04] border appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                        formErrors.thana ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
+                      } ${!form.thana ? 'text-white/30' : ''}`}
+                    >
+                      <option value="" disabled className="bg-mia-navy text-white/50">
+                        {form.district ? 'Select Thana / Upazila' : 'Select district first'}
+                      </option>
+                      {availableThanas.map(t => (
+                        <option key={t} value={t} className="bg-mia-navy text-white">{t}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+                  </div>
+                  {formErrors.thana && (
+                    <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={10} /> {formErrors.thana}
+                    </p>
+                  )}
+                </div>
+
+                {/* Delivery Note (Optional) */}
+                <div>
+                  <label className="text-xs font-medium text-white/50 mb-1.5 block">
+                    Delivery Note <span className="text-white/30">(Optional)</span>
+                  </label>
+                  <textarea
+                    placeholder="Any special instructions for delivery..."
+                    value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                    rows={2}
+                    className="w-full px-4 py-3.5 text-sm text-white placeholder:text-white/30 focus:outline-none transition-all rounded-2xl bg-white/[0.04] border border-white/[0.08] focus:border-mia-orange/50 resize-none"
+                  />
+                </div>
               </div>
-              <span className="text-sm font-bold" style={{ color: deliveryCharge === 0 ? '#22c55e' : '#00D1FF' }}>
-                {deliveryCharge === 0 ? 'Free' : `৳${deliveryCharge}`}
-              </span>
             </div>
 
-            <button onClick={() => setStep('payment')} disabled={!isFormValid}
-              className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
-              Continue to Payment
+            {/* Delivery Info Banner */}
+            {form.district && (
+              <div className="flex items-center justify-between px-4 py-3.5 rounded-2xl"
+                style={{
+                  background: deliveryCharge === 0
+                    ? 'rgba(34,197,94,0.08)'
+                    : 'rgba(255,138,0,0.06)',
+                  border: deliveryCharge === 0
+                    ? '1px solid rgba(34,197,94,0.2)'
+                    : '1px solid rgba(255,138,0,0.15)'
+                }}>
+                <div className="flex items-center gap-3">
+                  <Truck size={18} className={deliveryCharge === 0 ? 'text-green-400' : 'text-mia-orange'} />
+                  <div>
+                    <p className="text-xs text-white/70">
+                      Delivery to <span className="text-white font-medium">{form.thana ? `${form.thana}, ` : ''}{form.district}</span>
+                    </p>
+                    <p className="text-[10px] text-white/40">{deliveryInfo.zone}</p>
+                  </div>
+                </div>
+                <span className={`text-base font-bold ${deliveryCharge === 0 ? 'text-green-400' : 'text-mia-orange'}`}>
+                  {deliveryCharge === 0 ? 'Free' : `৳${deliveryCharge}`}
+                </span>
+              </div>
+            )}
+
+            {/* Continue Button */}
+            <button
+              onClick={() => {
+                if (validateForm()) {
+                  setStep('payment');
+                }
+              }}
+              disabled={!isFormValid}
+              className="w-full py-4 rounded-2xl text-sm font-semibold text-white glow-btn disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+              style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 8px 24px rgba(255,138,0,0.25)' }}>
+              Continue to Payment <ArrowRight size={16} />
             </button>
           </>
         )}
@@ -428,9 +749,12 @@ export function CheckoutPage() {
                   <p className="text-[10px] text-white/35 mb-1 uppercase tracking-wider font-medium">Delivering to</p>
                   <p className="text-sm font-semibold text-white">{form.full_name}</p>
                   <p className="text-xs text-white/50 mt-0.5">{form.phone}</p>
-                  <p className="text-xs text-white/40 mt-0.5">{form.address}, {form.area}</p>
+                  <p className="text-xs text-white/40 mt-0.5">{form.address}</p>
+                  <p className="text-xs text-white/40">{form.thana}, {form.district}</p>
                 </div>
-                <button onClick={() => setStep('info')} className="text-xs text-mia-orange hover:underline shrink-0">Change</button>
+                <button onClick={() => setStep('info')} className="text-xs text-mia-orange hover:underline shrink-0 flex items-center gap-1">
+                  <Edit3 size={10} /> Change
+                </button>
               </div>
             </div>
 
@@ -559,7 +883,7 @@ export function CheckoutPage() {
                   <span className="text-white">৳{subtotal}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Delivery ({form.area})</span>
+                  <span className="text-white/50">Delivery ({form.district})</span>
                   <span className={deliveryCharge === 0 ? 'text-green-400' : 'text-white'}>
                     {deliveryCharge === 0 ? 'Free' : `৳${deliveryCharge}`}
                   </span>
