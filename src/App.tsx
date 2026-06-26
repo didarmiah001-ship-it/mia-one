@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { AuthProvider } from './lib/auth';
 import { DataProvider } from './lib/data';
 import { StoreProvider } from './store/StoreContext';
-import { RouterProvider, Routes, Route, useLocation } from './lib/router';
+import { RouterProvider, Routes, Route } from './lib/router';
 import { ToastProvider } from './components/Toast';
 import { SplashScreen } from './components/SplashScreen';
 import { BottomNav } from './components/BottomNav';
@@ -27,13 +27,9 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SearchPage } from './pages/SearchPage';
 import { PaymentPage } from './pages/PaymentPage';
 import { TransactionHistoryPage } from './pages/TransactionHistoryPage';
-import { AdminLayout } from './pages/admin/AdminLayout';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 
 function CustomerShell() {
-  const { pathname } = useLocation();
-  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
-
   return (
     <div className="min-h-screen bg-mia-black">
       <Routes>
@@ -57,11 +53,9 @@ function CustomerShell() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/transactions" element={<TransactionHistoryPage />} />
-        <Route path="/admin" element={<AdminLayout />} />
-        <Route path="/admin/:section" element={<AdminLayout />} />
       </Routes>
-      {!isAdminRoute && <MiaAgent />}
-      {!isAdminRoute && <BottomNav />}
+      <MiaAgent />
+      <BottomNav />
     </div>
   );
 }
