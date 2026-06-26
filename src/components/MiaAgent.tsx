@@ -46,9 +46,9 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
         <div className="flex items-center gap-3 mb-6">
           <div className="relative w-12 h-12">
             <div className="absolute inset-0 rounded-xl rotate-gradient opacity-60 blur-[1px]" />
-            <div className="absolute inset-[2px] rounded-xl flex items-center justify-center"
+            <div className="absolute inset-[2px] rounded-xl flex items-center justify-center overflow-hidden"
               style={{ boxShadow: '0 0 12px rgba(255,138,0,0.2)' }}>
-              <img src={appConfig.logo} alt="MIA ONE" className="w-full h-full object-contain" />
+              <img src="/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png" alt="MIA Agent" className="w-full h-full object-contain" />
             </div>
           </div>
           <div>

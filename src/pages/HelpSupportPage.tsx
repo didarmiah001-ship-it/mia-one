@@ -93,7 +93,7 @@ export function HelpSupportPage() {
       onClick: handleEmail,
     },
     {
-      icon: Headphones,
+      image: '/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png',
       labelKey: 'helpSupport.miaAgent',
       subtitleKey: 'helpSupport.miaAgentDesc',
       color: '#FF2EC9',
@@ -127,9 +127,9 @@ export function HelpSupportPage() {
               style={{ background: 'radial-gradient(circle, #FF2EC9, transparent)' }} />
           </div>
           <div className="relative flex flex-col items-center text-center">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 overflow-hidden"
               style={{ background: 'linear-gradient(135deg, rgba(255,138,0,0.12), rgba(255,46,201,0.08))', border: '1px solid rgba(255,138,0,0.2)' }}>
-              <Headphones size={24} className="text-mia-orange" />
+              <img src="/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png" alt="MIA Agent" className="w-10 h-10 object-contain" />
             </div>
             <h2 className="text-base font-bold text-white">{t('helpSupport.hero')}</h2>
             <p className="text-xs text-white/40 mt-1.5 leading-relaxed">
@@ -154,10 +154,14 @@ export function HelpSupportPage() {
                   style={{ border: `1px solid ${btn.border}`, background: btn.bg }}
                 >
                   <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 overflow-hidden"
                     style={{ backgroundColor: `${btn.color}15`, border: `1px solid ${btn.color}30` }}
                   >
-                    <Icon size={22} style={{ color: btn.color }} />
+                    {btn.image ? (
+                      <img src={btn.image} alt="" className="w-8 h-8 object-contain" />
+                    ) : (
+                      <Icon size={22} style={{ color: btn.color }} />
+                    )}
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <p className="text-sm font-semibold text-white">{btn.labelKey ? t(btn.labelKey) : btn.subtitle}</p>

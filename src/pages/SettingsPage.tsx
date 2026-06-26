@@ -220,9 +220,9 @@ export function SettingsPage() {
             onClick={() => setShowAgent(true)}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
             style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
               style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.18)' }}>
-              <MessageCircle size={16} className="text-mia-orange" />
+              <img src="/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png" alt="MIA Agent" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm text-white/80 font-medium">{t('settings.miaAgent')}</p>
