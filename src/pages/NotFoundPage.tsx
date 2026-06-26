@@ -1,7 +1,9 @@
 import { Home, Search, ArrowLeft } from 'lucide-react';
 import { useNavigate } from '../lib/router';
+import { useTranslation } from 'react-i18next';
 
 export function NotFoundPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -30,10 +32,10 @@ export function NotFoundPage() {
           404
         </div>
 
-        <h1 className="text-xl font-bold text-white mb-3">Page Not Found</h1>
+        <h1 className="text-xl font-bold text-white mb-3">{t('notFound.title')}</h1>
         <p className="text-sm text-white/40 mb-10 leading-relaxed">
-          The page you're looking for doesn't exist or has been moved.<br />
-          Let's get you back on track.
+          {t('notFound.desc')}<br />
+          {t('notFound.subDesc')}
         </p>
 
         {/* Actions */}
@@ -44,7 +46,7 @@ export function NotFoundPage() {
             style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 4px 20px rgba(255,138,0,0.3)' }}
           >
             <Home size={16} />
-            Back to Home
+            {t('notFound.backHome')}
           </button>
           <button
             onClick={() => navigate('/search')}
@@ -52,14 +54,14 @@ export function NotFoundPage() {
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <Search size={16} />
-            Search Products
+            {t('notFound.searchProducts')}
           </button>
           <button
             onClick={() => navigate(-1)}
             className="flex items-center justify-center gap-2 w-full py-3 text-sm text-white/30 hover:text-white/60 transition-colors"
           >
             <ArrowLeft size={14} />
-            Go Back
+            {t('notFound.goBack')}
           </button>
         </div>
       </div>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, X, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function PWAUpdateBanner() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [reg, setReg] = useState<ServiceWorkerRegistration | null>(null);
@@ -59,8 +61,8 @@ export function PWAUpdateBanner() {
 
         {/* Text */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white leading-none mb-0.5">Update available</p>
-          <p className="text-[11px] text-white/40 leading-none">New version ready to install</p>
+          <p className="text-sm font-semibold text-white leading-none mb-0.5">{t('pwa.updateAvailable')}</p>
+          <p className="text-[11px] text-white/40 leading-none">{t('pwa.newVersion')}</p>
         </div>
 
         {/* Update button */}
@@ -71,7 +73,7 @@ export function PWAUpdateBanner() {
           style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', opacity: updating ? 0.7 : 1 }}
         >
           <RefreshCw size={12} className={updating ? 'animate-spin' : ''} />
-          <span className="relative z-[1]">{updating ? 'Updating…' : 'Update'}</span>
+          <span className="relative z-[1]">{updating ? t('pwa.updating') : t('pwa.update')}</span>
         </button>
 
         {/* Dismiss */}

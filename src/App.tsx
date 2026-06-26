@@ -36,6 +36,7 @@ const ContactPage            = lazy(() => import('./pages/ContactPage').then(m =
 const PrivacyPolicyPage      = lazy(() => import('./pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
 const TermsPage              = lazy(() => import('./pages/TermsPage').then(m => ({ default: m.TermsPage })));
 const RefundPolicyPage       = lazy(() => import('./pages/RefundPolicyPage').then(m => ({ default: m.RefundPolicyPage })));
+const HelpSupportPage        = lazy(() => import('./pages/HelpSupportPage').then(m => ({ default: m.HelpSupportPage })));
 const NotFoundPage           = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 function CustomerShell() {
@@ -68,6 +69,7 @@ function CustomerShell() {
             <Route path="/privacy-policy"  element={<Suspense fallback={<ListPageSkeleton />}><PrivacyPolicyPage /></Suspense>} />
             <Route path="/terms"           element={<Suspense fallback={<ListPageSkeleton />}><TermsPage /></Suspense>} />
             <Route path="/refund-policy"   element={<Suspense fallback={<ListPageSkeleton />}><RefundPolicyPage /></Suspense>} />
+            <Route path="/help-support"   element={<Suspense fallback={<ListPageSkeleton />}><HelpSupportPage /></Suspense>} />
             <Route path="*"               element={<NotFoundPage />} />
           </Routes>
         </Suspense>

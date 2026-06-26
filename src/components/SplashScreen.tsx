@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { appConfig } from '../lib/config';
+import { useTranslation } from 'react-i18next';
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
+  const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -71,7 +73,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       </div>
 
       {/* Progress text */}
-      <p className="text-[10px] text-white/20 mt-4 font-medium tracking-wider">Loading premium experience...</p>
+      <p className="text-[10px] text-white/20 mt-4 font-medium tracking-wider">{t('splash.loading')}</p>
     </div>
   );
 }

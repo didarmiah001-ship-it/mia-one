@@ -8,6 +8,8 @@ import { useNavigate } from '../lib/router';
 import { useAuth } from '../lib/auth';
 import { appConfig } from '../lib/config';
 import { MiaAgent } from '../components/MiaAgent';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 const SETTINGS_KEY = 'mia-one-settings';
 
@@ -103,6 +105,7 @@ function SettingRow({
 }
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
@@ -133,68 +136,68 @@ export function SettingsPage() {
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
-          <h1 className="text-lg font-bold text-white">Settings</h1>
+          <h1 className="text-lg font-bold text-white">{t('settings.title')}</h1>
         </div>
       </header>
 
       <div className="max-w-lg md:max-w-2xl mx-auto px-4 mt-6 space-y-6">
 
         {/* Notifications */}
-        <Section title="Notifications">
+        <Section title={t('settings.notifications')}>
           <SettingRow
             icon={Bell}
             color="#FF8A00"
-            label="Order Updates"
-            sublabel="Status changes and delivery alerts"
+            label={t('settings.orderUpdates')}
+            sublabel={t('settings.orderUpdatesDesc')}
             right={<Toggle on={settings.notifications_order} onChange={v => update('notifications_order', v)} />}
           />
           <SettingRow
             icon={Bell}
             color="#22C55E"
-            label="Promotions & Offers"
-            sublabel="Deals, coupons, and flash sales"
+            label={t('settings.promotions')}
+            sublabel={t('settings.promotionsDesc')}
             right={<Toggle on={settings.notifications_promo} onChange={v => update('notifications_promo', v)} />}
           />
           <SettingRow
             icon={Bell}
             color="#00D1FF"
-            label="System Notifications"
-            sublabel="App updates and announcements"
+            label={t('settings.systemNotifications')}
+            sublabel={t('settings.systemNotificationsDesc')}
             right={<Toggle on={settings.notifications_system} onChange={v => update('notifications_system', v)} />}
           />
         </Section>
 
         {/* Sound */}
-        <Section title="Sound & Haptics">
+        <Section title={t('settings.soundHaptics')}>
           <SettingRow
             icon={Volume2}
             color="#7B2CFF"
-            label="Sound Effects"
-            sublabel="Button clicks and alerts"
+            label={t('settings.soundEffects')}
+            sublabel={t('settings.soundEffectsDesc')}
             right={<Toggle on={settings.sound_effects} onChange={v => update('sound_effects', v)} />}
           />
         </Section>
 
         {/* Language & Region */}
-        <Section title="Language & Region">
-          <SettingRow
-            icon={Globe}
-            color="#00D1FF"
-            label="Language"
-            sublabel={settings.language}
-            right={<ChevronRight size={14} className="text-white/15 shrink-0" />}
-          />
+        <Section title={t('settings.languageRegion')}>
+          <div className="px-4 py-2">
+            <p className="text-sm font-medium text-white/80 mb-3 flex items-center gap-2">
+              <Globe size={16} style={{ color: '#00D1FF' }} />
+              {t('settings.language')}
+            </p>
+            <LanguageSwitcher variant="full" />
+          </div>
           <SettingRow
             icon={Globe}
             color="#22C55E"
-            label="Currency"
+            label={t('settings.currency')}
             sublabel={settings.currency}
             right={<ChevronRight size={14} className="text-white/15 shrink-0" />}
           />
         </Section>
 
         {/* Privacy */}
-        <Section title="Privacy & Security">
+        <Section title={t('settings.privacySecurity')}>
           <button
             onClick={() => navigate('/edit-profile')}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
@@ -204,15 +207,15 @@ export function SettingsPage() {
               <Shield size={16} className="text-mia-purple" />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm text-white/80 font-medium">Change Password</p>
-              <p className="text-[11px] text-white/30 mt-0.5">Update your account password</p>
+              <p className="text-sm text-white/80 font-medium">{t('settings.changePassword')}</p>
+              <p className="text-[11px] text-white/30 mt-0.5">{t('settings.changePasswordDesc')}</p>
             </div>
             <ChevronRight size={14} className="text-white/15 shrink-0" />
           </button>
         </Section>
 
         {/* Support */}
-        <Section title="Support">
+        <Section title={t('settings.support')}>
           <button
             onClick={() => setShowAgent(true)}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
@@ -222,27 +225,27 @@ export function SettingsPage() {
               <MessageCircle size={16} className="text-mia-orange" />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm text-white/80 font-medium">MIA Agent</p>
-              <p className="text-[11px] text-white/30 mt-0.5">Chat support, order help &amp; more</p>
+              <p className="text-sm text-white/80 font-medium">{t('settings.miaAgent')}</p>
+              <p className="text-[11px] text-white/30 mt-0.5">{t('settings.miaAgentDesc')}</p>
             </div>
             <ChevronRight size={14} className="text-white/15 shrink-0" />
           </button>
           <SettingRow
             icon={Info}
             color="#94A3B8"
-            label="Support Email"
+            label={t('settings.supportEmail')}
             sublabel={appConfig.support.email}
             right={<ExternalLink size={13} className="text-white/15 shrink-0" />}
           />
         </Section>
 
         {/* Legal */}
-        <Section title="Legal">
+        <Section title={t('settings.legal')}>
           {([
-            { label: 'Privacy Policy', path: '/privacy-policy', icon: Shield, color: '#7B2CFF' },
-            { label: 'Terms & Conditions', path: '/terms', icon: FileText, color: '#00D1FF' },
-            { label: 'Refund Policy', path: '/refund-policy', icon: RotateCcw, color: '#22C55E' },
-            { label: 'Contact Us', path: '/contact', icon: Phone, color: '#FF8A00' },
+            { labelKey: 'settings.privacyPolicy', path: '/privacy-policy', icon: Shield, color: '#7B2CFF' },
+            { labelKey: 'settings.termsConditions', path: '/terms', icon: FileText, color: '#00D1FF' },
+            { labelKey: 'settings.refundPolicy', path: '/refund-policy', icon: RotateCcw, color: '#22C55E' },
+            { labelKey: 'settings.contactUs', path: '/contact', icon: Phone, color: '#FF8A00' },
           ] as const).map(item => (
             <button
               key={item.path}
@@ -254,7 +257,7 @@ export function SettingsPage() {
                 <item.icon size={16} style={{ color: item.color }} />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm text-white/80 font-medium">{item.label}</p>
+                <p className="text-sm text-white/80 font-medium">{t(item.labelKey)}</p>
               </div>
               <ChevronRight size={14} className="text-white/15 shrink-0" />
             </button>
@@ -262,11 +265,11 @@ export function SettingsPage() {
         </Section>
 
         {/* About */}
-        <Section title="About">
+        <Section title={t('settings.about')}>
           <SettingRow
             icon={Smartphone}
             color="#94A3B8"
-            label="App Version"
+            label={t('settings.appVersion')}
             sublabel={`MIA ONE v${appVersion}`}
             right={<span className="text-[11px] text-white/20 font-mono">{appVersion}</span>}
           />
@@ -274,7 +277,7 @@ export function SettingsPage() {
 
         {/* Danger zone */}
         {user && (
-          <Section title="Account">
+          <Section title={t('settings.account')}>
             {!showDeleteConfirm ? (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
@@ -285,28 +288,28 @@ export function SettingsPage() {
                   <Trash2 size={15} className="text-red-400" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm text-red-400 font-medium">Delete Account</p>
-                  <p className="text-[11px] text-white/30 mt-0.5">Permanently remove your account</p>
+                  <p className="text-sm text-red-400 font-medium">{t('settings.deleteAccount')}</p>
+                  <p className="text-[11px] text-white/30 mt-0.5">{t('settings.deleteAccountDesc')}</p>
                 </div>
               </button>
             ) : (
               <div className="p-4 rounded-2xl space-y-3" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
-                <p className="text-sm text-white/80 font-medium">Are you sure?</p>
+                <p className="text-sm text-white/80 font-medium">{t('settings.deleteConfirmTitle')}</p>
                 <p className="text-xs text-white/40 leading-relaxed">
-                  This action cannot be undone. All your data, orders, and saved information will be permanently deleted.
+                  {t('settings.deleteConfirmDesc')}
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/50"
                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    Cancel
+                    {t('settings.cancel')}
                   </button>
                   <button
                     onClick={handleDeleteAccount}
                     className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-red-400"
                     style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                    Delete
+                    {t('settings.delete')}
                   </button>
                 </div>
               </div>

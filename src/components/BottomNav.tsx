@@ -1,16 +1,18 @@
 import { Home, Search, ShoppingCart, Package, User } from 'lucide-react';
 import { useLocation, useNavigate } from '../lib/router';
 import { useStore } from '../store/StoreContext';
+import { useTranslation } from 'react-i18next';
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Home', color: '#FF8A00' },
-  { path: '/search', icon: Search, label: 'Search', color: '#00D1FF' },
-  { path: '/cart', icon: ShoppingCart, label: 'Cart', color: '#FF2EC9' },
-  { path: '/orders', icon: Package, label: 'Orders', color: '#7B2CFF' },
-  { path: '/profile', icon: User, label: 'Profile', color: '#FF8A00' },
+  { path: '/', icon: Home, labelKey: 'nav.home', color: '#FF8A00' },
+  { path: '/search', icon: Search, labelKey: 'nav.search', color: '#00D1FF' },
+  { path: '/cart', icon: ShoppingCart, labelKey: 'nav.cart', color: '#FF2EC9' },
+  { path: '/orders', icon: Package, labelKey: 'nav.orders', color: '#7B2CFF' },
+  { path: '/profile', icon: User, labelKey: 'nav.profile', color: '#FF8A00' },
 ];
 
 export function BottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { state } = useStore();
@@ -34,11 +36,12 @@ export function BottomNav() {
         {navItems.map(item => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
+          const label = t(item.labelKey);
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              aria-label={item.path === '/cart' && cartCount > 0 ? `${item.label} (${cartCount} items)` : item.label}
+              aria-label={item.path === '/cart' && cartCount > 0 ? `${label} (${cartCount} ${t('common.items')})` : label}
               aria-current={isActive ? 'page' : undefined}
               className="relative flex flex-col items-center gap-0.5 py-1 px-3 transition-all duration-400"
             >
@@ -81,7 +84,7 @@ export function BottomNav() {
                 aria-hidden="true"
                 style={{ color: isActive ? item.color : 'rgba(255,255,255,0.25)' }}
               >
-                {item.label}
+                {label}
               </span>
               {isActive && (
                 <div

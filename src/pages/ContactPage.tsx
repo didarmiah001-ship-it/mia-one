@@ -1,16 +1,18 @@
 import { ArrowLeft, MessageCircle, Mail, Phone, MapPin, Clock, ChevronRight, ExternalLink } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
+import { useTranslation } from 'react-i18next';
 
 const faqs = [
-  { q: 'How do I track my order?', a: 'Go to Orders in the app to see real-time status updates for all your orders.' },
-  { q: 'What is the return policy?', a: 'We accept returns within 7 days of delivery for eligible items in original condition.' },
-  { q: 'How long does delivery take?', a: `We deliver within ${appConfig.delivery.estimatedDays}. Express delivery options may be available at checkout.` },
-  { q: 'Is Cash on Delivery available?', a: 'Yes, Cash on Delivery (COD) is available for all orders within our delivery zones.' },
-  { q: 'How do I apply a coupon?', a: 'Enter your coupon code at the checkout page in the promo code field before placing the order.' },
+  { qKey: 'contact.faq1Q', aKey: 'contact.faq1A' },
+  { qKey: 'contact.faq2Q', aKey: 'contact.faq2A' },
+  { qKey: 'contact.faq3Q', aKey: 'contact.faq3A' },
+  { qKey: 'contact.faq4Q', aKey: 'contact.faq4A' },
+  { qKey: 'contact.faq5Q', aKey: 'contact.faq5A' },
 ];
 
 export function ContactPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -25,7 +27,7 @@ export function ContactPage() {
           >
             <ArrowLeft size={16} className="text-white/60" />
           </button>
-          <h1 className="text-lg font-bold text-white">Contact Us</h1>
+          <h1 className="text-lg font-bold text-white">{t('contact.title')}</h1>
         </div>
       </header>
 
@@ -37,15 +39,15 @@ export function ContactPage() {
             style={{ background: 'linear-gradient(135deg, rgba(255,138,0,0.15), rgba(255,46,201,0.08))', border: '1px solid rgba(255,138,0,0.2)' }}>
             <MessageCircle size={24} className="text-mia-orange" />
           </div>
-          <h2 className="text-base font-bold text-white mb-1">We're here to help</h2>
+          <h2 className="text-base font-bold text-white mb-1">{t('contact.subtitle')}</h2>
           <p className="text-sm text-white/40 leading-relaxed">
-            Our support team is available 7 days a week to assist you with any questions or concerns.
+            {t('contact.description')}
           </p>
         </div>
 
         {/* Contact options */}
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-2 px-1">Get In Touch</p>
+          <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-2 px-1">{t('contact.getInTouch')}</p>
 
           <a
             href={appConfig.support.whatsappUrl}
@@ -59,8 +61,8 @@ export function ContactPage() {
               <MessageCircle size={18} style={{ color: '#25D366' }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white font-semibold">WhatsApp Support</p>
-              <p className="text-xs text-white/40 mt-0.5">Fastest response · Usually replies in minutes</p>
+              <p className="text-sm text-white font-semibold">{t('contact.whatsappSupport')}</p>
+              <p className="text-xs text-white/40 mt-0.5">{t('contact.whatsappDesc')}</p>
             </div>
             <ExternalLink size={14} className="text-white/20 shrink-0" />
           </a>
@@ -75,7 +77,7 @@ export function ContactPage() {
               <Mail size={18} className="text-mia-blue" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white font-semibold">Email Support</p>
+              <p className="text-sm text-white font-semibold">{t('contact.emailSupport')}</p>
               <p className="text-xs text-white/40 mt-0.5">{appConfig.support.email}</p>
             </div>
             <ExternalLink size={14} className="text-white/20 shrink-0" />
@@ -86,12 +88,12 @@ export function ContactPage() {
         <div className="glow-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Clock size={15} className="text-mia-orange" />
-            <p className="text-sm font-semibold text-white">Business Hours</p>
+            <p className="text-sm font-semibold text-white">{t('contact.businessHours')}</p>
           </div>
           <div className="space-y-2">
             {[
-              { days: 'Saturday – Thursday', hours: '9:00 AM – 9:00 PM' },
-              { days: 'Friday', hours: '2:00 PM – 9:00 PM' },
+              { days: t('contact.satThu'), hours: t('contact.satThuHours') },
+              { days: t('contact.friday'), hours: t('contact.fridayHours') },
             ].map(row => (
               <div key={row.days} className="flex items-center justify-between">
                 <span className="text-xs text-white/50">{row.days}</span>
@@ -103,16 +105,16 @@ export function ContactPage() {
 
         {/* FAQ */}
         <div>
-          <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-2 px-1">Frequently Asked Questions</p>
+          <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-2 px-1">{t('contact.faq')}</p>
           <div className="space-y-1.5">
             {faqs.map((faq) => (
-              <details key={faq.q} className="group rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <details key={faq.qKey} className="group rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <summary className="flex items-center justify-between px-4 py-3.5 cursor-pointer list-none select-none">
-                  <span className="text-sm text-white/80 font-medium pr-4">{faq.q}</span>
+                  <span className="text-sm text-white/80 font-medium pr-4">{t(faq.qKey)}</span>
                   <ChevronRight size={14} className="text-white/25 shrink-0 transition-transform duration-200 group-open:rotate-90" />
                 </summary>
                 <div className="px-4 pb-3.5">
-                  <p className="text-xs text-white/40 leading-relaxed">{faq.a}</p>
+                  <p className="text-xs text-white/40 leading-relaxed">{faq.aKey === 'contact.faq3A' ? t(faq.aKey, { days: appConfig.delivery.estimatedDays }) : t(faq.aKey)}</p>
                 </div>
               </details>
             ))}
@@ -127,7 +129,7 @@ export function ContactPage() {
               <MapPin size={15} className="text-mia-orange" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white mb-1">Our Office</p>
+              <p className="text-sm font-semibold text-white mb-1">{t('contact.ourOffice')}</p>
               <p className="text-xs text-white/40 leading-relaxed">
                 MIA ONE Ltd.<br />
                 Dhaka, Bangladesh

@@ -3,8 +3,10 @@ import { ArrowLeft, PackageOpen } from 'lucide-react';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { useData } from '../lib/data';
 import { ProductCard } from '../components/ProductCard';
+import { useTranslation } from 'react-i18next';
 
 export function CategoriesPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const selectedCategory = searchParams.get('selected');
   const navigate = useNavigate();
@@ -27,7 +29,7 @@ export function CategoriesPage() {
               <ArrowLeft size={16} className="text-white/60" />
             </button>
           )}
-          <h1 className="text-lg font-bold text-white">{selectedCategory || 'Categories'}</h1>
+          <h1 className="text-lg font-bold text-white">{selectedCategory || t('categories.title')}</h1>
         </div>
       </header>
 
@@ -64,7 +66,7 @@ export function CategoriesPage() {
                 </div>
                 <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">{cat.name}</span>
                 <span className="text-[10px] text-white/25 font-medium">
-                  {products.filter(p => p.category === cat.name).length} items
+                  {products.filter(p => p.category === cat.name).length} {t('categories.items')}
                 </span>
               </button>
             ))}
@@ -77,7 +79,7 @@ export function CategoriesPage() {
                   style={{ background: 'rgba(255,138,0,0.05)', border: '1px solid rgba(255,138,0,0.1)' }}>
                   <PackageOpen size={32} className="text-white/20" />
                 </div>
-                <p className="text-sm text-white/40">No products in this category</p>
+                <p className="text-sm text-white/40">{t('categories.empty')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">

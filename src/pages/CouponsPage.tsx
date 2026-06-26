@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Tag, Copy, CheckCircle2, Clock, Loader2, Ticket } from 'lucide-react';
 import { useNavigate } from '../lib/router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth';
 import { fetchUserCoupons } from '../lib/api';
 
@@ -17,12 +18,13 @@ interface Coupon {
 }
 
 function CouponCard({ coupon }: { coupon: Coupon }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
   const expiresText = coupon.expires_at
-    ? `Expires ${new Date(coupon.expires_at).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}`
-    : 'No expiry';
+    ? `${t('coupons.expires')} ${new Date(coupon.expires_at).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    : t('coupons.noExpiry');
 
   const daysLeft = coupon.expires_at
     ? Math.ceil((new Date(coupon.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -53,12 +55,12 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
           </div>
           <div>
             <p className="text-lg font-bold text-white">
-              {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `৳${coupon.value} OFF`}
+              {coupon.type === 'percentage' ? `${coupon.value}% ${t('coupons.off')}` : `৳${coupon.value} ${t('coupons.off')}`}
             </p>
             {coupon.min_order && coupon.min_order > 0 ? (
-              <p className="text-[11px] text-white/40">Min. order ৳{coupon.min_order}</p>
+              <p className="text-[11px] text-white/40">{t('coupons.minOrder')} ৳{coupon.min_order}</p>
             ) : (
-              <p className="text-[11px] text-white/40">No minimum order</p>
+              <p className="text-[11px] text-white/40">{t('coupons.noMinOrder')}</p>
             )}
           </div>
         </div>
@@ -69,7 +71,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
             style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
             <Clock size={10} className="text-red-400" />
             <span className="text-[10px] text-red-400 font-semibold">
-              {daysLeft === 0 ? 'Expires today' : `${daysLeft}d left`}
+              {daysLeft === 0 ? t('coupons.expiresToday') : `${daysLeft}${t('coupons.daysLeft')}`}
             </span>
           </div>
         )}
@@ -86,7 +88,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
       {/* Code + copy */}
       <div className="px-5 py-4 flex items-center justify-between">
         <div>
-          <p className="text-[10px] text-white/30 font-medium mb-1 uppercase tracking-wider">Coupon Code</p>
+          <p className="text-[10px] text-white/30 font-medium mb-1 uppercase tracking-wider">{t('coupons.couponCode')}</p>
           <div className="flex items-center gap-2">
             <span
               className="text-base font-mono font-bold tracking-widest text-mia-orange px-3 py-1.5 rounded-xl"
@@ -108,7 +110,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
           onClick={() => navigate('/')}
           className="px-4 py-2 rounded-xl text-xs font-semibold text-white glow-btn"
           style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
-          Use Now
+          {t('coupons.useNow')}
         </button>
       </div>
 
@@ -122,7 +124,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
         </div>
         {coupon.max_uses && (
           <span className="text-[10px] text-white/25">
-            {coupon.used_count}/{coupon.max_uses} used
+            {coupon.used_count}/{coupon.max_uses} {t('coupons.used')}
           </span>
         )}
       </div>
@@ -131,6 +133,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
 }
 
 export function CouponsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -158,8 +161,8 @@ export function CouponsPage() {
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <div>
-            <h1 className="text-base font-bold text-white leading-tight">My Coupons</h1>
-            {!loading && <p className="text-[10px] text-white/30">{coupons.length} available</p>}
+            <h1 className="text-base font-bold text-white leading-tight">{t('coupons.title')}</h1>
+            {!loading && <p className="text-[10px] text-white/30">{coupons.length} {t('coupons.available')}</p>}
           </div>
         </div>
       </header>
@@ -176,9 +179,9 @@ export function CouponsPage() {
               style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
               <Ticket size={26} className="text-green-400/50" />
             </div>
-            <p className="text-sm text-white/40 text-center">No coupons available right now</p>
+            <p className="text-sm text-white/40 text-center">{t('coupons.empty')}</p>
             <p className="text-xs text-white/25 text-center max-w-[220px]">
-              Check back later for exclusive offers and discounts
+              {t('coupons.emptyDesc')}
             </p>
           </div>
         ) : (

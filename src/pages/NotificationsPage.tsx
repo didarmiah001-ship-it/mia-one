@@ -11,6 +11,7 @@ import {
   markAllNotificationsRead,
   deleteUserNotification,
 } from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 interface Notif {
   id: string;
@@ -33,24 +34,24 @@ const TYPE_META: Record<string, { icon: React.ElementType; color: string; bg: st
 };
 
 const CATEGORY_TABS = [
-  { key: 'all',        label: 'All',        icon: Bell,       color: '#00D1FF' },
-  { key: 'offers',     label: 'Offers',     icon: Tag,        color: '#22C55E' },
-  { key: 'orders',     label: 'Orders',     icon: ShoppingBag,color: '#FF8A00' },
-  { key: 'flash_sale', label: 'Flash Sale', icon: Zap,        color: '#F59E0B' },
-  { key: 'coupons',    label: 'Coupons',    icon: Ticket,     color: '#A78BFA' },
+  { key: 'all',        labelKey: 'notifications.all',        icon: Bell,       color: '#00D1FF' },
+  { key: 'offers',     labelKey: 'notifications.offers',     icon: Tag,        color: '#22C55E' },
+  { key: 'orders',     labelKey: 'notifications.orders',     icon: ShoppingBag,color: '#FF8A00' },
+  { key: 'flash_sale', labelKey: 'notifications.flashSale', icon: Zap,        color: '#F59E0B' },
+  { key: 'coupons',    labelKey: 'notifications.coupons',    icon: Ticket,     color: '#A78BFA' },
 ] as const;
 
 type CategoryTab = typeof CATEGORY_TABS[number]['key'];
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string, t: (key: string, opts?: any) => string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('notifications.justNow');
+  if (mins < 60) return `${mins}${t('notifications.minAgo')}`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return `${hrs}${t('notifications.hourAgo')}`;
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return `${days}${t('notifications.dayAgo')}`;
   return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
@@ -61,6 +62,7 @@ function getMeta(notif: Notif) {
 }
 
 export function NotificationsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [notifs, setNotifs]       = useState<Notif[]>([]);
@@ -126,9 +128,9 @@ export function NotificationsPage() {
               <ArrowLeft size={16} className="text-white/70" />
             </button>
             <div>
-              <h1 className="text-base font-bold text-white leading-tight">Notifications</h1>
+              <h1 className="text-base font-bold text-white leading-tight">{t('notifications.title')}</h1>
               {unreadCount > 0 && (
-                <p className="text-[10px]" style={{ color: '#00D1FF' }}>{unreadCount} unread</p>
+                <p className="text-[10px]" style={{ color: '#00D1FF' }}>{unreadCount} {t('notifications.unread')}</p>
               )}
             </div>
           </div>
@@ -139,7 +141,7 @@ export function NotificationsPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium transition-colors"
                 style={{ color: '#00D1FF', background: 'rgba(0,209,255,0.07)', border: '1px solid rgba(0,209,255,0.15)' }}
               >
-                <CheckCheck size={12} /> Mark all read
+                <CheckCheck size={12} /> {t('notifications.markAllRead')}
               </button>
             )}
             <button
@@ -171,7 +173,7 @@ export function NotificationsPage() {
                 }
               >
                 <TabIcon size={13} />
-                {tab.label}
+                {t(tab.labelKey)}
                 {count > 0 && (
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
@@ -190,7 +192,7 @@ export function NotificationsPage() {
 
         {/* Unread toggle */}
         <div className="flex items-center justify-between">
-          <p className="text-xs text-mia-gray">{filtered.length} notification{filtered.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-mia-gray">{filtered.length} {filtered.length !== 1 ? t('notifications.notifications') : t('notifications.notification')}</p>
           <button
             onClick={() => setShowUnread(v => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
@@ -200,7 +202,7 @@ export function NotificationsPage() {
             }
           >
             <Bell size={11} />
-            Unread only
+            {t('notifications.unreadOnly')}
           </button>
         </div>
 
@@ -219,10 +221,10 @@ export function NotificationsPage() {
             </div>
             <div className="text-center">
               <p className="text-white font-semibold">
-                {showUnread ? 'All caught up!' : `No ${category === 'all' ? '' : category.replace('_', ' ')} notifications`}
+                {showUnread ? t('notifications.allCaughtUp') : `${t('notifications.noUnread')}`}
               </p>
               <p className="text-mia-gray text-sm mt-1">
-                {showUnread ? 'No unread notifications right now' : 'Check back later for updates'}
+                {showUnread ? t('notifications.noUnread') : t('notifications.checkBackLater')}
               </p>
             </div>
           </div>
@@ -264,7 +266,7 @@ export function NotificationsPage() {
                     </p>
                     <p className="text-xs text-white/45 mt-0.5 leading-relaxed">{notif.message}</p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <p className="text-[10px] text-white/25">{timeAgo(notif.created_at)}</p>
+                      <p className="text-[10px] text-white/25">{timeAgo(notif.created_at, t)}</p>
                       {notif.category && notif.category !== 'general' && (
                         <span
                           className="text-[9px] px-1.5 py-0.5 rounded-md font-medium capitalize"

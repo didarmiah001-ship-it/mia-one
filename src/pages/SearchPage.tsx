@@ -9,13 +9,14 @@ import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { fetchBrands, searchProducts, SearchFilters } from '../lib/api';
 import { Product } from '../lib/types';
+import { useTranslation } from 'react-i18next';
 
 const SORT_OPTIONS = [
-  { key: 'newest', label: 'Newest First' },
-  { key: 'best_selling', label: 'Best Selling' },
-  { key: 'price_asc', label: 'Price: Low to High' },
-  { key: 'price_desc', label: 'Price: High to Low' },
-  { key: 'discount', label: 'Biggest Discount' },
+  { key: 'newest', labelKey: 'search.sortNewest' },
+  { key: 'best_selling', labelKey: 'search.sortBestSelling' },
+  { key: 'price_asc', labelKey: 'search.sortPriceLow' },
+  { key: 'price_desc', labelKey: 'search.sortPriceHigh' },
+  { key: 'discount', labelKey: 'search.sortBiggestDiscount' },
 ] as const;
 
 const RATING_OPTIONS = [4, 3, 2];
@@ -105,6 +106,7 @@ function PriceSlider({
 }
 
 function ResultCard({ product }: { product: Product }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { state, dispatch } = useStore();
   const isWishlisted = state.wishlist.some(i => i.product.id === product.id);
@@ -129,7 +131,7 @@ function ResultCard({ product }: { product: Product }) {
         )}
         {product.stock === 0 && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <span className="text-[9px] text-white/60 font-medium">Out of Stock</span>
+            <span className="text-[9px] text-white/60 font-medium">{t('common.outOfStock')}</span>
           </div>
         )}
       </div>
@@ -176,6 +178,7 @@ function ResultCard({ product }: { product: Product }) {
 }
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { categories, products: allProducts } = useData();
@@ -326,7 +329,7 @@ export function SearchPage() {
     inStockOnly ? 'stock' : '',
   ].filter(Boolean).length;
 
-  const currentSortLabel = SORT_OPTIONS.find(s => s.key === sortBy)?.label || 'Newest First';
+  const currentSortLabel = t(SORT_OPTIONS.find(s => s.key === sortBy)?.labelKey || 'search.sortNewest');
 
   const showSuggestions = !searched && query.length === 0;
 
@@ -352,7 +355,7 @@ export function SearchPage() {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit(query)}
-                placeholder="Search products, brands..."
+                placeholder={t('search.placeholder')}
                 autoFocus
                 className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none transition-all"
                 style={{
@@ -397,7 +400,7 @@ export function SearchPage() {
                     }} />
                 ))}
               </div>
-              <span className="text-xs text-mia-pink/80 animate-pulse">Listening...</span>
+              <span className="text-xs text-mia-pink/80 animate-pulse">{t('search.listening')}</span>
             </div>
           )}
 
@@ -411,7 +414,7 @@ export function SearchPage() {
                   ? { background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }
                   : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <SlidersHorizontal size={13} />
-                Filters
+                {t('search.filters')}
                 {activeFilterCount > 0 && (
                   <span className="w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center"
                     style={{ background: '#FF8A00', color: '#000' }}>
@@ -441,7 +444,7 @@ export function SearchPage() {
                         style={sortBy === opt.key
                           ? { background: 'rgba(255,138,0,0.1)', color: '#FF8A00' }
                           : { color: 'rgba(255,255,255,0.55)' }}>
-                        {opt.label}
+                        {t(opt.labelKey)}
                         {sortBy === opt.key && <Check size={12} />}
                       </button>
                     ))}
@@ -453,12 +456,12 @@ export function SearchPage() {
                 <button onClick={clearAllFilters}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs text-red-400 transition-all ml-auto"
                   style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.12)' }}>
-                  <X size={11} /> Clear
+                  <X size={11} /> {t('search.clear')}
                 </button>
               )}
 
               <span className="ml-auto text-[10px] text-white/25 font-medium shrink-0">
-                {loading ? '...' : `${results.length} results`}
+                {loading ? '...' : `${results.length} ${t('search.results')}`}
               </span>
             </div>
           )}
@@ -475,7 +478,7 @@ export function SearchPage() {
 
             {/* Category */}
             <div>
-              <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">Category</p>
+              <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">{t('search.category')}</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedCategory('')}
@@ -483,7 +486,7 @@ export function SearchPage() {
                   style={!selectedCategory
                     ? { background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }
                     : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  All
+                  {t('search.all')}
                 </button>
                 {categories.map(cat => (
                   <button
@@ -502,7 +505,7 @@ export function SearchPage() {
             {/* Brand */}
             {brands.length > 0 && (
               <div>
-                <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">Brand</p>
+                <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">{t('search.brand')}</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedBrand('')}
@@ -510,7 +513,7 @@ export function SearchPage() {
                     style={!selectedBrand
                       ? { background: 'rgba(0,209,255,0.1)', color: '#00D1FF', border: '1px solid rgba(0,209,255,0.2)' }
                       : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                    All
+                    {t('search.all')}
                   </button>
                   {brands.map((brand: any) => (
                     <button
@@ -529,13 +532,13 @@ export function SearchPage() {
 
             {/* Price Range */}
             <div>
-              <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">Price Range</p>
+              <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">{t('search.priceRange')}</p>
               <PriceSlider min={0} max={maxPrice} value={priceRange} onChange={setPriceRange} />
             </div>
 
             {/* Rating */}
             <div>
-              <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">Min. Rating</p>
+              <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">{t('search.minRating')}</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setMinRating(0)}
@@ -543,7 +546,7 @@ export function SearchPage() {
                   style={minRating === 0
                     ? { background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }
                     : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  Any
+                  {t('search.any')}
                 </button>
                 {RATING_OPTIONS.map(r => (
                   <button
@@ -563,8 +566,8 @@ export function SearchPage() {
             {/* In Stock */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white/70 font-medium">In Stock Only</p>
-                <p className="text-[11px] text-white/30">Show available products</p>
+                <p className="text-sm text-white/70 font-medium">{t('search.inStockOnly')}</p>
+                <p className="text-[11px] text-white/30">{t('search.showAvailable')}</p>
               </div>
               <button
                 onClick={() => setInStockOnly(v => !v)}
@@ -586,11 +589,11 @@ export function SearchPage() {
             {history.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest">Recent Searches</p>
+                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest">{t('search.recentSearches')}</p>
                   <button
                     onClick={() => { setHistory([]); localStorage.removeItem(HISTORY_KEY); }}
                     className="text-[10px] text-white/25 hover:text-red-400 transition-colors">
-                    Clear
+                    {t('search.clear')}
                   </button>
                 </div>
                 <div className="space-y-1.5">
@@ -615,7 +618,7 @@ export function SearchPage() {
 
             {/* Trending categories */}
             <div>
-              <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-2.5">Browse Categories</p>
+              <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest mb-2.5">{t('search.browseCategories')}</p>
               <div className="grid grid-cols-2 gap-2">
                 {categories.slice(0, 6).map(cat => (
                   <button
@@ -630,7 +633,7 @@ export function SearchPage() {
                     <div className="min-w-0">
                       <p className="text-xs font-medium truncate" style={{ color: cat.color }}>{cat.name}</p>
                       <p className="text-[10px] text-white/25">
-                        {allProducts.filter(p => p.category === cat.name).length} items
+                        {allProducts.filter(p => p.category === cat.name).length} {t('categories.items')}
                       </p>
                     </div>
                   </button>
@@ -643,7 +646,7 @@ export function SearchPage() {
               <div>
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <TrendingUp size={13} className="text-mia-orange" />
-                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest">Trending Now</p>
+                  <p className="text-[10px] font-semibold text-white/25 uppercase tracking-widest">{t('search.trending')}</p>
                 </div>
                 <div className="space-y-2">
                   {allProducts.filter(p => p.is_trending).slice(0, 4).map(p => (
@@ -683,14 +686,14 @@ export function SearchPage() {
                   <Search size={24} className="text-mia-orange/40" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-white/60">No products found</p>
-                  <p className="text-xs text-white/30 mt-1">Try different keywords or adjust filters</p>
+                  <p className="text-sm font-medium text-white/60">{t('search.noResults')}</p>
+                  <p className="text-xs text-white/30 mt-1">{t('search.noResultsDesc')}</p>
                 </div>
                 <button
                   onClick={clearAllFilters}
                   className="px-5 py-2 rounded-xl text-sm font-medium text-mia-orange"
                   style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.2)' }}>
-                  Clear all filters
+                  {t('search.clearAllFilters')}
                 </button>
               </div>
             ) : (

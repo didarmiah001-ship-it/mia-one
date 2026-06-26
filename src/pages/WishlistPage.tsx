@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth';
 import { fetchWishlist, toggleWishlist } from '../lib/api';
 import { appConfig } from '../lib/config';
 import { Product } from '../lib/types';
+import { useTranslation } from 'react-i18next';
 
 interface WishlistEntry {
   id: string;
@@ -13,6 +14,7 @@ interface WishlistEntry {
 }
 
 export function WishlistPage() {
+  const { t } = useTranslation();
   const { state, dispatch } = useStore();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -77,14 +79,14 @@ export function WishlistPage() {
         <div className="relative w-28 h-28 mb-6 float-premium">
           <img src={appConfig.logo} alt="MIA ONE" className="w-full h-full object-contain opacity-60" />
         </div>
-        <h2 className="text-lg font-bold text-white mb-2">Wishlist is Empty</h2>
-        <p className="text-sm text-white/40 mb-6 text-center">Save products you love for later</p>
+        <h2 className="text-lg font-bold text-white mb-2">{t('wishlist.empty')}</h2>
+        <p className="text-sm text-white/40 mb-6 text-center">{t('wishlist.emptyDesc')}</p>
         <button
           onClick={() => navigate('/')}
           className="px-6 py-3 rounded-xl text-sm font-semibold text-white glow-btn"
           style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
         >
-          Browse Products
+          {t('wishlist.browseProducts')}
         </button>
       </div>
     );
@@ -94,8 +96,8 @@ export function WishlistPage() {
     <div className="page-transition pb-24">
       <header className="sticky top-0 z-30 glass px-4 py-3">
         <div className="max-w-lg md:max-w-2xl mx-auto">
-          <h1 className="text-lg font-bold text-white">My Wishlist</h1>
-          <p className="text-xs text-white/40">{wishlistItems.length} items</p>
+          <h1 className="text-lg font-bold text-white">{t('wishlist.title')}</h1>
+          <p className="text-xs text-white/40">{wishlistItems.length} {wishlistItems.length !== 1 ? t('common.items') : t('common.item')}</p>
         </div>
       </header>
 
@@ -124,7 +126,7 @@ export function WishlistPage() {
                   }}
                   className="text-[11px] px-3 py-1 rounded-full bg-mia-orange/10 text-mia-orange hover:bg-mia-orange/20 transition-colors"
                 >
-                  Add to Cart
+                  {t('wishlist.addToCart')}
                 </button>
                 <button
                   onClick={(e) => {

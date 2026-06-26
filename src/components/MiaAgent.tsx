@@ -1,5 +1,6 @@
 import { X, ShoppingBag, MapPin, Package, Info, Headphones, ChevronRight } from 'lucide-react';
 import { appConfig } from '../lib/config';
+import { useTranslation } from 'react-i18next';
 
 interface MiaAgentProps {
   isOpen: boolean;
@@ -7,15 +8,17 @@ interface MiaAgentProps {
 }
 
 export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
-  if (!isOpen) return null;
+  const { t } = useTranslation();
 
   const quickActions = [
-    { icon: ShoppingBag, label: 'Place an Order', color: '#FF8A00' },
-    { icon: Package, label: 'Track My Order', color: '#00D1FF' },
-    { icon: Info, label: 'Product Information', color: '#7B2CFF' },
-    { icon: MapPin, label: 'Delivery Information', color: '#FF2EC9' },
-    { icon: Headphones, label: 'Customer Support', color: '#FF8A00' },
+    { icon: ShoppingBag, labelKey: 'miaAgent.placeOrder', color: '#FF8A00' },
+    { icon: Package, labelKey: 'miaAgent.trackOrder', color: '#00D1FF' },
+    { icon: Info, labelKey: 'miaAgent.productInfo', color: '#7B2CFF' },
+    { icon: MapPin, labelKey: 'miaAgent.deliveryInfo', color: '#FF2EC9' },
+    { icon: Headphones, labelKey: 'miaAgent.customerSupport', color: '#FF8A00' },
   ];
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -49,10 +52,10 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">MIA Agent</h3>
+            <h3 className="text-sm font-bold text-white">{t('miaAgent.title')}</h3>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 neon-pulse" />
-              <span className="text-[11px] text-green-400">Online now</span>
+              <span className="text-[11px] text-green-400">{t('miaAgent.online')}</span>
             </div>
           </div>
         </div>
@@ -70,11 +73,12 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
         <div className="space-y-2">
           {quickActions.map((action) => {
             const Icon = action.icon;
+            const label = t(action.labelKey);
             return (
               <button
-                key={action.label}
+                key={action.labelKey}
                 onClick={() => {
-                  if (action.label === 'Customer Support') {
+                  if (action.labelKey === 'miaAgent.customerSupport') {
                     window.open(appConfig.support.whatsappUrl, '_blank');
                   }
                   onClose();
@@ -91,7 +95,7 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
                 >
                   <Icon size={18} style={{ color: action.color }} />
                 </div>
-                <span className="text-sm text-white/80 flex-1 text-left">{action.label}</span>
+                <span className="text-sm text-white/80 flex-1 text-left">{label}</span>
                 <ChevronRight size={14} style={{ color: `${action.color}60` }} />
               </button>
             );

@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import {
   Package, Heart, MapPin, Bell, Settings, LogOut, ChevronRight,
-  Edit2, Shield, Tag, User, Camera, Star, ShoppingBag, TrendingUp, Receipt,
+  Edit2, Shield, Tag, User, Camera, Star, ShoppingBag, TrendingUp, Receipt, Headphones,
 } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useStore } from '../store/StoreContext';
 import { useAuth } from '../lib/auth';
 import { appConfig } from '../lib/config';
 import { fetchUserNotifications, fetchOrders } from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 export function ProfilePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { state } = useStore();
   const { user, profile, isAdmin, signOut } = useAuth();
@@ -33,25 +35,31 @@ export function ProfilePage() {
 
   const menuSections = [
     {
-      title: 'My Account',
+      title: t('profile.myAccount'),
       items: [
-        { icon: Package, label: 'My Orders', badge: orderCount > 0 ? orderCount : undefined, path: '/orders', color: '#FF8A00' },
-        { icon: Heart, label: 'Wishlist', badge: state.wishlist.length > 0 ? state.wishlist.length : undefined, path: '/wishlist', color: '#FF2EC9' },
-        { icon: Receipt, label: 'Transaction History', path: '/transactions', color: '#00D1FF' },
-        { icon: MapPin, label: 'Saved Addresses', path: '/addresses', color: '#7B2CFF' },
+        { icon: Package, label: t('profile.myOrders'), badge: orderCount > 0 ? orderCount : undefined, path: '/orders', color: '#FF8A00' },
+        { icon: Heart, label: t('profile.wishlist'), badge: state.wishlist.length > 0 ? state.wishlist.length : undefined, path: '/wishlist', color: '#FF2EC9' },
+        { icon: Receipt, label: t('profile.transactionHistory'), path: '/transactions', color: '#00D1FF' },
+        { icon: MapPin, label: t('profile.savedAddresses'), path: '/addresses', color: '#7B2CFF' },
       ],
     },
     {
-      title: 'Offers & Updates',
+      title: t('profile.offersUpdates'),
       items: [
-        { icon: Bell, label: 'Notifications', badge: unreadCount > 0 ? unreadCount : undefined, path: '/notifications', color: '#00D1FF' },
-        { icon: Tag, label: 'My Coupons', path: '/coupons', color: '#22C55E' },
+        { icon: Bell, label: t('profile.notifications'), badge: unreadCount > 0 ? unreadCount : undefined, path: '/notifications', color: '#00D1FF' },
+        { icon: Tag, label: t('profile.myCoupons'), path: '/coupons', color: '#22C55E' },
       ],
     },
     {
-      title: 'Preferences',
+      title: t('profile.preferences'),
       items: [
-        { icon: Settings, label: 'Settings', path: '/settings', color: '#94A3B8' },
+        { icon: Settings, label: t('profile.settings'), path: '/settings', color: '#94A3B8' },
+      ],
+    },
+    {
+      title: t('profile.support'),
+      items: [
+        { icon: Headphones, label: t('profile.helpSupport'), path: '/help-support', color: '#FF8A00' },
       ],
     },
   ];
@@ -60,13 +68,13 @@ export function ProfilePage() {
     <div className="page-transition pb-28">
       <header className="sticky top-0 z-30 glass px-4 py-3">
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
-          <h1 className="text-lg font-bold text-white">My Profile</h1>
+          <h1 className="text-lg font-bold text-white">{t('profile.title')}</h1>
           {isAdmin && (
             <button
               onClick={() => navigate('/admin')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-mia-orange"
               style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.2)' }}>
-              <Shield size={12} /> Admin Panel
+              <Shield size={12} /> {t('profile.adminPanel')}
             </button>
           )}
         </div>
@@ -112,10 +120,10 @@ export function ProfilePage() {
             {/* Info */}
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-bold text-white truncate">
-                {user ? (profile?.full_name || 'Welcome!') : 'Guest User'}
+                {user ? (profile?.full_name || t('profile.welcome')) : t('profile.guestUser')}
               </h2>
               <p className="text-xs text-white/40 mt-0.5 truncate">
-                {user ? user.email : 'Sign in to access your account'}
+                {user ? user.email : t('profile.signInToAccess')}
               </p>
               {profile?.phone && (
                 <p className="text-xs text-white/30 mt-0.5">{profile.phone}</p>
@@ -124,7 +132,7 @@ export function ProfilePage() {
                 <button
                   onClick={() => navigate('/edit-profile')}
                   className="mt-2 flex items-center gap-1 text-[11px] text-mia-orange font-medium">
-                  <Edit2 size={10} /> Edit Profile
+                  <Edit2 size={10} /> {t('profile.editProfile')}
                 </button>
               )}
             </div>
@@ -135,9 +143,9 @@ export function ProfilePage() {
             <div className="grid grid-cols-3 gap-3 mt-5 pt-4"
               style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
               {[
-                { value: orderCount, label: 'Orders', icon: ShoppingBag, color: '#FF8A00', path: '/orders' },
-                { value: state.wishlist.length, label: 'Wishlist', icon: Heart, color: '#FF2EC9', path: '/wishlist' },
-                { value: state.cart.reduce((s, i) => s + i.quantity, 0), label: 'In Cart', icon: TrendingUp, color: '#00D1FF', path: '/cart' },
+                { value: orderCount, label: t('profile.orders'), icon: ShoppingBag, color: '#FF8A00', path: '/orders' },
+                { value: state.wishlist.length, label: t('profile.wishlist'), icon: Heart, color: '#FF2EC9', path: '/wishlist' },
+                { value: state.cart.reduce((s, i) => s + i.quantity, 0), label: t('profile.inCart'), icon: TrendingUp, color: '#00D1FF', path: '/cart' },
               ].map(stat => {
                 const StatIcon = stat.icon;
                 return (
@@ -157,13 +165,13 @@ export function ProfilePage() {
                 onClick={() => navigate('/login')}
                 className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white glow-btn"
                 style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
-                Sign In
+                {t('profile.signIn')}
               </button>
               <button
                 onClick={() => navigate('/signup')}
                 className="flex-1 py-3 rounded-2xl text-sm font-medium text-white/70"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                Sign Up
+                {t('profile.signUp')}
               </button>
             </div>
           )}
@@ -222,7 +230,7 @@ export function ProfilePage() {
                 style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.1)' }}>
                 <LogOut size={16} className="text-red-400" />
               </div>
-              <span className="text-sm text-red-400 font-medium flex-1 text-left">Logout</span>
+              <span className="text-sm text-red-400 font-medium flex-1 text-left">{t('profile.logout')}</span>
             </button>
           </div>
         )}
@@ -232,7 +240,7 @@ export function ProfilePage() {
           <div className="flex items-center gap-2 justify-center py-2">
             <Star size={10} className="text-white/15" />
             <p className="text-[10px] text-white/20">
-              Member since {new Date(profile.created_at).toLocaleDateString('en', { month: 'long', year: 'numeric' })}
+              {t('profile.memberSince')} {new Date(profile.created_at).toLocaleDateString('en', { month: 'long', year: 'numeric' })}
             </p>
           </div>
         )}

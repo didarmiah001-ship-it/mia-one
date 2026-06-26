@@ -3,8 +3,10 @@ import { Heart, ShoppingCart, Star, ImageOff } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { Product } from '../lib/types';
 import { useStore } from '../store/StoreContext';
+import { useTranslation } from 'react-i18next';
 
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { state, dispatch } = useStore();
   const [imgError, setImgError] = useState(false);
@@ -48,7 +50,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
           <span
             className="absolute top-2 left-2 px-2.5 py-1 text-white text-[10px] font-bold rounded-lg neon-pulse"
             style={{ background: 'linear-gradient(135deg, #FF2EC9, #7B2CFF)', color: '#fff' }}
-            aria-label={`${discount}% off`}
+            aria-label={`${discount}% ${t('common.off')}`}
           >
             -{discount}%
           </span>
@@ -58,7 +60,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
             e.stopPropagation();
             dispatch({ type: 'TOGGLE_WISHLIST', product });
           }}
-          aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+          aria-label={isWishlisted ? `${t('common.remove')} ${product.name} ${t('common.fromWishlist')}` : `${t('common.add')} ${product.name} ${t('common.toWishlist')}`}
           aria-pressed={isWishlisted}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center transition-all duration-300 hover:scale-125 hover:bg-black/60"
           style={isWishlisted ? { boxShadow: '0 0 12px rgba(255, 46, 201, 0.5)' } : {}}
@@ -72,7 +74,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
         {product.stock < 10 && product.stock > 0 && (
           <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-mia-orange/90 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm"
             style={{ boxShadow: '0 0 8px rgba(255, 138, 0, 0.3)' }}>
-            Only {product.stock} left
+            {t('common.only')} {product.stock} {t('common.left')}
           </span>
         )}
       </div>
@@ -82,7 +84,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
       </h3>
       <div className="flex items-center gap-1.5 mb-2">
         <Star size={12} className="fill-mia-orange text-mia-orange drop-shadow-[0_0_4px_rgba(255,138,0,0.5)]" aria-hidden="true" />
-        <span className="text-[11px] text-white/60" aria-label={`${product.rating} stars`}>{product.rating}</span>
+        <span className="text-[11px] text-white/60" aria-label={`${product.rating} ${t('common.stars')}`}>{product.rating}</span>
         <span className="text-[11px] text-white/20">({product.reviews_count})</span>
       </div>
       <div className="flex items-center justify-between">
@@ -92,7 +94,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
               <span className="text-sm font-bold text-mia-orange drop-shadow-[0_0_6px_rgba(255,138,0,0.3)]">
                 ৳{product.discount_price}
               </span>
-              <span className="text-[11px] text-white/25 line-through" aria-label={`Was ৳${product.price}`}>৳{product.price}</span>
+              <span className="text-[11px] text-white/25 line-through" aria-label={`${t('common.was')} ৳${product.price}`}>৳{product.price}</span>
             </div>
           ) : (
             <span className="text-sm font-bold text-white">৳{product.price}</span>
@@ -103,7 +105,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
             e.stopPropagation();
             dispatch({ type: 'ADD_TO_CART', product });
           }}
-          aria-label={`Add ${product.name} to cart`}
+          aria-label={`${t('common.addToCart')} ${product.name}`}
           className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
           style={{
             background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',

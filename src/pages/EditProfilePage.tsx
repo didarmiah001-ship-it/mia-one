@@ -3,10 +3,12 @@ import { ArrowLeft, Save, User, Phone, Camera, KeyRound, Eye, EyeOff, CheckCircl
 import { useNavigate } from '../lib/router';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 type Tab = 'profile' | 'password';
 
 export function EditProfilePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
 
@@ -42,7 +44,7 @@ export function EditProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setProfileError('Image must be under 5MB');
+      setProfileError(t('editProfile.imageTooLarge'));
       return;
     }
     setAvatarFile(file);
@@ -86,11 +88,11 @@ export function EditProfilePage() {
     setPasswordSuccess(false);
 
     if (newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError(t('editProfile.passwordTooShort'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+      setPasswordError(t('editProfile.passwordsDontMatch'));
       return;
     }
 
@@ -101,7 +103,7 @@ export function EditProfilePage() {
     });
     if (signInErr) {
       setPasswordLoading(false);
-      setPasswordError('Current password is incorrect');
+      setPasswordError(t('editProfile.currentPasswordWrong'));
       return;
     }
 
@@ -130,7 +132,7 @@ export function EditProfilePage() {
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
-          <h1 className="text-lg font-bold text-white">Edit Profile</h1>
+          <h1 className="text-lg font-bold text-white">{t('editProfile.title')}</h1>
         </div>
       </header>
 
@@ -139,7 +141,7 @@ export function EditProfilePage() {
         <div
           className="flex gap-1.5 mb-6 p-1.5 rounded-2xl"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          {([['profile', 'Profile Info'], ['password', 'Change Password']] as [Tab, string][]).map(([key, label]) => (
+          {([['profile', t('editProfile.profileInfo')], ['password', t('editProfile.changePassword')]] as [Tab, string][]).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -180,8 +182,8 @@ export function EditProfilePage() {
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </div>
-              <p className="text-[11px] text-white/30">Tap the camera icon to upload a photo</p>
-              {avatarFile && <p className="text-[11px] text-mia-orange">{avatarFile.name} selected</p>}
+              <p className="text-[11px] text-white/30">{t('editProfile.cameraHint')}</p>
+              {avatarFile && <p className="text-[11px] text-mia-orange">{avatarFile.name} {t('editProfile.selected')}</p>}
             </div>
 
             {profileError && (
@@ -191,12 +193,12 @@ export function EditProfilePage() {
             )}
             {profileSuccess && (
               <div className="p-3 rounded-xl text-sm text-green-300 flex items-center gap-2" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.15)' }}>
-                <CheckCircle2 size={14} /> Profile updated successfully!
+                <CheckCircle2 size={14} /> {t('editProfile.profileUpdated')}
               </div>
             )}
 
             <div>
-              <label className="text-xs text-white/40 mb-1.5 block font-medium">Email</label>
+              <label className="text-xs text-white/40 mb-1.5 block font-medium">{t('editProfile.email')}</label>
               <input
                 type="text"
                 value={user.email || ''}
@@ -207,28 +209,28 @@ export function EditProfilePage() {
             </div>
 
             <div>
-              <label className="text-xs text-white/40 mb-1.5 block font-medium">Full Name</label>
+              <label className="text-xs text-white/40 mb-1.5 block font-medium">{t('editProfile.fullName')}</label>
               <div className="relative">
                 <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
-                  placeholder="Your full name"
+                  placeholder={t('editProfile.fullNamePlaceholder')}
                   className={`${inputClass} pl-11`}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-white/40 mb-1.5 block font-medium">Phone</label>
+              <label className="text-xs text-white/40 mb-1.5 block font-medium">{t('editProfile.phone')}</label>
               <div className="relative">
                 <Phone size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
                 <input
                   type="tel"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  placeholder="Phone number"
+                  placeholder={t('editProfile.phonePlaceholder')}
                   className={`${inputClass} pl-11`}
                 />
               </div>
@@ -240,7 +242,7 @@ export function EditProfilePage() {
               className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50 glow-btn"
               style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
               {profileLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={15} />}
-              {profileLoading ? 'Saving...' : 'Save Changes'}
+              {profileLoading ? t('editProfile.saving') : t('editProfile.saveChanges')}
             </button>
           </form>
         )}
@@ -253,7 +255,7 @@ export function EditProfilePage() {
               style={{ background: 'rgba(0,209,255,0.04)', border: '1px solid rgba(0,209,255,0.1)' }}>
               <KeyRound size={16} className="text-mia-blue shrink-0 mt-0.5" />
               <p className="text-xs text-white/50 leading-relaxed">
-                Enter your current password first, then choose a new one. Minimum 6 characters.
+                {t('editProfile.passwordDesc')}
               </p>
             </div>
 
@@ -264,15 +266,15 @@ export function EditProfilePage() {
             )}
             {passwordSuccess && (
               <div className="p-3 rounded-xl text-sm text-green-300 flex items-center gap-2" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.15)' }}>
-                <CheckCircle2 size={14} /> Password changed successfully!
+                <CheckCircle2 size={14} /> {t('editProfile.passwordChanged')}
               </div>
             )}
 
             {(
               [
-                { label: 'Current Password', value: currentPassword, set: setCurrentPassword, show: showCurrent, toggle: () => setShowCurrent(s => !s) },
-                { label: 'New Password', value: newPassword, set: setNewPassword, show: showNew, toggle: () => setShowNew(s => !s) },
-                { label: 'Confirm New Password', value: confirmPassword, set: setConfirmPassword, show: showConfirm, toggle: () => setShowConfirm(s => !s) },
+                { label: t('editProfile.currentPassword'), value: currentPassword, set: setCurrentPassword, show: showCurrent, toggle: () => setShowCurrent(s => !s) },
+                { label: t('editProfile.newPassword'), value: newPassword, set: setNewPassword, show: showNew, toggle: () => setShowNew(s => !s) },
+                { label: t('editProfile.confirmNewPassword'), value: confirmPassword, set: setConfirmPassword, show: showConfirm, toggle: () => setShowConfirm(s => !s) },
               ] as const
             ).map(field => (
               <div key={field.label}>
@@ -299,7 +301,7 @@ export function EditProfilePage() {
 
             {newPassword.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[11px] text-white/30">Password strength</p>
+                <p className="text-[11px] text-white/30">{t('editProfile.passwordStrength')}</p>
                 <div className="flex gap-1">
                   {[0, 1, 2, 3].map(i => {
                     const strength = Math.min(Math.floor(newPassword.length / 3), 4);
@@ -322,7 +324,7 @@ export function EditProfilePage() {
               className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50 glow-btn"
               style={{ background: 'linear-gradient(135deg, #7B2CFF, #00D1FF)' }}>
               {passwordLoading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={15} />}
-              {passwordLoading ? 'Changing...' : 'Change Password'}
+              {passwordLoading ? t('editProfile.changing') : t('editProfile.changePasswordBtn')}
             </button>
           </form>
         )}

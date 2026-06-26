@@ -5,8 +5,10 @@ import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useAuth } from '../lib/auth';
 import { toggleWishlist } from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 export function CartPage() {
+  const { t } = useTranslation();
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,14 +44,14 @@ export function CartPage() {
         <div className="relative w-28 h-28 mb-6 float-premium">
           <img src={appConfig.logo} alt="MIA ONE" className="w-full h-full object-contain opacity-60" />
         </div>
-        <h2 className="text-lg font-bold text-white mb-2">Your Cart is Empty</h2>
-        <p className="text-sm text-white/40 mb-6 text-center">Discover amazing products and add them to your cart</p>
+        <h2 className="text-lg font-bold text-white mb-2">{t('cart.empty')}</h2>
+        <p className="text-sm text-white/40 mb-6 text-center">{t('cart.emptyDesc')}</p>
         <button
           onClick={() => navigate('/')}
           className="px-6 py-3 rounded-xl text-sm font-semibold text-white glow-btn flex items-center gap-2"
           style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
         >
-          Start Shopping <ArrowRight size={16} />
+          {t('cart.startShopping')} <ArrowRight size={16} />
         </button>
       </div>
     );
@@ -64,15 +66,15 @@ export function CartPage() {
           <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
             <div>
               <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShoppingBag size={18} className="text-mia-orange" /> My Cart
+                <ShoppingBag size={18} className="text-mia-orange" /> {t('cart.title')}
               </h1>
-              <p className="text-xs text-white/40">{totalItems} item{totalItems !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-white/40">{totalItems} {totalItems !== 1 ? t('common.items') : t('common.item')}</p>
             </div>
             <button
               onClick={() => dispatch({ type: 'CLEAR_CART' })}
               className="text-xs text-red-400/60 hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg bg-red-500/5 border border-red-500/10"
             >
-              Clear All
+              {t('cart.clearAll')}
             </button>
           </div>
         </header>
@@ -129,7 +131,7 @@ export function CartPage() {
                       <button
                         onClick={() => handleSaveForLater(item.product.id)}
                         className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/5"
-                        title="Save for later"
+                        title={t('cart.saveForLater')}
                       >
                         <Heart size={12} className="text-white/40 hover:text-mia-pink transition-colors" />
                       </button>
@@ -137,7 +139,7 @@ export function CartPage() {
                         onClick={() => dispatch({ type: 'REMOVE_FROM_CART', productId: item.product.id })}
                         className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-red-500/20"
                         style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)' }}
-                        title="Remove"
+                        title={t('cart.remove')}
                       >
                         <Trash2 size={11} className="text-red-400" />
                       </button>
@@ -175,50 +177,50 @@ export function CartPage() {
               style={{ background: 'rgba(255,138,0,0.05)', border: '1px solid rgba(255,138,0,0.12)' }}>
               <Tag size={12} className="text-mia-orange shrink-0" />
               <span className="text-[11px] text-white/30 leading-none">
-                Add <span className="text-mia-orange font-semibold">৳{(appConfig.delivery.freeDeliveryThreshold - totals.subtotal).toLocaleString()}</span> more for free delivery
+                {t('cart.moreForFree')} <span className="text-mia-orange font-semibold">{appConfig.delivery.currency}{(appConfig.delivery.freeDeliveryThreshold - totals.subtotal).toLocaleString()}</span> {t('cart.addMore')}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs"
               style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.12)' }}>
               <Tag size={12} className="text-green-400 shrink-0" />
-              <span className="text-green-400 font-medium text-[11px]">You qualify for free delivery!</span>
+              <span className="text-green-400 font-medium text-[11px]">{t('cart.freeDeliveryQualified')}</span>
             </div>
           )}
 
           {/* Order Summary */}
           <div className="glow-card p-4 space-y-2.5">
-            <h3 className="text-sm font-semibold text-white mb-3">Order Summary</h3>
+            <h3 className="text-sm font-semibold text-white mb-3">{t('cart.orderSummary')}</h3>
             <div className="flex justify-between text-sm">
-              <span className="text-white/50">Subtotal ({totalItems} items)</span>
+              <span className="text-white/50">{t('cart.subtotal')} ({totalItems} {totalItems !== 1 ? t('common.items') : t('common.item')})</span>
               <span className="text-white">৳{totals.subtotal.toLocaleString()}</span>
             </div>
             {totals.discount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-green-400">Discount Savings</span>
+                <span className="text-green-400">{t('cart.discountSavings')}</span>
                 <span className="text-green-400 font-medium">-৳{totals.discount.toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-white/50">Delivery Charge</span>
+              <span className="text-white/50">{t('cart.deliveryCharge')}</span>
               <span className={totals.deliveryCharge === 0 ? 'text-green-400 font-medium' : 'text-white'}>
-                {totals.deliveryCharge === 0 ? 'Free' : `৳${totals.deliveryCharge}`}
+                {totals.deliveryCharge === 0 ? t('common.free') : `${appConfig.delivery.currency}${totals.deliveryCharge}`}
               </span>
             </div>
             <div className="border-t border-white/5 pt-3 flex justify-between">
-              <span className="text-sm font-semibold text-white">Total</span>
-              <span className="text-xl font-bold text-mia-orange">৳{totals.total.toLocaleString()}</span>
+              <span className="text-sm font-semibold text-white">{t('cart.total')}</span>
+              <span className="text-xl font-bold text-mia-orange">{appConfig.delivery.currency}{totals.total.toLocaleString()}</span>
             </div>
 
             {/* Trust badges */}
             <div className="pt-1 space-y-2">
               <div className="flex items-center gap-2 text-[11px] text-white/30">
                 <ShieldCheck size={13} className="text-white/40 shrink-0" />
-                <span>Secure Checkout Guaranteed</span>
+                <span>{t('cart.secureCheckout')}</span>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-white/30">
                 <Truck size={13} className="text-white/40 shrink-0" />
-                <span>Fast Delivery inside Munshiganj &amp; Dhaka</span>
+                <span>{t('cart.fastDelivery')}</span>
               </div>
             </div>
           </div>
@@ -243,7 +245,7 @@ export function CartPage() {
             className="w-full py-4 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 8px 32px rgba(255,138,0,0.3)' }}
           >
-            Proceed to Checkout — ৳{totals.total.toLocaleString()} <ArrowRight size={18} />
+            {t('cart.proceedToCheckout')} — {appConfig.delivery.currency}{totals.total.toLocaleString()} <ArrowRight size={18} />
           </button>
         </div>
       </div>

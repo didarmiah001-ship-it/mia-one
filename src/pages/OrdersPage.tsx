@@ -9,16 +9,17 @@ import { useStore } from '../store/StoreContext';
 import { useAuth } from '../lib/auth';
 import { fetchOrders, fetchOrderTimeline, cancelOrder } from '../lib/api';
 import { appConfig } from '../lib/config';
+import { useTranslation } from 'react-i18next';
 
 // ── Status Config ──────────────────────────────────────────────────────────────
 
 const STATUS_STEPS = [
-  { key: 'pending',    label: 'Order Placed',      icon: Package,      short: 'Placed'    },
-  { key: 'confirmed',  label: 'Confirmed',          icon: ShieldCheck,  short: 'Confirmed' },
-  { key: 'processing', label: 'Processing',         icon: RefreshCw,    short: 'Processing'},
-  { key: 'packed',     label: 'Packed',             icon: PackageCheck, short: 'Packed'    },
-  { key: 'shipped',    label: 'Shipped',            icon: Truck,        short: 'Shipped'   },
-  { key: 'delivered',  label: 'Delivered',          icon: CheckCircle,  short: 'Delivered' },
+  { key: 'pending',    labelKey: 'orders.orderPlaced', icon: Package,      shortKey: 'orders.placed'    },
+  { key: 'confirmed',  labelKey: 'orders.confirmed',   icon: ShieldCheck,  shortKey: 'orders.confirmed' },
+  { key: 'processing', labelKey: 'orders.processing',  icon: RefreshCw,    shortKey: 'orders.processing'},
+  { key: 'packed',     labelKey: 'orders.packed',      icon: PackageCheck, shortKey: 'orders.packed'    },
+  { key: 'shipped',    labelKey: 'orders.shipped',     icon: Truck,        shortKey: 'orders.shipped'   },
+  { key: 'delivered',  labelKey: 'orders.delivered',   icon: CheckCircle,  shortKey: 'orders.delivered' },
 ];
 
 // Legacy keys mapped to nearest step index
@@ -28,12 +29,12 @@ const STATUS_INDEX: Record<string, number> = {
   cancelled: -1,
 };
 
-const PAYMENT_LABELS: Record<string, string> = {
-  cash_on_delivery: 'Cash on Delivery',
-  bkash: 'bKash',
-  nagad: 'Nagad',
-  bank_transfer: 'Bank Transfer',
-  cod: 'Cash on Delivery',
+const PAYMENT_LABEL_KEYS: Record<string, string> = {
+  cash_on_delivery: 'orders.cod',
+  bkash: 'orders.bkash',
+  nagad: 'orders.nagad',
+  bank_transfer: 'orders.bankTransfer',
+  cod: 'orders.cod',
 };
 
 const CANCELLABLE = new Set(['placed', 'pending', 'confirmed']);
@@ -49,6 +50,7 @@ function OrderDetailModal({
   onClose: () => void;
   onCancelled: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [timeline, setTimeline] = useState<any[]>([]);
   const [cancelling, setCancelling] = useState(false);
@@ -120,7 +122,7 @@ function OrderDetailModal({
           <div className="flex items-center justify-between">
             {isCancelled ? (
               <span className="text-sm px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 text-red-400" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                <XCircle size={13} /> Cancelled
+                <XCircle size={13} /> {t('orders.cancelled')}
               </span>
             ) : (
               <span className="text-sm px-3 py-1.5 rounded-xl font-semibold capitalize text-mia-orange" style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.2)' }}>
@@ -129,14 +131,14 @@ function OrderDetailModal({
             )}
             <div className="text-right">
               <p className="text-xl font-bold text-mia-orange">৳{Number(order.total).toLocaleString()}</p>
-              <p className="text-[10px] text-white/30">incl. delivery</p>
+              <p className="text-[10px] text-white/30">{t('orders.inclDelivery')}</p>
             </div>
           </div>
 
           {/* Progress Stepper */}
           {!isCancelled && (
             <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <p className="text-xs text-white/40 font-medium mb-4">Order Progress</p>
+              <p className="text-xs text-white/40 font-medium mb-4">{t('orders.orderProgress')}</p>
               {/* Horizontal steps */}
               <div className="flex items-center">
                 {STATUS_STEPS.map((step, idx) => {
@@ -157,7 +159,7 @@ function OrderDetailModal({
                         </div>
                         <span className="text-[8px] mt-1 font-medium text-center leading-tight max-w-[40px]"
                           style={{ color: isCurrent ? '#FF8A00' : isCompleted ? '#22c55e' : 'rgba(255,255,255,0.2)' }}>
-                          {step.short}
+                          {t(step.shortKey)}
                         </span>
                       </div>
                       {idx < STATUS_STEPS.length - 1 && (
@@ -170,7 +172,7 @@ function OrderDetailModal({
               </div>
               {/* Current step label */}
               <p className="text-xs text-center mt-3 font-medium" style={{ color: '#FF8A00' }}>
-                {STATUS_STEPS[stepIdx]?.label || order.status}
+                {STATUS_STEPS[stepIdx] ? t(STATUS_STEPS[stepIdx].labelKey) : order.status}
               </p>
             </div>
           )}
@@ -178,7 +180,7 @@ function OrderDetailModal({
           {/* Timeline */}
           {timeline.length > 0 && (
             <div className="space-y-2.5">
-              <p className="text-xs text-white/40 font-medium uppercase tracking-wider">History</p>
+              <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{t('orders.history')}</p>
               {[...timeline].reverse().map((t, i) => {
                 const idx = STATUS_INDEX[t.status] ?? 0;
                 const step = STATUS_STEPS[idx] ?? STATUS_STEPS[0];
@@ -208,18 +210,18 @@ function OrderDetailModal({
 
           {/* Delivery Address */}
           <div className="rounded-2xl p-4 space-y-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-xs text-white/40 font-medium uppercase tracking-wider mb-2">Delivery</p>
+            <p className="text-xs text-white/40 font-medium uppercase tracking-wider mb-2">{t('orders.delivery')}</p>
             <div className="flex items-center gap-2 text-sm text-white"><Phone size={12} className="text-white/30" /> {addr.phone || '—'}</div>
             <div className="flex items-start gap-2 text-xs text-white/60"><MapPin size={12} className="text-white/30 shrink-0 mt-0.5" /> {addr.address}{addr.area ? `, ${addr.area}` : ''}</div>
             <div className="flex items-center gap-2 text-xs text-white/50">
               <CreditCard size={12} className="text-white/30" />
-              {PAYMENT_LABELS[order.payment_method] || order.payment_method}
+              {PAYMENT_LABEL_KEYS[order.payment_method] ? t(PAYMENT_LABEL_KEYS[order.payment_method]) : order.payment_method}
             </div>
           </div>
 
           {/* Items */}
           <div className="space-y-2">
-            <p className="text-xs text-white/40 font-medium uppercase tracking-wider">Items ({items.length})</p>
+            <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{t('orders.items')} ({items.length})</p>
             {items.map((item: any, i: number) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                 {item.image && <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />}
@@ -233,15 +235,15 @@ function OrderDetailModal({
 
             {/* Price breakdown */}
             <div className="pt-2 space-y-1.5 border-t border-white/5">
-              <div className="flex justify-between text-xs"><span className="text-white/40">Subtotal</span><span className="text-white/60">৳{Number(order.subtotal || 0).toLocaleString()}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-white/40">{t('orders.subtotal')}</span><span className="text-white/60">৳{Number(order.subtotal || 0).toLocaleString()}</span></div>
               {Number(order.discount) > 0 && (
                 <div className="flex justify-between text-xs">
-                  <span className="text-green-400 flex items-center gap-1"><Tag size={9} />Coupon {order.coupon_code && `(${order.coupon_code})`}</span>
+                  <span className="text-green-400 flex items-center gap-1"><Tag size={9} />{t('orders.coupon')} {order.coupon_code && `(${order.coupon_code})`}</span>
                   <span className="text-green-400">-৳{Number(order.discount).toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xs"><span className="text-white/40">Delivery</span><span className={Number(order.delivery_charge) === 0 ? 'text-green-400' : 'text-white/60'}>{Number(order.delivery_charge) === 0 ? 'Free' : `৳${Number(order.delivery_charge).toLocaleString()}`}</span></div>
-              <div className="flex justify-between text-sm font-bold pt-1 border-t border-white/5"><span className="text-white">Total</span><span className="text-mia-orange">৳{Number(order.total).toLocaleString()}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-white/40">{t('orders.delivery')}</span><span className={Number(order.delivery_charge) === 0 ? 'text-green-400' : 'text-white/60'}>{Number(order.delivery_charge) === 0 ? t('orders.free') : `৳${Number(order.delivery_charge).toLocaleString()}`}</span></div>
+              <div className="flex justify-between text-sm font-bold pt-1 border-t border-white/5"><span className="text-white">{t('orders.total')}</span><span className="text-mia-orange">৳{Number(order.total).toLocaleString()}</span></div>
             </div>
           </div>
 
@@ -253,19 +255,19 @@ function OrderDetailModal({
                   <div className="flex items-start gap-2 mb-3">
                     <AlertTriangle size={15} className="text-red-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-white">Cancel this order?</p>
-                      <p className="text-xs text-white/50 mt-0.5">This action cannot be undone. The order will be marked as cancelled.</p>
+                      <p className="text-sm font-semibold text-white">{t('orders.cancelConfirmTitle')}</p>
+                      <p className="text-xs text-white/50 mt-0.5">{t('orders.cancelConfirmDesc')}</p>
                     </div>
                   </div>
                   {cancelError && <p className="text-xs text-red-400 mb-2">{cancelError}</p>}
                   <div className="flex gap-2">
                     <button onClick={() => setCancelConfirm(false)} className="flex-1 py-2 rounded-xl text-xs font-medium text-white/60 bg-white/5 border border-white/8 hover:bg-white/10 transition-colors">
-                      Keep Order
+                      {t('orders.keepOrder')}
                     </button>
                     <button onClick={handleCancel} disabled={cancelling}
                       className="flex-1 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-50 transition-all"
                       style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
-                      {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+                      {cancelling ? t('orders.cancelling') : t('orders.yesCancel')}
                     </button>
                   </div>
                 </div>
@@ -273,7 +275,7 @@ function OrderDetailModal({
                 <button onClick={() => setCancelConfirm(true)}
                   className="w-full py-3 rounded-xl text-sm font-medium text-red-400/70 hover:text-red-400 transition-colors"
                   style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.12)' }}>
-                  Cancel Order
+                  {t('orders.cancelOrder')}
                 </button>
               )}
             </div>
@@ -287,6 +289,7 @@ function OrderDetailModal({
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export function OrdersPage() {
+  const { t } = useTranslation();
   const { state, dispatch } = useStore();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -323,10 +326,10 @@ export function OrdersPage() {
       }));
 
   const FILTER_TABS = [
-    { key: 'all', label: 'All' },
-    { key: 'active', label: 'Active' },
-    { key: 'delivered', label: 'Delivered' },
-    { key: 'cancelled', label: 'Cancelled' },
+    { key: 'all', label: t('orders.all') },
+    { key: 'active', label: t('orders.active') },
+    { key: 'delivered', label: t('orders.delivered') },
+    { key: 'cancelled', label: t('orders.cancelled') },
   ];
 
   const allOrders = rawOrders.filter(o => {
@@ -356,11 +359,11 @@ export function OrdersPage() {
         <div className="relative w-28 h-28 mb-6 float-premium">
           <img src={appConfig.logo} alt="MIA ONE" className="w-full h-full object-contain opacity-60" />
         </div>
-        <h2 className="text-lg font-bold text-white mb-2">No Orders Yet</h2>
-        <p className="text-sm text-white/40 mb-6 text-center">Your orders will appear here once you make a purchase</p>
+        <h2 className="text-lg font-bold text-white mb-2">{t('orders.empty')}</h2>
+        <p className="text-sm text-white/40 mb-6 text-center">{t('orders.emptyDesc')}</p>
         <button onClick={() => navigate('/')} className="px-6 py-3 rounded-xl text-sm font-semibold text-white glow-btn"
           style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
-          Start Shopping
+          {t('orders.startShopping')}
         </button>
       </div>
     );
@@ -375,8 +378,8 @@ export function OrdersPage() {
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">My Orders</h1>
-            <p className="text-xs text-white/40">{rawOrders.length} order{rawOrders.length !== 1 ? 's' : ''}</p>
+            <h1 className="text-lg font-bold text-white">{t('orders.title')}</h1>
+            <p className="text-xs text-white/40">{rawOrders.length} {rawOrders.length !== 1 ? t('orders.orders') : t('orders.order')}</p>
           </div>
         </div>
       </header>
@@ -410,7 +413,7 @@ export function OrdersPage() {
 
       <div className="max-w-lg md:max-w-2xl mx-auto px-4 mt-3 space-y-3">
         {allOrders.length === 0 ? (
-          <p className="text-center text-sm text-white/30 py-8">No orders in this category</p>
+          <p className="text-center text-sm text-white/30 py-8">{t('orders.noOrdersInCategory')}</p>
         ) : allOrders.map(order => {
           const stepIdx = STATUS_INDEX[order.status] ?? 0;
           const isCancelled = order.status === 'cancelled';
@@ -439,7 +442,7 @@ export function OrdersPage() {
               {/* Status Badge */}
               {isCancelled ? (
                 <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium text-red-400" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                  <XCircle size={10} /> Cancelled
+                  <XCircle size={10} /> {t('orders.cancelled')}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium capitalize text-mia-orange" style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.2)' }}>
@@ -478,10 +481,10 @@ export function OrdersPage() {
                   item.image ? <img key={i} src={item.image} alt="" className="w-9 h-9 rounded-lg object-cover border border-white/8" /> : null
                 ))}
                 <span className="text-xs text-white/30 ml-1">
-                  {items.length} item{items.length !== 1 ? 's' : ''}
-                  {items.length > 4 && ` · +${items.length - 4} more`}
+                  {items.length} {items.length !== 1 ? t('common.items') : t('common.item')}
+                  {items.length > 4 && ` · +${items.length - 4} ${t('common.more')}`}
                 </span>
-                <span className="ml-auto text-[10px] text-white/25 capitalize">{PAYMENT_LABELS[order.payment_method] || order.payment_method}</span>
+                <span className="ml-auto text-[10px] text-white/25 capitalize">{PAYMENT_LABEL_KEYS[order.payment_method] ? t(PAYMENT_LABEL_KEYS[order.payment_method]) : order.payment_method}</span>
               </div>
             </button>
           );

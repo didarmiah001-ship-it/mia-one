@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, ChevronRight, ChevronLeft, Bell, Zap, TrendingUp, Sparkles } from 'lucide-react';
 import { useNavigate } from '../lib/router';
+import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../components/ProductCard';
 import { CategoryIcon } from '../components/CategoryIcon';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
 
 export function HomePage() {
+  const { t } = useTranslation();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [fadingOut, setFadingOut] = useState(false);
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -83,17 +86,20 @@ export function HomePage() {
             </div>
             <div>
               <h1 className="text-lg font-extrabold neon-text">{appConfig.name}</h1>
-              <p className="text-[9px] text-white/35 tracking-[0.2em] font-medium">EVERYTHING YOU NEED</p>
+              <p className="text-[9px] text-white/35 tracking-[0.2em] font-medium">{t('common.tagline')}</p>
             </div>
           </div>
-          <button className="relative w-10 h-10 rounded-2xl flex items-center justify-center glow-hover"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,138,0,0.08), rgba(255,46,201,0.08))',
-              border: '1px solid rgba(255,138,0,0.12)',
-            }}>
-            <Bell size={18} className="text-white/60" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-mia-pink neon-pulse" />
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher variant="icon" />
+            <button onClick={() => navigate('/notifications')} className="relative w-10 h-10 rounded-2xl flex items-center justify-center glow-hover"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,138,0,0.08), rgba(255,46,201,0.08))',
+                border: '1px solid rgba(255,138,0,0.12)',
+              }}>
+              <Bell size={18} className="text-white/60" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-mia-pink neon-pulse" />
+            </button>
+          </div>
         </div>
         {/* Search bar — taps into full search page */}
         <div className="max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto relative">
@@ -102,7 +108,7 @@ export function HomePage() {
             className="w-full flex items-center gap-3 pl-4 pr-4 py-3 rounded-2xl text-sm text-white/30 text-left transition-all hover:border-mia-orange/30"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <Search size={16} className="text-white/25 shrink-0" />
-            <span>Search products, brands...</span>
+            <span>{t('home.searchPlaceholder')}</span>
           </button>
         </div>
       </header>
@@ -115,10 +121,10 @@ export function HomePage() {
                 /* Fallback when no DB banners */
                 <div className="absolute inset-0 flex flex-col justify-center px-6">
                   <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, #FF8A00, transparent)', animation: 'breathe-neon 4s ease-in-out infinite' }} />
-                  <span className="text-2xl font-extrabold mb-1.5" style={{ color: '#FF8A00', textShadow: '0 0 20px #FF8A0040' }}>Flash Sale</span>
-                  <p className="text-sm text-white/60 mb-4">Up to 50% Off on Top Products</p>
+                  <span className="text-2xl font-extrabold mb-1.5" style={{ color: '#FF8A00', textShadow: '0 0 20px #FF8A0040' }}>{t('home.flashSaleTitle')}</span>
+                  <p className="text-sm text-white/60 mb-4">{t('home.flashSaleDesc')}</p>
                   <button className="text-xs font-semibold px-5 py-2 rounded-xl w-fit transition-all hover:scale-105" style={{ backgroundColor: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.3)' }}>
-                    Shop Now
+                    {t('home.shopNow')}
                   </button>
                 </div>
               ) : (
@@ -226,9 +232,9 @@ export function HomePage() {
           {/* Categories */}
           <section className="px-4 mt-7">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-white/90 tracking-wide">Categories</h2>
+              <h2 className="text-sm font-bold text-white/90 tracking-wide">{t('home.categories')}</h2>
               <button onClick={() => navigate('/categories')} className="text-xs text-mia-orange flex items-center gap-0.5 glow-hover font-medium">
-                See All <ChevronRight size={12} />
+                {t('common.seeAll')} <ChevronRight size={12} />
               </button>
             </div>
             <div className="grid grid-cols-5 gap-3">
@@ -276,11 +282,11 @@ export function HomePage() {
                   style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.2)' }}>
                   <Zap size={14} className="text-mia-orange" />
                 </div>
-                <h2 className="text-sm font-bold text-white/90">Flash Sale</h2>
+                <h2 className="text-sm font-bold text-white/90">{t('home.flashSale')}</h2>
               </div>
               <span className="text-[10px] px-3 py-1 rounded-lg font-semibold neon-pulse"
                 style={{ background: 'rgba(255,138,0,0.1)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.2)' }}>
-                Limited Time
+                {t('home.limitedTime')}
               </span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -291,7 +297,7 @@ export function HomePage() {
           {/* Featured */}
           <section className="px-4 mt-9">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-white/90">Featured Products</h2>
+              <h2 className="text-sm font-bold text-white/90">{t('home.featured')}</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {featured.slice(0, 4).map(p => <ProductCard key={p.id} product={p} />)}
@@ -304,8 +310,8 @@ export function HomePage() {
               style={{ border: '1px solid rgba(0,209,255,0.12)' }}>
               <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
                 style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
-              <h3 className="text-lg font-bold text-white mb-1.5">Free Delivery</h3>
-              <p className="text-xs text-white/50 mb-4">On all orders above {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+              <h3 className="text-lg font-bold text-white mb-1.5">{t('home.freeDelivery')}</h3>
+              <p className="text-xs text-white/50 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
               <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
                 style={{
                   background: 'rgba(0,209,255,0.1)',
@@ -313,7 +319,7 @@ export function HomePage() {
                   border: '1px solid rgba(0,209,255,0.25)',
                   boxShadow: '0 4px 12px rgba(0,209,255,0.1)',
                 }}>
-                Shop Now
+                {t('home.shopNow')}
               </button>
             </div>
           </section>
@@ -326,7 +332,7 @@ export function HomePage() {
                   style={{ background: 'rgba(255,46,201,0.1)', border: '1px solid rgba(255,46,201,0.2)' }}>
                   <TrendingUp size={14} className="text-mia-pink" />
                 </div>
-                <h2 className="text-sm font-bold text-white/90">Trending Now</h2>
+                <h2 className="text-sm font-bold text-white/90">{t('home.trending')}</h2>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -342,7 +348,7 @@ export function HomePage() {
                   style={{ background: 'rgba(123,44,255,0.1)', border: '1px solid rgba(123,44,255,0.2)' }}>
                   <Sparkles size={14} className="text-mia-purple" />
                 </div>
-                <h2 className="text-sm font-bold text-white/90">New Arrivals</h2>
+                <h2 className="text-sm font-bold text-white/90">{t('home.newArrivals')}</h2>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -353,7 +359,7 @@ export function HomePage() {
           {/* Recently Viewed */}
           {state.recentlyViewed.length > 0 && (
             <section className="px-4 mt-9">
-              <h2 className="text-sm font-bold text-white/90 mb-4">Recently Viewed</h2>
+              <h2 className="text-sm font-bold text-white/90 mb-4">{t('home.recentlyViewed')}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {state.recentlyViewed.slice(0, 4).map(p => <ProductCard key={p.id} product={p} />)}
               </div>

@@ -6,8 +6,10 @@ import { useStore } from '../store/StoreContext';
 import { ProductCard } from '../components/ProductCard';
 import { appConfig } from '../lib/config';
 import { useToast } from '../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 export function ProductDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { state, dispatch } = useStore();
@@ -29,7 +31,7 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-white/40">Product not found</p>
+        <p className="text-white/40">{t('product.notFound')}</p>
       </div>
     );
   }
@@ -71,12 +73,15 @@ export function ProductDetailPage() {
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  const t = e.currentTarget;
-                  t.onerror = null;
-                  t.style.display = 'none';
-                  const parent = t.parentElement;
+                  const img = e.currentTarget;
+                  img.onerror = null;
+                  img.style.display = 'none';
+                  const parent = img.parentElement;
                   if (parent) {
-                    parent.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,0.2)"><svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><path d=\'m21 15-5-5L5 21\'/></svg><span style=\'font-size:12px\'>Image unavailable</span></div>';
+                    const fallback = document.createElement('div');
+                    fallback.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,0.2)';
+                    fallback.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='m21 15-5-5L5 21'/></svg><span style='font-size:12px'>${t('product.imageUnavailable')}</span>`;
+                    parent.appendChild(fallback);
                   }
                 }}
               />
@@ -114,10 +119,10 @@ export function ProductDetailPage() {
                 <Star size={14} className="fill-mia-orange text-mia-orange" />
                 <span className="text-sm font-medium text-white">{product.rating}</span>
               </div>
-              <span className="text-xs text-white/30">({product.reviews_count} reviews)</span>
+              <span className="text-xs text-white/30">({product.reviews_count} {t('product.reviews')})</span>
               <span className="text-xs text-white/20">|</span>
               <span className={`text-xs ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                {product.stock > 0 ? `${product.stock} ${t('product.inStock')}` : t('product.outOfStock')}
               </span>
             </div>
 
@@ -136,20 +141,20 @@ export function ProductDetailPage() {
             <div className="flex items-center gap-3 mt-5 p-3 rounded-xl bg-white/5">
               <Truck size={18} className="text-mia-blue shrink-0" />
               <div>
-                <p className="text-xs font-medium text-white/80">Free delivery on orders above {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
-                <p className="text-[11px] text-white/40 mt-0.5">Estimated delivery: {appConfig.delivery.estimatedDays}</p>
+                <p className="text-xs font-medium text-white/80">{t('product.freeDeliveryNote')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+                <p className="text-[11px] text-white/40 mt-0.5">{t('product.estimatedDelivery')} {appConfig.delivery.estimatedDays}</p>
               </div>
             </div>
 
             {/* Description */}
             <div className="mt-6">
-              <h3 className="text-sm font-semibold text-white/90 mb-2">Description</h3>
+              <h3 className="text-sm font-semibold text-white/90 mb-2">{t('product.description')}</h3>
               <p className="text-sm text-white/50 leading-relaxed">{product.description}</p>
             </div>
 
             {/* Specifications */}
             <div className="mt-6">
-              <h3 className="text-sm font-semibold text-white/90 mb-2">Specifications</h3>
+              <h3 className="text-sm font-semibold text-white/90 mb-2">{t('product.specifications')}</h3>
               <div className="space-y-2">
                 {Object.entries(product.specifications).map(([key, value]) => (
                   <div key={key} className="flex items-center justify-between py-2 border-b border-white/5">
@@ -164,7 +169,7 @@ export function ProductDetailPage() {
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <section className="px-4 mt-8">
-              <h3 className="text-sm font-semibold text-white/90 mb-3">Related Products</h3>
+              <h3 className="text-sm font-semibold text-white/90 mb-3">{t('product.relatedProducts')}</h3>
               <div className="grid grid-cols-2 gap-3">
                 {relatedProducts.map(p => <ProductCard key={p.id} product={p} />)}
               </div>
@@ -196,7 +201,7 @@ export function ProductDetailPage() {
           <div className="max-w-lg md:max-w-2xl mx-auto">
             {/* Top row: Total Price */}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">Total</span>
+              <span className="text-sm font-medium text-gray-600">{t('product.total')}</span>
               <span className="text-xl font-bold text-gray-900">৳{totalPrice.toLocaleString()}</span>
             </div>
 
@@ -212,7 +217,7 @@ export function ProductDetailPage() {
                   <Minus size={16} className="text-gray-600" />
                 </button>
                 <div className="px-3 min-w-[40px] text-center flex flex-col items-center justify-center border-x border-gray-200 h-full bg-white">
-                  <span className="text-xs text-gray-500">QTY</span>
+                  <span className="text-xs text-gray-500">{t('common.qty')}</span>
                   <span className="text-sm font-bold text-gray-900">{quantity}</span>
                 </div>
                 <button
@@ -239,7 +244,7 @@ export function ProductDetailPage() {
                   boxShadow: '0 4px 16px rgba(255, 138, 0, 0.4)',
                 }}
               >
-                <span>Proceed to Checkout</span>
+                <span>{t('product.proceedToCheckout')}</span>
               </button>
 
               {/* Add to Cart */}
@@ -248,7 +253,7 @@ export function ProductDetailPage() {
                   if (product.stock === 0) return;
                   dispatch({ type: 'ADD_TO_CART', product, quantity });
                   setAddedToCart(true);
-                  showToast('Added to cart', 'success');
+                  showToast(t('product.addedToCart'), 'success');
                   setTimeout(() => setAddedToCart(false), 2000);
                 }}
                 disabled={product.stock === 0}

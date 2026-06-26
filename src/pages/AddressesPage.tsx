@@ -3,8 +3,10 @@ import { ArrowLeft, Plus, MapPin, Trash2, Star } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useAuth } from '../lib/auth';
 import { fetchAddresses, createAddress, deleteAddress, updateAddress } from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 export function AddressesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -63,7 +65,7 @@ export function AddressesPage() {
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <ArrowLeft size={16} className="text-white/60" />
             </button>
-            <h1 className="text-lg font-bold text-white">Saved Addresses</h1>
+            <h1 className="text-lg font-bold text-white">{t('addresses.title')}</h1>
           </div>
           <button onClick={() => setShowForm(true)}
             className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -75,18 +77,18 @@ export function AddressesPage() {
 
       <div className="max-w-lg md:max-w-2xl mx-auto px-4 mt-4 space-y-3">
         {loading ? (
-          <div className="text-center py-12 text-white/30 text-sm">Loading...</div>
+          <div className="text-center py-12 text-white/30 text-sm">{t('addresses.loading')}</div>
         ) : addresses.length === 0 && !showForm ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center float-premium"
               style={{ background: 'rgba(123,44,255,0.06)', border: '1px solid rgba(123,44,255,0.15)' }}>
               <MapPin size={24} className="text-mia-purple/50" />
             </div>
-            <p className="text-sm text-white/40 mb-4">No saved addresses yet</p>
+            <p className="text-sm text-white/40 mb-4">{t('addresses.empty')}</p>
             <button onClick={() => setShowForm(true)}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-white glow-btn"
               style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
-              Add Address
+              {t('addresses.addAddress')}
             </button>
           </div>
         ) : (
@@ -100,14 +102,14 @@ export function AddressesPage() {
                   </span>
                   {addr.is_default && (
                     <span className="text-[10px] text-mia-blue flex items-center gap-0.5">
-                      <Star size={10} className="fill-mia-blue" /> Default
+                      <Star size={10} className="fill-mia-blue" /> {t('addresses.default')}
                     </span>
                   )}
                 </div>
                 <div className="flex gap-2">
                   {!addr.is_default && (
                     <button onClick={() => handleSetDefault(addr.id)}
-                      className="text-[10px] text-white/30 hover:text-mia-blue">Set Default</button>
+                      className="text-[10px] text-white/30 hover:text-mia-blue">{t('addresses.setDefault')}</button>
                   )}
                   <button onClick={() => handleDelete(addr.id)}
                     className="text-white/30 hover:text-red-400 transition-colors">
@@ -126,37 +128,37 @@ export function AddressesPage() {
         {/* Add form */}
         {showForm && (
           <form onSubmit={handleAdd} className="glow-card p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-white mb-2">New Address</h3>
+            <h3 className="text-sm font-semibold text-white mb-2">{t('addresses.newAddress')}</h3>
             <div className="flex gap-2">
               {['Home', 'Work', 'Other'].map(l => (
                 <button key={l} type="button" onClick={() => setFormData(p => ({ ...p, label: l }))}
                   className={`text-xs px-3 py-1.5 rounded-lg transition-all ${formData.label === l ? 'text-mia-orange' : 'text-white/40'}`}
                   style={formData.label === l ? { background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.3)' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  {l}
+                  {l === 'Home' ? t('addresses.home') : l === 'Work' ? t('addresses.work') : t('addresses.other')}
                 </button>
               ))}
             </div>
             <input value={formData.full_name} onChange={e => setFormData(p => ({ ...p, full_name: e.target.value }))}
-              placeholder="Full Name" required
+              placeholder={t('addresses.fullName')} required
               className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
             <input value={formData.phone} onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
-              placeholder="Phone" required
+              placeholder={t('addresses.phone')} required
               className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
             <input value={formData.address} onChange={e => setFormData(p => ({ ...p, address: e.target.value }))}
-              placeholder="Full Address" required
+              placeholder={t('addresses.fullAddress')} required
               className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
             <div className="grid grid-cols-2 gap-2">
               <input value={formData.area} onChange={e => setFormData(p => ({ ...p, area: e.target.value }))}
-                placeholder="Area" className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
+                placeholder={t('addresses.area')} className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
               <input value={formData.city} onChange={e => setFormData(p => ({ ...p, city: e.target.value }))}
-                placeholder="City" className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
+                placeholder={t('addresses.city')} className="w-full px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
             </div>
             <div className="flex gap-2 pt-2">
               <button type="button" onClick={() => setShowForm(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm text-white/50 border border-white/10">Cancel</button>
+                className="flex-1 py-2.5 rounded-xl text-sm text-white/50 border border-white/10">{t('addresses.cancel')}</button>
               <button type="submit"
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white glow-btn"
-                style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>Save</button>
+                style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>{t('addresses.save')}</button>
             </div>
           </form>
         )}

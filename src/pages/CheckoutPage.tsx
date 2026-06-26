@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/router';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, ArrowRight, Banknote, Smartphone, CreditCard, Building2, Globe,
   MapPin, User, Phone, ChevronDown, Tag, CheckCircle2, Loader2, X, Lock,
@@ -87,9 +88,7 @@ const BANGLADESH_THANAS: Record<string, string[]> = {
   'Gaibandha': ['Gaibandha Sadar', 'Fulchhari', 'Gobindaganj', 'Palashbari', 'Sadullapur', 'Sughatta', 'Sundarganj'],
   'Thakurgaon': ['Thakurgaon Sadar', 'Baliadangi', 'Haripur', 'Pirganj', 'Ranishankail'],
   'Panchagarh': ['Panchagarh Sadar', 'Atwari', 'Boda', 'Debiganj', 'Tetulia'],
-  'Dinajpur': ['Dinajpur Sadar', 'Birampur', 'Birganj', 'Biral', 'Bochaganj', 'Chirirbandar', 'Phulbari', 'Ghoraghat', 'Hakimpur', 'Kaharole', 'Khansama', 'Nawabganj'],
   'Joypurhat': ['Joypurhat Sadar', 'Akkelpur', 'Kalai', 'Khetlal', 'Panchbibi'],
-  'Bhola': ['Bhola Sadar', 'Borhanuddin', 'Char Fasson', 'Daulatkhan', 'Lalmohan', 'Manpura', 'Tazumuddin'],
 };
 
 // Delivery charges based on location
@@ -219,15 +218,16 @@ export function CheckoutPage() {
   const { state, dispatch } = useStore();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { t } = useTranslation();
 
   const [step, setStep] = useState<'info' | 'payment'>('info');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const steps = [
-    { label: 'Cart', done: true },
-    { label: 'Delivery', done: step === 'payment', active: step === 'info' },
-    { label: 'Payment', done: false, active: step === 'payment' },
+    { label: t('checkout.cart'), done: true },
+    { label: t('checkout.delivery'), done: step === 'payment', active: step === 'info' },
+    { label: t('checkout.payment'), done: false, active: step === 'payment' },
   ];
 
   // Delivery form with Bangladesh address fields
@@ -301,10 +301,10 @@ export function CheckoutPage() {
   // Validate form fields
   const validateField = (field: string, value: string) => {
     if (!value.trim()) {
-      return `${field.replace('_', ' ')} is required`;
+      return t('checkout.err' + field.charAt(0).toUpperCase() + field.slice(1).replace('_', ''));
     }
     if (field === 'phone' && value.length < 10) {
-      return 'Enter a valid phone number';
+      return t('checkout.errValidPhone');
     }
     return '';
   };
@@ -387,7 +387,7 @@ export function CheckoutPage() {
     // Always create order in database (both authenticated and guest)
     const { data, error: orderErr } = await createOrder(orderPayload);
     if (orderErr || !data) {
-      setError(orderErr || 'Failed to place order. Please try again.');
+      setError(orderErr || t('checkout.orderFailed'));
       setSubmitting(false);
       return;
     }
@@ -429,7 +429,7 @@ export function CheckoutPage() {
       });
 
       if (sslErr || !gateway_url) {
-        setError(sslErr || 'SSLCommerz initiation failed. Please try another method.');
+        setError(sslErr || t('checkout.sslFailed'));
         setSubmitting(false);
         return;
       }
@@ -461,7 +461,7 @@ export function CheckoutPage() {
   const inputClass = 'w-full px-4 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors rounded-xl bg-white/[0.03] border border-white/[0.06] focus:border-mia-orange/40';
 
   return (
-    <div className="page-transition pb-28">
+    <div className={`page-transition ${step === 'confirmation' ? 'pb-28' : 'pb-[180px]'}`}>
       <header className="sticky top-0 z-30 glass px-4 py-3">
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center gap-3">
           <button onClick={() => step === 'payment' ? setStep('info') : navigate('/cart')}
@@ -471,7 +471,7 @@ export function CheckoutPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-base font-bold text-white">
-              {step === 'info' ? 'Delivery Info' : 'Review & Pay'}
+              {step === 'info' ? t('checkout.deliveryInfo') : t('checkout.reviewPay')}
             </h1>
             {/* 3-step progress */}
             <div className="flex items-center gap-1.5 mt-1.5">
@@ -498,7 +498,7 @@ export function CheckoutPage() {
           </div>
           <div className="ml-auto flex items-center gap-1 text-[10px] text-white/25">
             <Lock size={10} />
-            <span>Secure Checkout</span>
+            <span>{t('checkout.secureCheckout')}</span>
           </div>
         </div>
       </header>
@@ -520,7 +520,7 @@ export function CheckoutPage() {
                 <button onClick={() => setShowAddressPicker(!showAddressPicker)}
                   className="w-full flex items-center justify-between">
                   <span className="text-sm font-medium text-white flex items-center gap-2">
-                    <MapPin size={14} className="text-mia-blue" /> Use Saved Address
+                    <MapPin size={14} className="text-mia-blue" /> {t('checkout.useSavedAddress')}
                   </span>
                   <ChevronDown size={14} className={`text-white/40 transition-transform ${showAddressPicker ? 'rotate-180' : ''}`} />
                 </button>
@@ -532,7 +532,7 @@ export function CheckoutPage() {
                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-xs font-semibold text-mia-orange">{a?.label || 'Address'}</span>
-                          {a?.is_default && <span className="text-[9px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">Default</span>}
+                          {a?.is_default && <span className="text-[9px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">{t('checkout.default')}</span>}
                         </div>
                         <p className="text-xs text-white/70">{a?.full_name || ''} · {a?.phone || ''}</p>
                         <p className="text-xs text-white/40 truncate">{a?.address || ''}, {a?.district || ''}</p>
@@ -547,11 +547,11 @@ export function CheckoutPage() {
             <div className="glow-card p-5">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <MapPin size={18} className="text-mia-orange" /> Shipping Address
+                  <MapPin size={18} className="text-mia-orange" /> {t('checkout.shippingAddress')}
                 </h3>
                 <div className="flex items-center gap-1 text-[10px] text-white/30 bg-white/5 px-2 py-1 rounded-lg">
                   <Lock size={10} />
-                  <span>Secure</span>
+                  <span>{t('checkout.secure')}</span>
                 </div>
               </div>
 
@@ -559,13 +559,13 @@ export function CheckoutPage() {
                 {/* Full Name */}
                 <div>
                   <label className="text-xs font-medium text-white/50 mb-1.5 block">
-                    Full Name <span className="text-mia-orange">*</span>
+                    {t('checkout.fullName')} <span className="text-mia-orange">*</span>
                   </label>
                   <div className="relative">
                     <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
                     <input
                       type="text"
-                      placeholder="Enter your full name"
+                      placeholder={t('checkout.fullNamePlaceholder')}
                       value={form.full_name}
                       onChange={e => handleFormChange('full_name', e.target.value)}
                       autoComplete="name"
@@ -584,7 +584,7 @@ export function CheckoutPage() {
                 {/* Phone Number with Country Code */}
                 <div>
                   <label className="text-xs font-medium text-white/50 mb-1.5 block">
-                    Phone Number <span className="text-mia-orange">*</span>
+                    {t('checkout.phoneNumber')} <span className="text-mia-orange">*</span>
                   </label>
                   <div className="flex gap-2">
                     <div className="flex items-center px-3 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] shrink-0">
@@ -615,10 +615,10 @@ export function CheckoutPage() {
                 {/* Full Address */}
                 <div>
                   <label className="text-xs font-medium text-white/50 mb-1.5 block">
-                    Full Address <span className="text-mia-orange">*</span>
+                    {t('checkout.fullAddress')} <span className="text-mia-orange">*</span>
                   </label>
                   <textarea
-                    placeholder="House No. / Building / Road / Area"
+                    placeholder={t('checkout.addressPlaceholder')}
                     value={form.address}
                     onChange={e => handleFormChange('address', e.target.value)}
                     autoComplete="street-address"
@@ -637,7 +637,7 @@ export function CheckoutPage() {
                 {/* District Dropdown */}
                 <div>
                   <label className="text-xs font-medium text-white/50 mb-1.5 block">
-                    District <span className="text-mia-orange">*</span>
+                    {t('checkout.district')} <span className="text-mia-orange">*</span>
                   </label>
                   <div className="relative">
                     <select
@@ -647,7 +647,7 @@ export function CheckoutPage() {
                         formErrors.district ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
                       } ${!form.district ? 'text-white/30' : ''}`}
                     >
-                      <option value="" disabled className="bg-mia-navy text-white/50">Select District</option>
+                      <option value="" disabled className="bg-mia-navy text-white/50">{t('checkout.selectDistrict')}</option>
                       {BANGLADESH_DISTRICTS.map(d => (
                         <option key={d} value={d} className="bg-mia-navy text-white">{d}</option>
                       ))}
@@ -664,7 +664,7 @@ export function CheckoutPage() {
                 {/* Thana/Upazila Dropdown */}
                 <div>
                   <label className="text-xs font-medium text-white/50 mb-1.5 block">
-                    Thana / Upazila <span className="text-mia-orange">*</span>
+                    {t('checkout.thana')} <span className="text-mia-orange">*</span>
                   </label>
                   <div className="relative">
                     <select
@@ -676,7 +676,7 @@ export function CheckoutPage() {
                       } ${!form.thana ? 'text-white/30' : ''}`}
                     >
                       <option value="" disabled className="bg-mia-navy text-white/50">
-                        {form.district ? 'Select Thana / Upazila' : 'Select district first'}
+                        {form.district ? t('checkout.selectThana') : t('checkout.selectDistrictFirst')}
                       </option>
                       {availableThanas.map(t => (
                         <option key={t} value={t} className="bg-mia-navy text-white">{t}</option>
@@ -694,10 +694,10 @@ export function CheckoutPage() {
                 {/* Delivery Note (Optional) */}
                 <div>
                   <label className="text-xs font-medium text-white/50 mb-1.5 block">
-                    Delivery Note <span className="text-white/30">(Optional)</span>
+                    {t('checkout.deliveryNote')} <span className="text-white/30">{t('common.optional')}</span>
                   </label>
                   <textarea
-                    placeholder="Any special instructions for delivery..."
+                    placeholder={t('checkout.deliveryNotePlaceholder')}
                     value={form.notes}
                     onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                     rows={2}
@@ -722,29 +722,17 @@ export function CheckoutPage() {
                   <Truck size={18} className={deliveryCharge === 0 ? 'text-green-400' : 'text-mia-orange'} />
                   <div>
                     <p className="text-xs text-white/70">
-                      Delivery to <span className="text-white font-medium">{form.thana ? `${form.thana}, ` : ''}{form.district}</span>
+                      {t('checkout.deliveringTo')} <span className="text-white font-medium">{form.thana ? `${form.thana}, ` : ''}{form.district}</span>
                     </p>
                     <p className="text-[10px] text-white/40">{deliveryInfo.zone}</p>
                   </div>
                 </div>
                 <span className={`text-base font-bold ${deliveryCharge === 0 ? 'text-green-400' : 'text-mia-orange'}`}>
-                  {deliveryCharge === 0 ? 'Free' : `৳${deliveryCharge}`}
+                  {deliveryCharge === 0 ? t('checkout.free') : `৳${deliveryCharge}`}
                 </span>
               </div>
             )}
 
-            {/* Continue Button */}
-            <button
-              onClick={() => {
-                if (validateForm()) {
-                  setStep('payment');
-                }
-              }}
-              disabled={!isFormValid}
-              className="w-full py-4 rounded-2xl text-sm font-semibold text-white glow-btn disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
-              style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 8px 24px rgba(255,138,0,0.25)' }}>
-              Continue to Payment <ArrowRight size={16} />
-            </button>
           </>
         )}
 
@@ -755,14 +743,14 @@ export function CheckoutPage() {
             <div className="glow-card p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] text-white/35 mb-1 uppercase tracking-wider font-medium">Delivering to</p>
+                  <p className="text-[10px] text-white/35 mb-1 uppercase tracking-wider font-medium">{t('checkout.deliveringTo')}</p>
                   <p className="text-sm font-semibold text-white">{form.full_name}</p>
                   <p className="text-xs text-white/50 mt-0.5">{form.phone}</p>
                   <p className="text-xs text-white/40 mt-0.5">{form.address}</p>
                   <p className="text-xs text-white/40">{form.thana}, {form.district}</p>
                 </div>
                 <button onClick={() => setStep('info')} className="text-xs text-mia-orange hover:underline shrink-0 flex items-center gap-1">
-                  <Edit3 size={10} /> Change
+                  <Edit3 size={10} /> {t('checkout.change')}
                 </button>
               </div>
             </div>
@@ -770,7 +758,7 @@ export function CheckoutPage() {
             {/* Payment Method */}
             <div className="glow-card p-4">
               <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                <ShieldCheck size={14} className="text-mia-pink" /> Payment Method
+                <ShieldCheck size={14} className="text-mia-pink" /> {t('checkout.paymentMethod')}
               </h3>
               <div className="space-y-2">
                 {PAYMENT_METHODS.map(pm => {
@@ -814,21 +802,21 @@ export function CheckoutPage() {
                 <div className="mt-3 px-4 py-3 rounded-xl flex items-center gap-2"
                   style={{ background: 'rgba(103,114,229,0.06)', border: '1px solid rgba(103,114,229,0.15)' }}>
                   <Lock size={12} className="text-[#6772E5] shrink-0" />
-                  <p className="text-[11px] text-white/50">You'll enter your card details on the next screen — secured by Stripe.</p>
+                  <p className="text-[11px] text-white/50">{t('checkout.cardNote')}</p>
                 </div>
               )}
               {(paymentMethod === 'sslcommerz') && (
                 <div className="mt-3 px-4 py-3 rounded-xl flex items-center gap-2"
                   style={{ background: 'rgba(0,174,239,0.06)', border: '1px solid rgba(0,174,239,0.15)' }}>
                   <Zap size={12} className="text-[#00AEEF] shrink-0" />
-                  <p className="text-[11px] text-white/50">You'll be redirected to SSLCommerz's secure payment gateway.</p>
+                  <p className="text-[11px] text-white/50">{t('checkout.sslNote')}</p>
                 </div>
               )}
               {(paymentMethod === 'bkash' || paymentMethod === 'nagad') && (
                 <div className="mt-3 px-4 py-3 rounded-xl"
                   style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <p className="text-[11px] text-white/50 leading-relaxed">
-                    After placing the order, you'll be shown the merchant number and can submit your transaction ID for verification.
+                    {t('checkout.bankNote')}
                   </p>
                 </div>
               )}
@@ -837,7 +825,7 @@ export function CheckoutPage() {
             {/* Coupon */}
             <div className="glow-card p-4">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <Tag size={14} className="text-mia-purple" /> Coupon Code
+                <Tag size={14} className="text-mia-purple" /> {t('checkout.couponCode')}
               </h3>
               {couponApplied ? (
                 <div className="flex items-center justify-between px-4 py-3 rounded-xl"
@@ -846,7 +834,7 @@ export function CheckoutPage() {
                     <CheckCircle2 size={15} className="text-green-400" />
                     <div>
                       <p className="text-sm font-semibold text-green-400">{couponApplied.code}</p>
-                      <p className="text-xs text-green-400/60">Saved ৳{couponApplied.discount}</p>
+                      <p className="text-xs text-green-400/60">{t('checkout.saved')} ৳{couponApplied.discount}</p>
                     </div>
                   </div>
                   <button onClick={removeCoupon} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center">
@@ -863,7 +851,7 @@ export function CheckoutPage() {
                     <button onClick={handleCoupon} disabled={couponLoading || !couponInput.trim()}
                       className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
                       style={{ background: 'linear-gradient(135deg, #7B2CFF, #FF2EC9)' }}>
-                      {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
+                      {couponLoading ? <Loader2 size={14} className="animate-spin" /> : t('checkout.apply')}
                     </button>
                   </div>
                   {couponError && <p className="text-xs text-red-400">{couponError}</p>}
@@ -873,7 +861,7 @@ export function CheckoutPage() {
 
             {/* Order Summary */}
             <div className="glow-card p-4">
-              <h3 className="text-sm font-semibold text-white mb-3">Order Summary</h3>
+              <h3 className="text-sm font-semibold text-white mb-3">{t('checkout.orderSummary')}</h3>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {(state?.cart || []).map(item => (
                   <div key={item?.product?.id || Math.random()} className="flex items-center gap-2.5">
@@ -888,23 +876,23 @@ export function CheckoutPage() {
               </div>
               <div className="border-t border-white/5 mt-3 pt-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Subtotal</span>
+                  <span className="text-white/50">{t('checkout.subtotal')}</span>
                   <span className="text-white">৳{subtotal}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Delivery ({form.district})</span>
+                  <span className="text-white/50">{t('checkout.delivery')} ({form.district})</span>
                   <span className={deliveryCharge === 0 ? 'text-green-400' : 'text-white'}>
-                    {deliveryCharge === 0 ? 'Free' : `৳${deliveryCharge}`}
+                    {deliveryCharge === 0 ? t('checkout.free') : `৳${deliveryCharge}`}
                   </span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-green-400">Coupon ({couponApplied?.code})</span>
+                    <span className="text-green-400">{t('checkout.coupon')} ({couponApplied?.code})</span>
                     <span className="text-green-400">-৳{discount}</span>
                   </div>
                 )}
                 <div className="border-t border-white/5 pt-2 flex justify-between">
-                  <span className="text-sm font-bold text-white">Total</span>
+                  <span className="text-sm font-bold text-white">{t('checkout.total')}</span>
                   <span className="text-xl font-bold text-mia-orange">৳{total}</span>
                 </div>
               </div>
@@ -913,22 +901,47 @@ export function CheckoutPage() {
         )}
       </div>
 
+      {step === 'info' && (
+        <div
+          className="fixed left-0 right-0 z-40 px-4"
+          style={{
+            bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
+            paddingBottom: '12px',
+            paddingTop: '12px',
+            background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.85) 0%, rgba(10, 10, 15, 0.98) 100%)',
+            backdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+          }}
+        >
+          <div className="max-w-lg md:max-w-2xl mx-auto">
+            <button
+              onClick={() => { if (validateForm()) setStep('payment'); }}
+              disabled={!isFormValid}
+              className="w-full py-4 rounded-2xl text-sm font-semibold text-white glow-btn disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 8px 32px rgba(255,138,0,0.3)' }}
+            >
+              {t('checkout.continueToPayment')} <ArrowRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {step === 'payment' && (
-        <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,0px))] left-0 right-0 px-4 pb-2 z-20">
+        <div className="fixed left-0 right-0 z-40 px-4 pb-2" style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}>
           <div className="max-w-lg md:max-w-2xl mx-auto">
             <button onClick={handlePlaceOrder} disabled={submitting}
               className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn disabled:opacity-50 flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 8px 32px rgba(255,138,0,0.3)' }}>
               {submitting
-                ? <><Loader2 size={16} className="animate-spin" /> Processing...</>
+                ? <><Loader2 size={16} className="animate-spin" /> {t('checkout.processing')}</>
                 : paymentMethod === 'stripe'
-                  ? <><Lock size={14} /> Pay Securely — ৳{total}</>
+                  ? <><Lock size={14} /> {t('checkout.paySecurely')} — ৳{total}</>
                   : paymentMethod === 'sslcommerz'
-                    ? <><Zap size={14} /> Pay via SSLCommerz — ৳{total}</>
-                    : <>Place Order — ৳{total}</>}
+                    ? <><Zap size={14} /> {t('checkout.payViaSSL')} — ৳{total}</>
+                    : <>{t('checkout.placeOrder')} — ৳{total}</>}
             </button>
             <p className="text-center text-[10px] text-white/20 mt-1.5 flex items-center justify-center gap-1">
-              <Lock size={9} /> 256-bit SSL encrypted
+              <Lock size={9} /> {t('checkout.sslEncrypted')}
             </p>
           </div>
         </div>
