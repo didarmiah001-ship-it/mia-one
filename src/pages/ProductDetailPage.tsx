@@ -40,205 +40,205 @@ export function ProductDetailPage() {
     : 0;
 
   return (
-    <div className="page-transition">
-      {/* Header */}
-      <header className="sticky top-0 z-30 glass px-4 py-3">
-        <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
-            <ArrowLeft size={18} className="text-white/70" />
-          </button>
-          <button
-            onClick={() => dispatch({ type: 'TOGGLE_WISHLIST', product })}
-            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center"
-          >
-            <Heart size={18} className={isWishlisted ? 'fill-mia-pink text-mia-pink' : 'text-white/70'} />
-          </button>
-        </div>
-      </header>
-
-      <div className="max-w-lg md:max-w-2xl mx-auto">
-        {/* Gallery */}
-        <div className="px-4 mt-2">
-          <div className="aspect-square rounded-2xl overflow-hidden bg-mia-navy mb-3 flex items-center justify-center">
-            <img
-              src={product.images[selectedImage]}
-              alt={product.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const t = e.currentTarget;
-                t.onerror = null;
-                t.style.display = 'none';
-                const parent = t.parentElement;
-                if (parent) {
-                  parent.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,0.2)"><svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><path d=\'m21 15-5-5L5 21\'/></svg><span style=\'font-size:12px\'>Image unavailable</span></div>';
-                }
-              }}
-            />
+    <div className="min-h-screen bg-mia-black">
+      {/* Scrollable Content Area */}
+      <div className="pb-[180px]">
+        {/* Header */}
+        <header className="sticky top-0 z-30 glass px-4 py-3">
+          <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
+            <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
+              <ArrowLeft size={18} className="text-white/70" />
+            </button>
+            <button
+              onClick={() => dispatch({ type: 'TOGGLE_WISHLIST', product })}
+              className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center"
+            >
+              <Heart size={18} className={isWishlisted ? 'fill-mia-pink text-mia-pink' : 'text-white/70'} />
+            </button>
           </div>
-          {product.images.length > 1 && (
-            <div className="flex gap-2">
-              {product.images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
-                    idx === selectedImage ? 'border-mia-orange' : 'border-transparent opacity-50'
-                  }`}
-                >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        </header>
 
-        {/* Info */}
-        <div className="px-4 mt-5">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-xl font-bold text-white leading-tight">{product.name}</h1>
-            {discount > 0 && (
-              <span className="shrink-0 px-2 py-0.5 bg-mia-pink/20 text-mia-pink text-xs font-bold rounded-full">
-                -{discount}%
+        <div className="max-w-lg md:max-w-2xl mx-auto page-transition">
+          {/* Gallery */}
+          <div className="px-4 mt-2">
+            <div className="aspect-square rounded-2xl overflow-hidden bg-mia-navy mb-3 flex items-center justify-center">
+              <img
+                src={product.images[selectedImage]}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const t = e.currentTarget;
+                  t.onerror = null;
+                  t.style.display = 'none';
+                  const parent = t.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,0.2)"><svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><path d=\'m21 15-5-5L5 21\'/></svg><span style=\'font-size:12px\'>Image unavailable</span></div>';
+                  }
+                }}
+              />
+            </div>
+            {product.images.length > 1 && (
+              <div className="flex gap-2">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                      idx === selectedImage ? 'border-mia-orange' : 'border-transparent opacity-50'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="px-4 mt-5">
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-xl font-bold text-white leading-tight">{product.name}</h1>
+              {discount > 0 && (
+                <span className="shrink-0 px-2 py-0.5 bg-mia-pink/20 text-mia-pink text-xs font-bold rounded-full">
+                  -{discount}%
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1">
+                <Star size={14} className="fill-mia-orange text-mia-orange" />
+                <span className="text-sm font-medium text-white">{product.rating}</span>
+              </div>
+              <span className="text-xs text-white/30">({product.reviews_count} reviews)</span>
+              <span className="text-xs text-white/20">|</span>
+              <span className={`text-xs ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
               </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex items-center gap-1">
-              <Star size={14} className="fill-mia-orange text-mia-orange" />
-              <span className="text-sm font-medium text-white">{product.rating}</span>
             </div>
-            <span className="text-xs text-white/30">({product.reviews_count} reviews)</span>
-            <span className="text-xs text-white/20">|</span>
-            <span className={`text-xs ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-            </span>
-          </div>
 
-          <div className="flex items-center gap-3 mt-4">
-            {product.discount_price ? (
-              <>
-                <span className="text-2xl font-bold text-mia-orange">৳{product.discount_price}</span>
-                <span className="text-base text-white/30 line-through">৳{product.price}</span>
-              </>
-            ) : (
-              <span className="text-2xl font-bold text-white">৳{product.price}</span>
-            )}
-          </div>
-
-          {/* Delivery */}
-          <div className="flex items-center gap-3 mt-5 p-3 rounded-xl bg-white/5">
-            <Truck size={18} className="text-mia-blue shrink-0" />
-            <div>
-              <p className="text-xs font-medium text-white/80">Free delivery on orders above {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
-              <p className="text-[11px] text-white/40 mt-0.5">Estimated delivery: {appConfig.delivery.estimatedDays}</p>
+            <div className="flex items-center gap-3 mt-4">
+              {product.discount_price ? (
+                <>
+                  <span className="text-2xl font-bold text-mia-orange">৳{product.discount_price}</span>
+                  <span className="text-base text-white/30 line-through">৳{product.price}</span>
+                </>
+              ) : (
+                <span className="text-2xl font-bold text-white">৳{product.price}</span>
+              )}
             </div>
-          </div>
 
-          {/* Description */}
-          <div className="mt-6">
-            <h3 className="text-sm font-semibold text-white/90 mb-2">Description</h3>
-            <p className="text-sm text-white/50 leading-relaxed">{product.description}</p>
-          </div>
-
-          {/* Specifications */}
-          <div className="mt-6">
-            <h3 className="text-sm font-semibold text-white/90 mb-2">Specifications</h3>
-            <div className="space-y-2">
-              {Object.entries(product.specifications).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between py-2 border-b border-white/5">
-                  <span className="text-xs text-white/40">{key}</span>
-                  <span className="text-xs text-white/70">{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Purchase Bar — fixed above BottomNav */}
-        <div
-          className="fixed left-0 right-0 z-30 px-4 glass border-t border-white/5"
-          style={{
-            bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
-            paddingTop: '12px',
-            paddingBottom: '12px',
-          }}
-        >
-          <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3 items-center">
-            {/* QTY Box */}
-            <div className="flex flex-col items-center justify-center rounded-xl bg-white/5 border border-white/10 shrink-0" style={{ width: '72px', height: '56px' }}>
-              <span className="text-[10px] text-white/40 font-medium uppercase tracking-wide">QTY</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
-                  disabled={product.stock === 0}
-                >
-                  <Minus size={12} className="text-white/60" />
-                </button>
-                <span className="text-sm font-bold text-white min-w-[16px] text-center">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
-                  disabled={product.stock === 0}
-                >
-                  <Plus size={12} className="text-white/60" />
-                </button>
+            {/* Delivery */}
+            <div className="flex items-center gap-3 mt-5 p-3 rounded-xl bg-white/5">
+              <Truck size={18} className="text-mia-blue shrink-0" />
+              <div>
+                <p className="text-xs font-medium text-white/80">Free delivery on orders above {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+                <p className="text-[11px] text-white/40 mt-0.5">Estimated delivery: {appConfig.delivery.estimatedDays}</p>
               </div>
             </div>
 
-            {/* Buy Now */}
-            <button
-              onClick={() => {
-                if (product.stock === 0) return;
-                dispatch({ type: 'ADD_TO_CART', product, quantity });
-                navigate('/cart');
-              }}
-              disabled={product.stock === 0}
-              className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-[0.98] transition-all glow-btn disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                height: '56px',
-                background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',
-                boxShadow: '0 4px 20px rgba(255,138,0,0.35)',
-              }}
-            >
-              <span>Buy Now</span>
-            </button>
-
-            {/* Add to Cart */}
-            <button
-              onClick={() => {
-                if (product.stock === 0) return;
-                dispatch({ type: 'ADD_TO_CART', product, quantity });
-                setAddedToCart(true);
-                showToast('Added to cart', 'success');
-                setTimeout(() => setAddedToCart(false), 2000);
-              }}
-              disabled={product.stock === 0}
-              className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ height: '56px' }}
-            >
-              {addedToCart ? (
-                <><CheckCircle2 size={16} className="text-green-400" /><span className="text-green-400">Added!</span></>
-              ) : (
-                <><ShoppingCart size={16} aria-hidden="true" /><span>Add to Cart</span></>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <section className="px-4 mt-8">
-            <h3 className="text-sm font-semibold text-white/90 mb-3">Related Products</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {relatedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+            {/* Description */}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-white/90 mb-2">Description</h3>
+              <p className="text-sm text-white/50 leading-relaxed">{product.description}</p>
             </div>
-          </section>
-        )}
 
-        {/* Spacer for fixed bottom bar + nav */}
-        <div className="h-36" />
+            {/* Specifications */}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-white/90 mb-2">Specifications</h3>
+              <div className="space-y-2">
+                {Object.entries(product.specifications).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between py-2 border-b border-white/5">
+                    <span className="text-xs text-white/40">{key}</span>
+                    <span className="text-xs text-white/70">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Related Products */}
+          {relatedProducts.length > 0 && (
+            <section className="px-4 mt-8">
+              <h3 className="text-sm font-semibold text-white/90 mb-3">Related Products</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {relatedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+
+      {/* Fixed Purchase Bar — above BottomNav */}
+      <div
+        className="fixed left-0 right-0 z-40 px-4 glass border-t border-white/5"
+        style={{
+          bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
+          paddingTop: '12px',
+          paddingBottom: '12px',
+        }}
+      >
+        <div className="max-w-lg md:max-w-2xl mx-auto flex gap-3 items-center">
+          {/* QTY Box */}
+          <div className="flex flex-col items-center justify-center rounded-xl bg-white/5 border border-white/10 shrink-0" style={{ width: '72px', height: '56px' }}>
+            <span className="text-[10px] text-white/40 font-medium uppercase tracking-wide">QTY</span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
+                disabled={product.stock === 0}
+              >
+                <Minus size={12} className="text-white/60" />
+              </button>
+              <span className="text-sm font-bold text-white min-w-[16px] text-center">{quantity}</span>
+              <button
+                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
+                disabled={product.stock === 0}
+              >
+                <Plus size={12} className="text-white/60" />
+              </button>
+            </div>
+          </div>
+
+          {/* Buy Now */}
+          <button
+            onClick={() => {
+              if (product.stock === 0) return;
+              dispatch({ type: 'ADD_TO_CART', product, quantity });
+              navigate('/cart');
+            }}
+            disabled={product.stock === 0}
+            className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-[0.98] transition-all glow-btn disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              height: '56px',
+              background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',
+              boxShadow: '0 4px 20px rgba(255,138,0,0.35)',
+            }}
+          >
+            <span>Buy Now</span>
+          </button>
+
+          {/* Add to Cart */}
+          <button
+            onClick={() => {
+              if (product.stock === 0) return;
+              dispatch({ type: 'ADD_TO_CART', product, quantity });
+              setAddedToCart(true);
+              showToast('Added to cart', 'success');
+              setTimeout(() => setAddedToCart(false), 2000);
+            }}
+            disabled={product.stock === 0}
+            className="flex-1 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/10 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: '56px' }}
+          >
+            {addedToCart ? (
+              <><CheckCircle2 size={16} className="text-green-400" /><span className="text-green-400">Added!</span></>
+            ) : (
+              <><ShoppingCart size={16} aria-hidden="true" /><span>Add to Cart</span></>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
