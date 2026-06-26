@@ -299,6 +299,8 @@ export function PaymentPage() {
   const method      = searchParams.get('method') || 'bkash';
   const paymentId   = searchParams.get('payment_id') || '';
 
+  if (!orderId) { navigate('/cart'); return null; }
+
   const [stripeClientSecret, setStripeClientSecret] = useState('');
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState('');

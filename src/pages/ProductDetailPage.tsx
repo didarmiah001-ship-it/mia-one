@@ -204,7 +204,7 @@ export function ProductDetailPage() {
               onClick={() => {
                 if (product.stock === 0) return;
                 dispatch({ type: 'ADD_TO_CART', product, quantity });
-                navigate('/checkout');
+                navigate('/cart');
               }}
               disabled={product.stock === 0}
               className="flex-1 rounded-xl text-sm font-semibold text-white flex items-center justify-center active:scale-95 transition-all glow-btn"

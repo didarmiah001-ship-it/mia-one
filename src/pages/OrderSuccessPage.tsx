@@ -37,8 +37,9 @@ export function OrderSuccessPage() {
   const orderNumber = searchParams.get('number') || searchParams.get('id') || 'N/A';
   const total = searchParams.get('total') || '0';
   const method = searchParams.get('method') || 'cash_on_delivery';
-  // 'via_payment_page' = user already submitted TxID on PaymentPage
   const viaPP = searchParams.get('via_pp') === '1';
+
+  if (orderNumber === 'N/A') { navigate('/'); return null; }
 
   const [copied, setCopied] = useState(false);
   const [visible, setVisible] = useState(false);
