@@ -13,6 +13,7 @@ import {
   createOrder, validateCoupon, incrementCouponUsage, fetchAddresses,
   createPayment, initiateSSLCommerzPayment,
 } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 // Bangladesh Districts and Thanas
 const BANGLADESH_DISTRICTS = [
@@ -159,56 +160,29 @@ const DELIVERY_ZONES: Record<string, { charge: number; zone: string }> = {
   'Jhalokati': { charge: 130, zone: 'Barishal' },
 };
 
-const PAYMENT_METHODS = [
-  {
-    id: 'cash_on_delivery',
-    label: 'Cash on Delivery',
-    sub: 'Pay when you receive',
-    icon: Banknote,
-    color: '#FF8A00',
-    badge: null,
-  },
-  {
-    id: 'bkash',
-    label: 'bKash',
-    sub: 'Mobile banking · Send Money',
-    icon: Smartphone,
-    color: '#E2136E',
-    badge: 'INSTANT',
-  },
-  {
-    id: 'nagad',
-    label: 'Nagad',
-    sub: 'Mobile banking · Send Money',
-    icon: Smartphone,
-    color: '#F6921E',
-    badge: 'INSTANT',
-  },
-  {
-    id: 'stripe',
-    label: 'Card Payment',
-    sub: 'Visa / Mastercard / Amex',
-    icon: CreditCard,
-    color: '#6772E5',
-    badge: 'SECURE',
-  },
-  {
-    id: 'sslcommerz',
-    label: 'SSLCommerz',
-    sub: 'All BD banks & wallets',
-    icon: Globe,
-    color: '#00AEEF',
-    badge: 'POPULAR',
-  },
-  {
-    id: 'bank_transfer',
-    label: 'Bank Transfer',
-    sub: 'NPSB / RTGS / BEFTN',
-    icon: Building2,
-    color: '#00D1FF',
-    badge: null,
-  },
-];
+// Dynamic payment methods fetched from database
+interface PaymentMethodDB {
+  id: string;
+  payment_type: string;
+  account_name: string;
+  account_number: string;
+  account_type: string;
+  display_name: string;
+  payment_instructions: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+// Map payment type to icon and color
+const PAYMENT_TYPE_CONFIG: Record<string, { icon: any; color: string }> = {
+  'bkash': { icon: Smartphone, color: '#E2136E' },
+  'nagad': { icon: Smartphone, color: '#F6921E' },
+  'rocket': { icon: Smartphone, color: '#8B5CF6' },
+  'bank_transfer': { icon: Building2, color: '#00D1FF' },
+  'cash_on_delivery': { icon: Banknote, color: '#FF8A00' },
+  'stripe': { icon: CreditCard, color: '#6772E5' },
+  'sslcommerz': { icon: Globe, color: '#00AEEF' },
+};
 
 function generateOrderId() {
   return 'MIA-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -247,6 +221,8 @@ export function CheckoutPage() {
   const [showAddressPicker, setShowAddressPicker] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
+  const [paymentMethodsDB, setPaymentMethodsDB] = useState<PaymentMethodDB[]>([]);
+  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
 
   // Coupon
   const [couponInput, setCouponInput] = useState('');
@@ -268,6 +244,32 @@ export function CheckoutPage() {
   useEffect(() => {
     if (profile?.full_name) setForm(f => ({ ...f, full_name: profile.full_name }));
   }, [profile]);
+
+  // Fetch payment methods from database
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      setLoadingPaymentMethods(true);
+      try {
+        const { data, error } = await supabase
+          .from('payment_methods')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          setPaymentMethodsDB(data as PaymentMethodDB[]);
+          // Set the first active method as default
+          if (data[0]) {
+            setPaymentMethod(data[0].payment_type);
+          }
+        }
+      } catch (err) {
+        // Silently handle errors - will fallback to COD
+      }
+      setLoadingPaymentMethods(false);
+    };
+    fetchPaymentMethods();
+  }, []);
 
   const applyAddress = (a: any) => {
     if (!a) return;
@@ -760,42 +762,46 @@ export function CheckoutPage() {
               <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <ShieldCheck size={14} className="text-mia-pink" /> {t('checkout.paymentMethod')}
               </h3>
-              <div className="space-y-2">
-                {PAYMENT_METHODS.map(pm => {
-                  const Icon = pm.icon;
-                  const isSelected = paymentMethod === pm.id;
-                  return (
-                    <button key={pm.id} onClick={() => setPaymentMethod(pm.id)}
-                      className="w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all duration-200"
-                      style={isSelected
-                        ? { background: `${pm.color}0E`, border: `1.5px solid ${pm.color}40` }
-                        : { background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ background: `${pm.color}12`, border: `1px solid ${pm.color}20` }}>
-                        <Icon size={18} style={{ color: pm.color }} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-white">{pm.label}</p>
-                          {pm.badge && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
-                              style={{ background: `${pm.color}15`, color: pm.color, border: `1px solid ${pm.color}25` }}>
-                              {pm.badge}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-white/35">{pm.sub}</p>
-                      </div>
-                      <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+
+              {loadingPaymentMethods ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 rounded-full border-2 border-[#FF8A00] border-t-transparent animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {paymentMethodsDB.map(pm => {
+                    const config = PAYMENT_TYPE_CONFIG[pm.payment_type] || { icon: Banknote, color: '#FF8A00' };
+                    const Icon = config.icon;
+                    const color = config.color;
+                    const isSelected = paymentMethod === pm.payment_type;
+                    const displayName = pm.display_name || pm.payment_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const accountInfo = pm.account_number || '';
+                    return (
+                      <button key={pm.id} onClick={() => setPaymentMethod(pm.payment_type)}
+                        className="w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all duration-200"
                         style={isSelected
-                          ? { borderColor: pm.color, background: pm.color }
-                          : { borderColor: 'rgba(255,255,255,0.2)' }}>
-                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                          ? { background: `${color}0E`, border: `1.5px solid ${color}40` }
+                          : { background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${color}12`, border: `1px solid ${color}20` }}>
+                          <Icon size={18} style={{ color }} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-sm font-medium text-white">{displayName}</p>
+                          {accountInfo && <p className="text-[11px] text-white/35">{accountInfo}</p>}
+                          {pm.account_name && <p className="text-[10px] text-white/25">{pm.account_name}</p>}
+                        </div>
+                        <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+                          style={isSelected
+                            ? { borderColor: color, background: color }
+                            : { borderColor: 'rgba(255,255,255,0.2)' }}>
+                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Selected payment info */}
               {(paymentMethod === 'stripe') && (
@@ -812,14 +818,28 @@ export function CheckoutPage() {
                   <p className="text-[11px] text-white/50">{t('checkout.sslNote')}</p>
                 </div>
               )}
-              {(paymentMethod === 'bkash' || paymentMethod === 'nagad') && (
-                <div className="mt-3 px-4 py-3 rounded-xl"
-                  style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  <p className="text-[11px] text-white/50 leading-relaxed">
-                    {t('checkout.bankNote')}
-                  </p>
-                </div>
-              )}
+              {/* Show payment instructions from database for mobile banking */}
+              {['bkash', 'nagad', 'rocket', 'bank_transfer'].includes(paymentMethod) && (() => {
+                const selectedMethod = paymentMethodsDB.find(pm => pm.payment_type === paymentMethod);
+                const config = PAYMENT_TYPE_CONFIG[paymentMethod] || { color: '#FF8A00' };
+                if (selectedMethod?.payment_instructions) {
+                  return (
+                    <div className="mt-3 px-4 py-3 rounded-xl"
+                      style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line">
+                        {selectedMethod.payment_instructions}
+                      </p>
+                      {selectedMethod.account_number && (
+                        <div className="mt-2 pt-2 border-t border-white/5">
+                          <p className="text-[10px] text-white/40">Account: {selectedMethod.account_number}</p>
+                          {selectedMethod.account_name && <p className="text-[10px] text-white/40">Name: {selectedMethod.account_name}</p>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Coupon */}

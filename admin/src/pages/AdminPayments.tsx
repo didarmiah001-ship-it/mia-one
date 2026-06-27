@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, RefreshCw, CheckCircle2, XCircle, Clock, CreditCard, Filter, ChevronDown, Eye, X } from 'lucide-react';
+import { Search, RefreshCw, CheckCircle2, XCircle, Clock, CreditCard, Filter, ChevronDown, Eye, X, Image as ImageIcon, FileText, User, Phone, MapPin } from 'lucide-react';
 import { adminFetchAllPayments, adminUpdatePaymentStatus } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { supabase } from '../lib/supabase';
 
 const STATUS_OPTIONS = [
   { key: 'all',       label: 'All',       color: 'rgba(255,255,255,0.4)' },
@@ -28,6 +29,205 @@ function statusColor(s: string) {
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// Payment Detail Drawer Component
+function PaymentDetailDrawer({
+  payment,
+  onClose,
+  onStatusUpdate,
+  updatingId,
+  setUpdatingId,
+  toast,
+}: {
+  payment: any;
+  onClose: () => void;
+  onStatusUpdate: (id: string, status: string) => void;
+  updatingId: string | null;
+  setUpdatingId: (id: string | null) => void;
+  toast: { success: (msg: string) => void; error: (msg: string) => void };
+}) {
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch full order details with customer info
+    const fetchOrderDetails = async () => {
+      if (payment.order_id) {
+        const { data } = await supabase
+          .from('orders')
+          .select('*, profiles(full_name, phone, id)')
+          .eq('id', payment.order_id)
+          .maybeSingle();
+        setOrderDetails(data);
+      }
+    };
+    fetchOrderDetails();
+  }, [payment.order_id]);
+
+  const updateStatus = async (status: string) => {
+    setUpdatingId(payment.id);
+    const { error } = await adminUpdatePaymentStatus(payment.id, status);
+    setUpdatingId(null);
+    if (error) { toast.error(error); return; }
+    toast.success(`Payment marked as ${status}`);
+    onStatusUpdate(payment.id, status);
+  };
+
+  const screenshotUrl = payment.screenshot_url || payment.payment_screenshot_url;
+  const customerNote = payment.customer_note;
+  const address = orderDetails?.address || {};
+  const items = orderDetails?.items || [];
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md flex flex-col h-full overflow-y-auto"
+        style={{ background: '#0F0F17', borderLeft: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10"
+          style={{ background: '#0F0F17', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-3">
+            <CreditCard size={16} className="text-mia-orange" />
+            <h2 className="text-sm font-bold text-white">Payment Detail</h2>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/8 transition-colors">
+            <X size={14} className="text-white/50" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Status badge */}
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1.5 rounded-xl text-sm font-semibold capitalize"
+              style={{ background: `${statusColor(payment.status)}15`, color: statusColor(payment.status), border: `1px solid ${statusColor(payment.status)}30` }}>
+              {payment.status}
+            </span>
+            <span className="text-sm font-bold text-white">৳{Number(payment.amount || 0).toLocaleString()}</span>
+          </div>
+
+          {/* Payment Details */}
+          <div className="space-y-3 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Payment Info</p>
+            {[
+              ['Order', orderDetails?.order_number || payment.order_id?.slice(-8).toUpperCase()],
+              ['Method', payment.method?.replace(/_/g, ' ')],
+              ['Amount', `৳${Number(payment.amount || 0).toLocaleString()} ${payment.currency || 'BDT'}`],
+              ['TX ID', payment.transaction_id || '—'],
+              ['Sender Number', payment.sender_number || '—'],
+              ['Gateway Ref', payment.gateway_ref || '—'],
+              ['Created', fmtDate(payment.created_at)],
+              payment.submitted_at ? ['Submitted', fmtDate(payment.submitted_at)] : null,
+              payment.verified_at  ? ['Verified',  fmtDate(payment.verified_at)]  : null,
+              payment.refunded_at  ? ['Refunded',  fmtDate(payment.refunded_at)]  : null,
+            ].filter((x): x is [string, string] => x !== null).map(([k, v]) => (
+              <div key={k as string} className="flex justify-between gap-4">
+                <span className="text-xs text-white/35 capitalize">{k}</span>
+                <span className="text-xs text-white/70 text-right font-medium capitalize">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Customer Information */}
+          {orderDetails && (
+            <div className="space-y-3 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Customer Info</p>
+              <div className="flex items-center gap-2">
+                <User size={12} className="text-white/30 shrink-0" />
+                <span className="text-sm text-white">{address.full_name || orderDetails.profiles?.full_name || 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone size={12} className="text-white/30 shrink-0" />
+                <span className="text-sm text-white/70">{address.phone || orderDetails.profiles?.phone || '—'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin size={12} className="text-white/30 shrink-0 mt-0.5" />
+                <span className="text-xs text-white/60 leading-relaxed">
+                  {address.address}{address.area ? `, ${address.area}` : ''}{address.city ? `, ${address.city}` : ''}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Order Items */}
+          {items.length > 0 && (
+            <div className="space-y-3 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Items ({items.length})</p>
+              {items.map((item: any, i: number) => (
+                <div key={i} className="flex items-center gap-3">
+                  {item.image && <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white/80 truncate">{item.name}</p>
+                    <p className="text-[10px] text-white/35 mt-0.5">x{item.quantity} · ৳{item.price}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-white/70">৳{(Number(item.price) * item.quantity).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Payment Screenshot */}
+          {screenshotUrl && (
+            <div className="space-y-3 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-2">
+                <ImageIcon size={12} className="text-white/30" />
+                <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Payment Proof / Screenshot</p>
+              </div>
+              <a href={screenshotUrl} target="_blank" rel="noopener noreferrer" className="block">
+                <img src={screenshotUrl} alt="Payment proof" className="w-full rounded-xl object-cover border border-white/10 hover:border-mia-orange/40 transition-colors" style={{ maxHeight: '300px' }} />
+              </a>
+              <p className="text-[10px] text-white/30 text-center">Click to open full size</p>
+            </div>
+          )}
+
+          {/* Customer Note */}
+          {customerNote && (
+            <div className="space-y-3 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-2">
+                <FileText size={12} className="text-white/30" />
+                <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Customer Note</p>
+              </div>
+              <p className="text-xs text-white/60 leading-relaxed">{customerNote}</p>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          {payment.status === 'submitted' && (
+            <div className="space-y-2">
+              <p className="text-xs text-white/30 font-medium uppercase tracking-wider">Update Status</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  disabled={updatingId === payment.id}
+                  onClick={() => updateStatus('verified')}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                  style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }}
+                >
+                  <CheckCircle2 size={14} /> Verify
+                </button>
+                <button
+                  disabled={updatingId === payment.id}
+                  onClick={() => updateStatus('failed')}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                  style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
+                >
+                  <XCircle size={14} /> Reject
+                </button>
+              </div>
+            </div>
+          )}
+
+          {payment.status === 'verified' && (
+            <button
+              disabled={updatingId === payment.id}
+              onClick={() => updateStatus('refunded')}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+              style={{ background: 'rgba(123,44,255,0.1)', color: '#7B2CFF', border: '1px solid rgba(123,44,255,0.2)' }}
+            >
+              <Clock size={14} /> Mark as Refunded
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function AdminPayments() {
@@ -241,90 +441,17 @@ export function AdminPayments() {
 
       {/* Detail drawer */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="relative z-10 w-full max-w-md flex flex-col h-full overflow-y-auto"
-            style={{ background: '#0F0F17', borderLeft: '1px solid rgba(255,255,255,0.07)' }}>
-            <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10"
-              style={{ background: '#0F0F17', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="flex items-center gap-3">
-                <CreditCard size={16} className="text-mia-orange" />
-                <h2 className="text-sm font-bold text-white">Payment Detail</h2>
-              </div>
-              <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/8 transition-colors">
-                <X size={14} className="text-white/50" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-5">
-              {/* Status badge */}
-              <div className="flex items-center gap-3">
-                <span className="px-3 py-1.5 rounded-xl text-sm font-semibold capitalize"
-                  style={{ background: `${statusColor(selected.status)}15`, color: statusColor(selected.status), border: `1px solid ${statusColor(selected.status)}30` }}>
-                  {selected.status}
-                </span>
-                <span className="text-sm font-bold text-white">৳{Number(selected.amount || 0).toLocaleString()}</span>
-              </div>
-
-              {/* Details */}
-              <div className="space-y-3 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                {[
-                  ['Order', selected.orders?.order_number || selected.order_id?.slice(-8).toUpperCase()],
-                  ['Method', selected.method?.replace(/_/g, ' ')],
-                  ['Amount', `৳${Number(selected.amount || 0).toLocaleString()} ${selected.currency || 'BDT'}`],
-                  ['TX ID', selected.transaction_id || '—'],
-                  ['Sender', selected.sender_number || '—'],
-                  ['Gateway Ref', selected.gateway_ref || '—'],
-                  ['Created', fmtDate(selected.created_at)],
-                  selected.submitted_at ? ['Submitted', fmtDate(selected.submitted_at)] : null,
-                  selected.verified_at  ? ['Verified',  fmtDate(selected.verified_at)]  : null,
-                  selected.refunded_at  ? ['Refunded',  fmtDate(selected.refunded_at)]  : null,
-                ].filter((x): x is [string, string] => x !== null).map(([k, v]) => (
-                  <div key={k as string} className="flex justify-between gap-4">
-                    <span className="text-xs text-white/35 capitalize">{k}</span>
-                    <span className="text-xs text-white/70 text-right font-medium capitalize">{v}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Action buttons */}
-              {selected.status === 'submitted' && (
-                <div className="space-y-2">
-                  <p className="text-xs text-white/30 font-medium uppercase tracking-wider">Update Status</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      disabled={updatingId === selected.id}
-                      onClick={() => updateStatus(selected.id, 'verified')}
-                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
-                      style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }}
-                    >
-                      <CheckCircle2 size={14} /> Verify
-                    </button>
-                    <button
-                      disabled={updatingId === selected.id}
-                      onClick={() => updateStatus(selected.id, 'failed')}
-                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
-                      style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
-                    >
-                      <XCircle size={14} /> Reject
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {selected.status === 'verified' && (
-                <button
-                  disabled={updatingId === selected.id}
-                  onClick={() => updateStatus(selected.id, 'refunded')}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
-                  style={{ background: 'rgba(123,44,255,0.1)', color: '#7B2CFF', border: '1px solid rgba(123,44,255,0.2)' }}
-                >
-                  <Clock size={14} /> Mark as Refunded
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        <PaymentDetailDrawer
+          payment={selected}
+          onClose={() => setSelected(null)}
+          onStatusUpdate={(id, status) => {
+            if (selected?.id === id) setSelected((p: any) => ({ ...p, status }));
+            load();
+          }}
+          updatingId={updatingId}
+          setUpdatingId={setUpdatingId}
+          toast={toast}
+        />
       )}
     </div>
   );

@@ -3,30 +3,67 @@ import {
   Search, X, Printer, Download, ChevronRight,
   Package, Clock, CheckCircle, Truck, PackageCheck, XCircle,
   Filter, RefreshCw, FileText, MapPin, Phone, User, Calendar,
-  ArrowUpDown, Eye
+  ArrowUpDown, Eye, CreditCard, Image as ImageIcon
 } from 'lucide-react';
-import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline } from '../lib/api';
+import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline, fetchPayment } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { appConfig } from '../lib/config';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 export const ALL_STATUSES = [
+  { key: 'placed',          label: 'Placed',          color: '#FF8A00', icon: Package },
   { key: 'pending',         label: 'Pending',         color: '#94a3b8', icon: Clock },
+  { key: 'received',        label: 'Received',       color: '#00D1FF', icon: PackageCheck },
   { key: 'confirmed',       label: 'Confirmed',       color: '#00D1FF', icon: CheckCircle },
   { key: 'processing',      label: 'Processing',      color: '#FF8A00', icon: RefreshCw },
   { key: 'packed',          label: 'Packed',          color: '#7B2CFF', icon: PackageCheck },
+  { key: 'ready_for_delivery',label: 'Ready for Delivery',color: '#FF8A00', icon: PackageCheck },
   { key: 'shipped',         label: 'Shipped',         color: '#FF2EC9', icon: Truck },
+  { key: 'out_for_delivery',label: 'Out for Delivery',color: '#FF2EC9', icon: Truck },
   { key: 'delivered',       label: 'Delivered',       color: '#22c55e', icon: CheckCircle },
   { key: 'cancelled',       label: 'Cancelled',       color: '#ef4444', icon: XCircle },
-  // legacy
-  { key: 'placed',          label: 'Placed',          color: '#FF8A00', icon: Package },
-  { key: 'out_for_delivery',label: 'Out for Delivery',color: '#FF2EC9', icon: Truck },
+  { key: 'refunded',        label: 'Refunded',        color: '#ef4444', icon: XCircle },
 ];
 
-const NEXT_STATUS: Record<string, string> = {
-  placed: 'confirmed', pending: 'confirmed', confirmed: 'processing',
-  processing: 'packed', packed: 'shipped', shipped: 'delivered',
+// Action buttons available for each status
+const STATUS_ACTIONS: Record<string, { label: string; nextStatus: string; color: string }[]> = {
+  placed: [
+    { label: 'Receive', nextStatus: 'received', color: '#00D1FF' },
+    { label: 'Confirm', nextStatus: 'confirmed', color: '#22c55e' },
+    { label: 'Cancel', nextStatus: 'cancelled', color: '#ef4444' },
+  ],
+  pending: [
+    { label: 'Receive', nextStatus: 'received', color: '#00D1FF' },
+    { label: 'Confirm', nextStatus: 'confirmed', color: '#22c55e' },
+    { label: 'Cancel', nextStatus: 'cancelled', color: '#ef4444' },
+  ],
+  received: [
+    { label: 'Processing', nextStatus: 'processing', color: '#FF8A00' },
+    { label: 'Cancel', nextStatus: 'cancelled', color: '#ef4444' },
+  ],
+  confirmed: [
+    { label: 'Processing', nextStatus: 'processing', color: '#FF8A00' },
+    { label: 'Cancel', nextStatus: 'cancelled', color: '#ef4444' },
+  ],
+  processing: [
+    { label: 'Packed', nextStatus: 'packed', color: '#7B2CFF' },
+    { label: 'Cancel', nextStatus: 'cancelled', color: '#ef4444' },
+  ],
+  packed: [
+    { label: 'Ready', nextStatus: 'ready_for_delivery', color: '#FF8A00' },
+    { label: 'Shipped', nextStatus: 'shipped', color: '#FF2EC9' },
+  ],
+  ready_for_delivery: [
+    { label: 'Out for Delivery', nextStatus: 'out_for_delivery', color: '#FF2EC9' },
+    { label: 'Shipped', nextStatus: 'shipped', color: '#FF2EC9' },
+  ],
+  shipped: [
+    { label: 'Out for Delivery', nextStatus: 'out_for_delivery', color: '#FF2EC9' },
+  ],
+  out_for_delivery: [
+    { label: 'Delivered', nextStatus: 'delivered', color: '#22c55e' },
+  ],
 };
 
 function statusMeta(key: string) {
@@ -187,17 +224,24 @@ function exportPDF(orders: any[]) {
 function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: () => void; onStatusChange: (id: string, status: string) => void }) {
   const toast = useToast();
   const [timeline, setTimeline] = useState<any[]>([]);
+  const [payment, setPayment] = useState<any>(null);
   const [statusNote, setStatusNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState(order.status);
 
   useEffect(() => {
     fetchOrderTimeline(order.id).then(setTimeline);
-  }, [order.id]);
+    if (order.payment_id || order.id) {
+      fetchPayment(order.payment_id || order.id).then(p => {
+        if (p) setPayment(p);
+      });
+    }
+  }, [order.id, order.payment_id]);
 
   const sm = statusMeta(order.status);
   const addr = order.address || {};
   const items = order.items || [];
+  const actions = STATUS_ACTIONS[order.status] || [];
 
   const handleUpdate = async () => {
     if (newStatus === order.status) return;
@@ -213,6 +257,22 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
     }
     setUpdating(false);
   };
+
+  const handleQuickStatus = async (nextStatus: string, label: string) => {
+    setUpdating(true);
+    const { error } = await adminUpdateOrderStatus(order.id, nextStatus);
+    if (error) { toast.error(error); }
+    else {
+      toast.success(`Marked as ${label}`);
+      onStatusChange(order.id, nextStatus);
+      const tl = await fetchOrderTimeline(order.id);
+      setTimeline(tl);
+    }
+    setUpdating(false);
+  };
+
+  const paymentScreenshotUrl = payment?.screenshot_url || payment?.payment_screenshot_url || order.payment_screenshot_url;
+  const customerPaymentNote = payment?.customer_note || order.customer_payment_note;
 
   return (
     <div className="fixed inset-0 z-[9990] flex">
@@ -249,11 +309,27 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
             </div>
           </div>
 
+          {/* Quick Actions */}
+          {actions.length > 0 && (
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Quick Actions</p>
+              <div className="flex flex-wrap gap-2">
+                {actions.map(action => (
+                  <button key={action.nextStatus} onClick={() => handleQuickStatus(action.nextStatus, action.label)} disabled={updating}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50"
+                    style={{ background: `${action.color}15`, color: action.color, border: `1px solid ${action.color}30` }}>
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Update Status */}
           <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Update Status</p>
+            <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Set Status Manually</p>
             <div className="grid grid-cols-2 gap-1.5">
-              {ALL_STATUSES.filter(s => !['placed', 'out_for_delivery'].includes(s.key)).map(s => (
+              {ALL_STATUSES.map(s => (
                 <button key={s.key} onClick={() => setNewStatus(s.key)}
                   className="px-3 py-2 rounded-xl text-xs font-medium transition-all text-left"
                   style={newStatus === s.key
@@ -305,16 +381,22 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
           {/* Items */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Items ({items.length})</p>
-            {items.map((item: any, i: number) => (
-              <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                {item.image && <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/80 truncate">{item.name}</p>
-                  <p className="text-[10px] text-white/35 mt-0.5">x{item.quantity} · ৳{item.price}</p>
-                </div>
-                <span className="text-xs font-semibold text-white/70">৳{(Number(item.price) * item.quantity).toLocaleString()}</span>
+            {items.length === 0 ? (
+              <div className="p-4 rounded-xl text-center text-white/30 text-xs" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                No items found
               </div>
-            ))}
+            ) : (
+              items.map((item: any, i: number) => (
+                <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  {item.image && <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white/80 truncate">{item.name}</p>
+                    <p className="text-[10px] text-white/35 mt-0.5">x{item.quantity} · ৳{item.price}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-white/70">৳{(Number(item.price) * item.quantity).toLocaleString()}</span>
+                </div>
+              ))
+            )}
             {/* Totals */}
             <div className="pt-2 space-y-1.5 border-t border-white/5">
               <div className="flex justify-between text-xs"><span className="text-white/40">Subtotal</span><span className="text-white/70">৳{Number(order.subtotal || 0).toLocaleString()}</span></div>
@@ -323,6 +405,65 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
               <div className="flex justify-between text-sm font-bold pt-1"><span className="text-white">Total</span><span className="text-mia-orange">৳{Number(order.total).toLocaleString()}</span></div>
             </div>
           </div>
+
+          {/* Payment Details */}
+          {(payment || order.payment_method) && (
+            <div className="space-y-3 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="flex items-center gap-2">
+                <CreditCard size={12} className="text-white/30" />
+                <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Payment Details</p>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/35">Method</span>
+                  <span className="text-white/70 capitalize">{(order.payment_method || payment?.method || '').replace(/_/g, ' ')}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/35">Status</span>
+                  <span className={`capitalize ${payment?.status === 'verified' ? 'text-green-400' : payment?.status === 'failed' ? 'text-red-400' : 'text-white/70'}`}>
+                    {payment?.status || order.payment_status || 'Pending'}
+                  </span>
+                </div>
+                {payment?.transaction_id && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/35">Transaction ID</span>
+                    <span className="text-white/70 font-mono">{payment.transaction_id}</span>
+                  </div>
+                )}
+                {payment?.sender_number && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/35">Sender Number</span>
+                    <span className="text-white/70">{payment.sender_number}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Payment Screenshot */}
+          {paymentScreenshotUrl && (
+            <div className="space-y-3 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="flex items-center gap-2">
+                <ImageIcon size={12} className="text-white/30" />
+                <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Payment Proof / Screenshot</p>
+              </div>
+              <a href={paymentScreenshotUrl} target="_blank" rel="noopener noreferrer" className="block">
+                <img src={paymentScreenshotUrl} alt="Payment proof" className="w-full rounded-xl object-cover border border-white/10 hover:border-mia-orange/40 transition-colors" style={{ maxHeight: '250px' }} />
+              </a>
+              <p className="text-[10px] text-white/30 text-center">Click to open full size</p>
+            </div>
+          )}
+
+          {/* Customer Payment Note */}
+          {customerPaymentNote && (
+            <div className="space-y-3 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="flex items-center gap-2">
+                <FileText size={12} className="text-white/30" />
+                <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Customer Note</p>
+              </div>
+              <p className="text-xs text-white/60 leading-relaxed">{customerPaymentNote}</p>
+            </div>
+          )}
 
           {/* Timeline */}
           {timeline.length > 0 && (
@@ -389,12 +530,10 @@ export function AdminOrders() {
     if (selectedOrder?.id === orderId) setSelectedOrder((o: any) => o ? { ...o, status: newStatus } : o);
   };
 
-  const quickAdvance = async (order: any) => {
-    const next = NEXT_STATUS[order.status];
-    if (!next) return;
-    const { error } = await adminUpdateOrderStatus(order.id, next);
+  const handleStatusUpdate = async (orderId: string, newStatus: string, label: string) => {
+    const { error } = await adminUpdateOrderStatus(orderId, newStatus);
     if (error) toast.error(error);
-    else { toast.success(`Moved to ${statusMeta(next).label}`); handleStatusChange(order.id, next); }
+    else { toast.success(`Marked as ${label}`); handleStatusChange(orderId, newStatus); }
   };
 
   // Status counts for pipeline
@@ -429,7 +568,15 @@ export function AdminOrders() {
       <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {[
           { key: 'all', label: 'All', color: '#94a3b8' },
-          ...ALL_STATUSES.filter(s => !['placed', 'out_for_delivery'].includes(s.key))
+          { key: 'placed', label: 'Placed', color: '#FF8A00' },
+          { key: 'pending', label: 'Pending', color: '#94a3b8' },
+          { key: 'received', label: 'Received', color: '#00D1FF' },
+          { key: 'confirmed', label: 'Confirmed', color: '#00D1FF' },
+          { key: 'processing', label: 'Processing', color: '#FF8A00' },
+          { key: 'packed', label: 'Packed', color: '#7B2CFF' },
+          { key: 'out_for_delivery', label: 'Out', color: '#FF2EC9' },
+          { key: 'delivered', label: 'Delivered', color: '#22c55e' },
+          { key: 'cancelled', label: 'Cancelled', color: '#ef4444' },
         ].map(s => {
           const count = s.key === 'all' ? orders.length : (statusCounts[s.key] || 0);
           return (
@@ -498,7 +645,7 @@ export function AdminOrders() {
             const Icon = sm.icon;
             const addr = order.address || {};
             const items = order.items || [];
-            const canAdvance = !!NEXT_STATUS[order.status];
+            const actions = STATUS_ACTIONS[order.status] || [];
             return (
               <div key={order.id} className="glow-card overflow-hidden transition-all hover:border-white/10">
                 <div className="flex items-stretch">
@@ -535,14 +682,14 @@ export function AdminOrders() {
                       {/* Right: amount + actions */}
                       <div className="flex flex-col items-end gap-2 shrink-0">
                         <span className="text-base font-bold text-mia-orange">৳{Number(order.total).toLocaleString()}</span>
-                        <div className="flex items-center gap-1.5">
-                          {canAdvance && (
-                            <button onClick={() => quickAdvance(order)}
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          {actions.map(action => (
+                            <button key={action.nextStatus} onClick={() => handleStatusUpdate(order.id, action.nextStatus, action.label)}
                               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all hover:scale-105"
-                              style={{ background: `${statusMeta(NEXT_STATUS[order.status]).color}15`, color: statusMeta(NEXT_STATUS[order.status]).color, border: `1px solid ${statusMeta(NEXT_STATUS[order.status]).color}30` }}>
-                              <ChevronRight size={10} /> {statusMeta(NEXT_STATUS[order.status]).label}
+                              style={{ background: `${action.color}15`, color: action.color, border: `1px solid ${action.color}30` }}>
+                              {action.label}
                             </button>
-                          )}
+                          ))}
                           <button onClick={() => printInvoice(order)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print">
                             <Printer size={11} className="text-white/40" />
                           </button>

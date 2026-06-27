@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, CreditCard, Smartphone, Building2, CheckCircle2, XCircle,
-  Loader2, Copy, AlertCircle, Lock, RefreshCw, Clock, Check,
+  Loader2, Copy, AlertCircle, Lock, RefreshCw, Clock, Check, Upload, Image as ImageIcon, X,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from '../lib/router';
 import { submitManualPayment, initiateStripePayment, createPayment } from '../lib/api';
@@ -12,35 +12,14 @@ import { useTranslation } from 'react-i18next';
 // ── Payment method metadata ───────────────────────────────────────────────────
 const METHOD_META: Record<string, {
   label: string; color: string; icon: any;
-  merchantNumber?: string; instructions?: string; bankDetails?: string;
 }> = {
-  bkash: {
-    label: 'bKash',
-    color: '#E2136E',
-    icon: Smartphone,
-    merchantNumber: '01XXXXXXXXX',
-    instructionsKey: 'payment.bkashInstructions',
-  },
-  nagad: {
-    label: 'Nagad',
-    color: '#F6921E',
-    icon: Smartphone,
-    merchantNumber: '01XXXXXXXXX',
-    instructionsKey: 'payment.nagadInstructions',
-  },
-  bank_transfer: {
-    label: 'Bank Transfer',
-    color: '#00D1FF',
-    icon: Building2,
-    bankDetails: `Bank: Dutch-Bangla Bank\nAccount Name: MIA ONE Ltd.\nAccount No: 1234567890\nRouting No: 090261427\nBranch: Motijheel`,
-    instructionsKey: 'payment.bankInstructions',
-  },
-  stripe: {
-    label: 'Card Payment',
-    color: '#6772E5',
-    icon: CreditCard,
-    instructionsKey: 'payment.cardInstructions',
-  },
+  bkash: { label: 'bKash', color: '#E2136E', icon: Smartphone },
+  nagad: { label: 'Nagad', color: '#F6921E', icon: Smartphone },
+  rocket: { label: 'Rocket', color: '#8B5CF6', icon: Smartphone },
+  bank_transfer: { label: 'Bank Transfer', color: '#00D1FF', icon: Building2 },
+  stripe: { label: 'Card Payment', color: '#6772E5', icon: CreditCard },
+  sslcommerz: { label: 'SSLCommerz', color: '#00AEEF', icon: CreditCard },
+  cash_on_delivery: { label: 'Cash on Delivery', color: '#22C55E', icon: Smartphone },
 };
 
 // ── Stripe card form (pure HTML/CSS — no Stripe.js dependency) ─────────────────
@@ -150,10 +129,48 @@ function ManualPaymentForm({
   const Icon = meta?.icon || Smartphone;
   const [txId, setTxId] = useState('');
   const [senderNumber, setSenderNumber] = useState('');
+  const [customerNote, setCustomerNote] = useState('');
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<'number' | 'order' | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
+
+  // Fetch payment method details from database
+  const [paymentMethodDetails, setPaymentMethodDetails] = useState<{
+    account_number: string;
+    account_name: string;
+    payment_instructions: string;
+    bank_name?: string;
+    branch_name?: string;
+    routing_number?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchPaymentDetails = async () => {
+      const { data } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('payment_type', method)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (data) {
+        setPaymentMethodDetails({
+          account_number: data.account_number || '',
+          account_name: data.account_name || '',
+          payment_instructions: data.payment_instructions || '',
+          bank_name: data.bank_name || '',
+          branch_name: data.branch_name || '',
+          routing_number: data.routing_number || '',
+        });
+      }
+    };
+    fetchPaymentDetails();
+  }, [method]);
 
   const copy = (text: string, key: 'number' | 'order') => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -161,15 +178,101 @@ function ManualPaymentForm({
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError(t('payment.errInvalidFile') || 'Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError(t('payment.errFileTooLarge') || 'File size must be less than 5MB');
+      return;
+    }
+
+    setScreenshotFile(file);
+    setScreenshotUrl(null);
+    setError('');
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setScreenshotPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeScreenshot = () => {
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
+    setScreenshotUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadScreenshot = async (): Promise<string | null> => {
+    if (!screenshotFile) return null;
+
+    setUploadingScreenshot(true);
+    try {
+      const fileExt = screenshotFile.name.split('.').pop();
+      const fileName = `payment-proofs/${orderNumber}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('payment-proofs')
+        .upload(fileName, screenshotFile);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('payment-proofs')
+        .getPublicUrl(fileName);
+
+      return urlData?.publicUrl || null;
+    } catch (err) {
+      console.error('Upload failed:', err);
+      return null;
+    } finally {
+      setUploadingScreenshot(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!txId.trim()) { setError(t('payment.errTxId')); return; }
-    if ((method === 'bkash' || method === 'nagad') && !senderNumber.trim()) {
+    if ((method === 'bkash' || method === 'nagad' || method === 'rocket') && !senderNumber.trim()) {
       setError(t('payment.errSenderNumber')); return;
     }
     setError('');
     setSubmitting(true);
-    const { error: apiErr } = await submitManualPayment(paymentId, txId.trim(), senderNumber.trim());
+
+    // Upload screenshot if selected
+    let uploadedUrl: string | null = null;
+    if (screenshotFile) {
+      uploadedUrl = await uploadScreenshot();
+      if (!uploadedUrl) {
+        setError(t('payment.errUploadFailed') || 'Failed to upload screenshot. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+      setScreenshotUrl(uploadedUrl);
+    }
+
+    const { error: apiErr } = await submitManualPayment(
+      paymentId,
+      txId.trim(),
+      senderNumber.trim(),
+      customerNote.trim() || undefined,
+      uploadedUrl || undefined
+    );
     setSubmitting(false);
     if (apiErr) setError(apiErr);
     else onSuccess();
@@ -185,20 +288,23 @@ function ManualPaymentForm({
           <p className="text-sm font-semibold text-white">{t('payment.sendPayment')}</p>
         </div>
 
-        {(method === 'bkash' || method === 'nagad') && (
+        {(method === 'bkash' || method === 'nagad' || method === 'rocket') && paymentMethodDetails && (
           <>
             <div>
               <p className="text-[10px] text-white/35 uppercase tracking-wider mb-1.5 font-medium">{t('payment.merchantNumber')}</p>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold tracking-wider" style={{ color: meta?.color }}>
-                  {meta?.merchantNumber}
+                  {paymentMethodDetails.account_number || 'N/A'}
                 </span>
-                <button onClick={() => copy(meta?.merchantNumber || '', 'number')}
+                <button onClick={() => copy(paymentMethodDetails?.account_number || '', 'number')}
                   className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
                   style={{ background: copied === 'number' ? 'rgba(34,197,94,0.1)' : `${meta?.color}10`, border: `1px solid ${meta?.color}25` }}>
                   {copied === 'number' ? <Check size={13} className="text-green-400" /> : <Copy size={13} style={{ color: meta?.color }} />}
                 </button>
               </div>
+              {paymentMethodDetails.account_name && (
+                <p className="text-[10px] text-white/35 mt-1">{paymentMethodDetails.account_name}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -219,13 +325,27 @@ function ManualPaymentForm({
           </>
         )}
 
-        {method === 'bank_transfer' && (
+        {method === 'bank_transfer' && paymentMethodDetails && (
           <div className="p-4 rounded-2xl space-y-2"
             style={{ background: 'rgba(0,209,255,0.04)', border: '1px solid rgba(0,209,255,0.1)' }}>
-            <pre className="text-xs text-white/60 leading-relaxed whitespace-pre-wrap font-sans">
-              {meta?.bankDetails}
-            </pre>
-            <div className="flex items-center gap-2 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="space-y-1.5">
+              {paymentMethodDetails.bank_name && (
+                <p className="text-xs text-white/60"><span className="text-white/40">Bank:</span> {paymentMethodDetails.bank_name}</p>
+              )}
+              {paymentMethodDetails.account_name && (
+                <p className="text-xs text-white/60"><span className="text-white/40">Account Name:</span> {paymentMethodDetails.account_name}</p>
+              )}
+              {paymentMethodDetails.account_number && (
+                <p className="text-xs text-white/60"><span className="text-white/40">Account No:</span> {paymentMethodDetails.account_number}</p>
+              )}
+              {paymentMethodDetails.routing_number && (
+                <p className="text-xs text-white/60"><span className="text-white/40">Routing No:</span> {paymentMethodDetails.routing_number}</p>
+              )}
+              {paymentMethodDetails.branch_name && (
+                <p className="text-xs text-white/60"><span className="text-white/40">Branch:</span> {paymentMethodDetails.branch_name}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               <p className="text-[10px] text-white/35">{t('payment.reference')}:</p>
               <span className="text-[10px] font-mono font-bold text-mia-orange">{orderNumber}</span>
               <button onClick={() => copy(orderNumber, 'order')}>
@@ -235,8 +355,12 @@ function ManualPaymentForm({
           </div>
         )}
 
-        {meta?.instructionsKey && (
-          <p className="text-xs text-white/45 leading-relaxed">{t(meta.instructionsKey)}</p>
+        {paymentMethodDetails?.payment_instructions && (
+          <div className="px-4 py-3 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line">
+              {paymentMethodDetails.payment_instructions}
+            </p>
+          </div>
         )}
       </div>
 
@@ -266,7 +390,7 @@ function ManualPaymentForm({
             style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)', focus: 'border-color: rgba(255,138,0,0.4)' }} />
         </div>
 
-        {(method === 'bkash' || method === 'nagad') && (
+        {(method === 'bkash' || method === 'nagad' || method === 'rocket') && (
           <div>
             <label className="text-[11px] text-white/40 mb-1.5 block font-medium uppercase tracking-wider">
               {t('payment.senderNumberLabel')}
@@ -279,11 +403,66 @@ function ManualPaymentForm({
           </div>
         )}
 
-        <button type="submit" disabled={submitting}
+        {/* Payment Screenshot Upload */}
+        <div>
+          <label className="text-[11px] text-white/40 mb-1.5 block font-medium uppercase tracking-wider">
+            {t('payment.screenshotLabel') || 'Payment Screenshot'} <span className="text-white/25">({t('common.optional')})</span>
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          {!screenshotPreview ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full px-4 py-4 rounded-2xl text-sm text-white/50 flex flex-col items-center justify-center gap-2 transition-all hover:border-mia-orange/30"
+              style={{ background: 'var(--bg-input)', border: '1px dashed rgba(255,255,255,0.15)' }}
+            >
+              <Upload size={22} className="text-white/30" />
+              <span>{t('payment.uploadScreenshot') || 'Upload payment screenshot'}</span>
+              <span className="text-[10px] text-white/25">JPG, PNG (max 5MB)</span>
+            </button>
+          ) : (
+            <div className="relative rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+              <img src={screenshotPreview} alt="Payment proof" className="w-full h-40 object-cover" />
+              <button
+                type="button"
+                onClick={removeScreenshot}
+                className="absolute top-2 right-2 w-8 h-8 rounded-xl flex items-center justify-center bg-black/60 hover:bg-red-500/80 transition-colors"
+              >
+                <X size={14} className="text-white" />
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent">
+                <p className="text-[10px] text-white/60 truncate">{screenshotFile?.name}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Customer Note */}
+        <div>
+          <label className="text-[11px] text-white/40 mb-1.5 block font-medium uppercase tracking-wider">
+            {t('payment.noteLabel') || 'Additional Note'} <span className="text-white/25">({t('common.optional')})</span>
+          </label>
+          <textarea
+            value={customerNote}
+            onChange={e => setCustomerNote(e.target.value)}
+            placeholder={t('payment.notePlaceholder') || 'Any additional information about your payment...'}
+            rows={2}
+            className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none transition-all resize-none"
+            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}
+          />
+        </div>
+
+        <button type="submit" disabled={submitting || uploadingScreenshot}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50 glow-btn"
           style={{ background: `linear-gradient(135deg, ${meta?.color}, ${meta?.color}99)` }}>
-          {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
-          {submitting ? t('payment.submitting') : t('payment.submitForVerification')}
+          {submitting || uploadingScreenshot ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
+          {uploadingScreenshot ? (t('payment.uploading') || 'Uploading...') : submitting ? t('payment.submitting') : t('payment.submitForVerification')}
         </button>
       </form>
     </div>

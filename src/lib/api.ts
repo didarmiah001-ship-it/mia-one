@@ -748,10 +748,25 @@ export async function createPayment(payment: {
   return { data, error: error?.message ?? null };
 }
 
-export async function submitManualPayment(paymentId: string, txId: string, senderNumber: string) {
+export async function submitManualPayment(
+  paymentId: string,
+  txId: string,
+  senderNumber: string,
+  customerNote?: string,
+  screenshotUrl?: string
+) {
+  const updates: any = {
+    transaction_id: txId,
+    sender_number: senderNumber,
+    status: 'submitted',
+    submitted_at: new Date().toISOString(),
+  };
+  if (customerNote) updates.customer_note = customerNote;
+  if (screenshotUrl) updates.screenshot_url = screenshotUrl;
+
   const { error } = await supabase
     .from('payments')
-    .update({ transaction_id: txId, sender_number: senderNumber, status: 'submitted', submitted_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', paymentId);
   return { error: error?.message ?? null };
 }

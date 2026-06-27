@@ -20,6 +20,7 @@ import { AdminNotifications } from './AdminNotifications';
 import { AdminReports } from './AdminReports';
 import { AdminSettings } from './AdminSettings';
 import { AdminPayments } from './AdminPayments';
+import { AdminPaymentSettings } from './AdminPaymentSettings';
 
 const NAV_GROUPS = [
   {
@@ -52,6 +53,7 @@ const NAV_GROUPS = [
     label: 'Finance',
     items: [
       { id: 'payments',      label: 'Payments',      icon: CreditCard      },
+      { id: 'payment-settings', label: 'Payment Settings', icon: Settings   },
       { id: 'reports',       label: 'Analytics',     icon: BarChart2       },
     ],
   },
@@ -198,6 +200,7 @@ function SectionContent({ section }: { section: string }) {
     case 'coupons':       return <AdminCoupons />;
     case 'notifications': return <AdminNotifications />;
     case 'payments':      return <AdminPayments />;
+    case 'payment-settings': return <AdminPaymentSettings />;
     case 'reports':       return <AdminReports />;
     case 'settings':      return <AdminSettings />;
     default:              return <AdminDashboard />;

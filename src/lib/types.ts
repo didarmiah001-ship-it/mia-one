@@ -17,6 +17,23 @@ export interface Product {
   created_at: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  payment_type: 'bkash' | 'nagad' | 'rocket' | 'bank_transfer' | 'cash_on_delivery' | 'stripe' | 'sslcommerz';
+  account_name: string;
+  account_number: string;
+  account_type: 'personal' | 'agent' | 'merchant' | 'bank' | 'none';
+  bank_name: string;
+  branch_name: string;
+  routing_number: string;
+  payment_instructions: string;
+  is_active: boolean;
+  sort_order: number;
+  display_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CartItem {
   product: Product;
   quantity: number;
