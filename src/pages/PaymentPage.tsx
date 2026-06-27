@@ -202,11 +202,11 @@ function ManualPaymentForm({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="px-3 py-2.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <p className="text-[10px] text-white/30 mb-1">{t('payment.amount')}</p>
                 <p className="text-base font-bold text-white">৳{amount}</p>
               </div>
-              <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="px-3 py-2.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <p className="text-[10px] text-white/30 mb-1">{t('payment.reference')}</p>
                 <div className="flex items-center gap-1">
                   <p className="text-xs font-mono font-bold text-mia-orange truncate">{orderNumber}</p>
@@ -263,7 +263,7 @@ function ManualPaymentForm({
             onChange={e => setTxId(e.target.value)}
             placeholder={method === 'bkash' ? t('payment.txIdPlaceholder') : method === 'nagad' ? t('payment.senderPlaceholder') : t('payment.transferRef')}
             className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none transition-all font-mono tracking-wide"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', focus: 'border-color: rgba(255,138,0,0.4)' }} />
+            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)', focus: 'border-color: rgba(255,138,0,0.4)' }} />
         </div>
 
         {(method === 'bkash' || method === 'nagad') && (
@@ -275,7 +275,7 @@ function ManualPaymentForm({
               onChange={e => setSenderNumber(e.target.value)}
               placeholder={t('payment.senderNumberPlaceholder')}
               className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none transition-all"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }} />
+              style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }} />
           </div>
         )}
 
@@ -351,7 +351,7 @@ export function PaymentPage() {
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center gap-3">
           <button onClick={() => navigate(-1 as any)}
             className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <div className="flex-1">
@@ -396,7 +396,7 @@ export function PaymentPage() {
 
         {/* Order summary strip */}
         <div className="flex items-center justify-between px-4 py-3 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{ background: `${meta?.color}10` }}>
@@ -462,7 +462,7 @@ export function PaymentPage() {
 
         {/* Pending verification note */}
         <div className="flex items-start gap-3 px-4 py-3 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
           <Clock size={14} className="text-white/25 shrink-0 mt-0.5" />
           <p className="text-[11px] text-white/35 leading-relaxed">
             {t('payment.verificationNote')}

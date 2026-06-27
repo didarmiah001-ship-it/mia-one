@@ -79,10 +79,10 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
 
       {/* Dashed divider */}
       <div className="flex items-center px-4 my-0"
-        style={{ borderTop: '1px dashed rgba(255,255,255,0.07)' }}>
-        <div className="w-3 h-3 rounded-full -ml-6 shrink-0" style={{ background: '#0D1117' }} />
+        style={{ borderTop: '1px dashed var(--border-normal)' }}>
+        <div className="w-3 h-3 rounded-full -ml-6 shrink-0" style={{ background: 'var(--bg-base)' }} />
         <div className="flex-1" />
-        <div className="w-3 h-3 rounded-full -mr-6 shrink-0" style={{ background: '#0D1117' }} />
+        <div className="w-3 h-3 rounded-full -mr-6 shrink-0" style={{ background: 'var(--bg-base)' }} />
       </div>
 
       {/* Code + copy */}
@@ -117,7 +117,7 @@ function CouponCard({ coupon }: { coupon: Coupon }) {
       {/* Footer */}
       <div
         className="px-5 py-2.5 flex items-center justify-between"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <div className="flex items-center gap-1.5">
           <Clock size={10} className="text-white/25" />
           <span className="text-[10px] text-white/30">{expiresText}</span>
@@ -157,7 +157,7 @@ export function CouponsPage() {
           <button
             onClick={() => navigate('/profile')}
             className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--input-border)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <div>

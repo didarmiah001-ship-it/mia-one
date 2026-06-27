@@ -103,7 +103,7 @@ export function OrderSuccessPage() {
                 <button
                   onClick={copyOrderNumber}
                   className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                  style={{ background: copied ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  style={{ background: copied ? 'rgba(34,197,94,0.1)' : 'var(--border-subtle)', border: '1px solid var(--border-normal)' }}
                   title={t('orderSuccess.copyOrderNumber')}
                 >
                   {copied
@@ -167,7 +167,7 @@ export function OrderSuccessPage() {
           <button
             onClick={() => navigate('/')}
             className="w-full py-3 rounded-2xl text-sm font-medium text-white/70 flex items-center justify-center gap-2 transition-colors hover:text-white"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
           >
             <Home size={15} /> {t('orderSuccess.continueShopping')} <ArrowRight size={14} />
           </button>

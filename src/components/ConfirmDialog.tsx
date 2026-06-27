@@ -29,9 +29,9 @@ export function ConfirmDialog({
       <div
         className="relative w-full max-w-sm rounded-3xl p-6"
         style={{
-          background: 'linear-gradient(145deg, #141820, #0D1117)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border-normal)',
+          boxShadow: 'var(--card-shadow)',
           animation: 'slide-up 0.25s ease-out',
         }}
       >
@@ -46,7 +46,8 @@ export function ConfirmDialog({
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/8 hover:bg-white/5 transition-colors"
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-normal)', background: 'var(--bg-input)' }}
           >
             {cancel}
           </button>

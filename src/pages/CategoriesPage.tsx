@@ -24,7 +24,7 @@ export function CategoriesPage() {
             <button
               onClick={() => navigate('/categories')}
               className="w-9 h-9 rounded-xl flex items-center justify-center glow-hover"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--input-border)' }}
             >
               <ArrowLeft size={16} className="text-white/60" />
             </button>

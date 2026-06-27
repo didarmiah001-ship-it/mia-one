@@ -4,6 +4,19 @@ import App from './App.tsx';
 import './index.css';
 import './lib/i18n';
 
+// Seed the theme before React paints to avoid flash
+;(function() {
+  try {
+    const saved = localStorage.getItem('mia-one-theme') as 'dark' | 'light' | 'system' | null;
+    const mode  = saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'dark';
+    const resolved =
+      mode === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : mode;
+    document.documentElement.setAttribute('data-theme', resolved);
+  } catch { document.documentElement.setAttribute('data-theme', 'dark'); }
+})();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

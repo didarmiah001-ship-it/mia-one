@@ -148,7 +148,7 @@ export function CartPage() {
                     {/* Qty controls + line total */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-white/60">৳{lineTotal.toLocaleString()}</span>
-                      <div className="flex items-center gap-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '2px' }}>
+                      <div className="flex items-center gap-0.5" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '2px' }}>
                         <button
                           onClick={() => dispatch({ type: 'UPDATE_CART_QTY', productId: item.product.id, quantity: item.quantity - 1 })}
                           className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-white/10"
@@ -234,7 +234,7 @@ export function CartPage() {
           bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
           paddingBottom: '12px',
           paddingTop: '12px',
-          background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.85) 0%, rgba(10, 10, 15, 0.98) 100%)',
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-base) 85%, transparent) 0%, var(--bg-base) 100%)',
           backdropFilter: 'blur(12px)',
           borderTop: '1px solid rgba(255, 255, 255, 0.05)',
         }}

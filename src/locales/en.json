@@ -400,7 +400,16 @@
     "deleteConfirmTitle": "Are you sure?",
     "deleteConfirmDesc": "This action cannot be undone. All your data, orders, and saved information will be permanently deleted.",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "themeDesc": "Choose your preferred look",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "themeSystem": "System",
+    "themeDarkDesc": "Premium black / navy",
+    "themeLightDesc": "Clean white / gray",
+    "themeSystemDesc": "Follow device setting"
   },
   "addresses": {
     "title": "Saved Addresses",

@@ -62,7 +62,7 @@ export function AddressesPage() {
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('/profile')}
               className="w-9 h-9 rounded-xl flex items-center justify-center glow-hover"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <ArrowLeft size={16} className="text-white/60" />
             </button>
             <h1 className="text-lg font-bold text-white">{t('addresses.title')}</h1>
@@ -133,7 +133,7 @@ export function AddressesPage() {
               {['Home', 'Work', 'Other'].map(l => (
                 <button key={l} type="button" onClick={() => setFormData(p => ({ ...p, label: l }))}
                   className={`text-xs px-3 py-1.5 rounded-lg transition-all ${formData.label === l ? 'text-mia-orange' : 'text-white/40'}`}
-                  style={formData.label === l ? { background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.3)' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  style={formData.label === l ? { background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.3)' } : { background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   {l === 'Home' ? t('addresses.home') : l === 'Work' ? t('addresses.work') : t('addresses.other')}
                 </button>
               ))}

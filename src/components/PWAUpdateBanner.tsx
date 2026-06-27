@@ -39,9 +39,9 @@ export function PWAUpdateBanner() {
       <div
         className="relative rounded-2xl px-4 py-3.5 flex items-center gap-3"
         style={{
-          background: 'linear-gradient(135deg, rgba(20, 24, 32, 0.97), rgba(13, 17, 23, 0.98))',
+          background: 'var(--card-bg)',
           border: '1px solid rgba(255, 138, 0, 0.25)',
-          boxShadow: '0 8px 40px rgba(255, 138, 0, 0.15), 0 0 0 1px rgba(255,138,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
+          boxShadow: '0 8px 40px rgba(255, 138, 0, 0.15), 0 0 0 1px rgba(255,138,0,0.08), inset 0 1px 0 var(--border-subtle)',
           backdropFilter: 'blur(24px)',
         }}
       >
@@ -80,7 +80,7 @@ export function PWAUpdateBanner() {
         <button
           onClick={() => setVisible(false)}
           className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
         >
           <X size={12} className="text-white/40" />
         </button>

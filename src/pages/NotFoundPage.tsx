@@ -51,7 +51,7 @@ export function NotFoundPage() {
           <button
             onClick={() => navigate('/search')}
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-medium text-white/60"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-normal)' }}
           >
             <Search size={16} />
             {t('notFound.searchProducts')}

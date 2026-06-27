@@ -51,9 +51,9 @@ export function LanguageSwitcher({ variant = 'icon' }: LanguageSwitcherProps) {
           <div
             className="absolute right-0 top-12 z-50 rounded-2xl overflow-hidden page-transition"
             style={{
-              background: 'linear-gradient(145deg, rgba(20, 24, 32, 0.98), rgba(13, 17, 23, 0.99))',
-              border: '1px solid rgba(255, 138, 0, 0.15)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--border-orange)',
+              boxShadow: 'var(--card-shadow)',
               minWidth: '180px',
             }}
           >

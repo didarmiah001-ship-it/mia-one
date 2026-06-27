@@ -129,7 +129,7 @@ export function EditProfilePage() {
           <button
             onClick={() => navigate('/profile')}
             className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <h1 className="text-lg font-bold text-white">{t('editProfile.title')}</h1>
@@ -140,7 +140,7 @@ export function EditProfilePage() {
         {/* Tabs */}
         <div
           className="flex gap-1.5 mb-6 p-1.5 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.06)' }}>
           {([['profile', t('editProfile.profileInfo')], ['password', t('editProfile.changePassword')]] as [Tab, string][]).map(([key, label]) => (
             <button
               key={key}
@@ -164,7 +164,7 @@ export function EditProfilePage() {
               <div className="relative">
                 <div
                   className="w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center"
-                  style={{ background: 'linear-gradient(145deg, #141820, #0D1117)', border: '2px solid rgba(255,138,0,0.2)' }}>
+                  style={{ background: 'var(--card-bg)', border: '2px solid rgba(255,138,0,0.2)' }}>
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -204,7 +204,7 @@ export function EditProfilePage() {
                 value={user.email || ''}
                 disabled
                 className="w-full px-4 py-3 rounded-2xl text-sm text-white/35 cursor-not-allowed"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
+                style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}
               />
             </div>
 

@@ -26,8 +26,8 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
       <div
         className="relative w-full max-w-lg mx-auto rounded-t-3xl p-6 page-transition"
         style={{
-          background: 'linear-gradient(180deg, rgba(20, 24, 32, 0.98), rgba(13, 17, 23, 0.99))',
-          borderTop: '1px solid rgba(255, 138, 0, 0.15)',
+          background: 'var(--card-bg)',
+          borderTop: '1px solid var(--border-orange)',
           boxShadow: '0 -8px 40px rgba(255, 138, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
           paddingBottom: 'max(24px, calc(24px + env(safe-area-inset-bottom, 0px)))',
         }}
@@ -38,7 +38,7 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:rotate-90 hover:scale-110"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ background: 'var(--bg-input)', border: '1px solid var(--border-normal)' }}
         >
           <X size={14} className="text-white/60" />
         </button>
@@ -47,7 +47,7 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
           <div className="relative w-12 h-12">
             <div className="absolute inset-0 rounded-xl rotate-gradient opacity-60 blur-[1px]" />
             <div className="absolute inset-[2px] rounded-xl flex items-center justify-center overflow-hidden"
-              style={{ boxShadow: '0 0 12px rgba(255,138,0,0.2)' }}>
+              style={{ background: 'var(--bg-card)', boxShadow: '0 0 12px rgba(255,138,0,0.2)' }}>
               <img src="/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png" alt="MIA Agent" className="w-full h-full object-contain" />
             </div>
           </div>
@@ -62,8 +62,8 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
 
         <div className="rounded-2xl p-4 mb-6"
           style={{
-            background: 'linear-gradient(135deg, rgba(255, 138, 0, 0.03), rgba(0, 209, 255, 0.03))',
-            border: '1px solid rgba(255, 138, 0, 0.08)',
+            background: 'var(--bg-hover)',
+            border: '1px solid var(--border-orange)',
           }}>
           <p className="text-sm text-white/80 leading-relaxed whitespace-pre-line">
             {appConfig.support.welcomeMessage}
@@ -84,7 +84,7 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
                   onClose();
                 }}
                 className="menu-glow w-full flex items-center gap-3 p-3.5 rounded-xl transition-all duration-300 hover:translate-x-1"
-                style={{ border: '1px solid rgba(255,255,255,0.03)' }}
+                style={{ border: '1px solid var(--border-subtle)' }}
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"

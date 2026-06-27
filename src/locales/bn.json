@@ -401,7 +401,16 @@
     "deleteConfirmTitle": "আপনি কি নিশ্চিত?",
     "deleteConfirmDesc": "এই কাজটি ফিরিয়ে আনা যাবে না। আপনার সব ডেটা, অর্ডার ও সংরক্ষিত তথ্য স্থায়ীভাবে মুছে যাবে।",
     "cancel": "বাতিল",
-    "delete": "মুছুন"
+    "delete": "মুছুন",
+    "appearance": "অ্যাপিয়ারেন্স",
+    "theme": "থিম",
+    "themeDesc": "আপনার পছন্দের লুক বেছে নিন",
+    "themeDark": "ডার্ক",
+    "themeLight": "লাইট",
+    "themeSystem": "সিস্টেম",
+    "themeDarkDesc": "প্রিমিয়াম কালো / নেভি",
+    "themeLightDesc": "পরিষ্কার সাদা / ধূসর",
+    "themeSystemDesc": "ডিভাইস সেটিং অনুসরণ"
   },
   "addresses": {
     "title": "সংরক্ষিত ঠিকানা",

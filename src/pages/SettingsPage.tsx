@@ -10,6 +10,7 @@ import { appConfig } from '../lib/config';
 import { MiaAgent } from '../components/MiaAgent';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { useTheme, type ThemeMode } from '../lib/theme';
 
 const SETTINGS_KEY = 'mia-one-settings';
 
@@ -73,6 +74,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const THEME_OPTIONS: { mode: ThemeMode; emoji: string; labelKey: string; descKey: string; color: string }[] = [
+  { mode: 'dark',   emoji: '🌙', labelKey: 'settings.themeDark',   descKey: 'settings.themeDarkDesc',   color: '#7B2CFF' },
+  { mode: 'light',  emoji: '☀️', labelKey: 'settings.themeLight',  descKey: 'settings.themeLightDesc',  color: '#FF8A00' },
+  { mode: 'system', emoji: '🔄', labelKey: 'settings.themeSystem', descKey: 'settings.themeSystemDesc', color: '#00D1FF' },
+];
+
 function SettingRow({
   icon: Icon,
   color,
@@ -89,7 +96,7 @@ function SettingRow({
   return (
     <div
       className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+      style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: `${color}10`, border: `1px solid ${color}18` }}>
@@ -112,6 +119,7 @@ export function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAgent, setShowAgent] = useState(false);
   const [appVersion] = useState('1.0.0');
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -133,7 +141,7 @@ export function SettingsPage() {
           <button
             onClick={() => navigate('/profile')}
             className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <h1 className="text-lg font-bold text-white">{t('settings.title')}</h1>
@@ -178,6 +186,46 @@ export function SettingsPage() {
           />
         </Section>
 
+        {/* Appearance / Theme */}
+        <Section title={t('settings.appearance')}>
+          <div className="glow-card p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(123,44,255,0.12)', border: '1px solid rgba(123,44,255,0.2)' }}>
+                <Smartphone size={14} style={{ color: '#7B2CFF' }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white/85">{t('settings.theme')}</p>
+                <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{t('settings.themeDesc')}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {THEME_OPTIONS.map(opt => {
+                const active = themeMode === opt.mode;
+                return (
+                  <button
+                    key={opt.mode}
+                    onClick={() => setThemeMode(opt.mode)}
+                    className="flex flex-col items-center gap-2 px-2 py-3.5 rounded-2xl transition-all duration-300 active:scale-95"
+                    style={{
+                      background: active ? `${opt.color}12` : 'var(--bg-surface)',
+                      border: active ? `1.5px solid ${opt.color}50` : '1px solid rgba(255,255,255,0.06)',
+                      boxShadow: active ? `0 0 16px ${opt.color}18` : 'none',
+                    }}
+                  >
+                    <span className="text-xl">{opt.emoji}</span>
+                    <span className="text-xs font-semibold" style={{ color: active ? opt.color : 'var(--text-secondary)' }}>
+                      {t(opt.labelKey)}
+                    </span>
+                    {active && (
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: opt.color }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Section>
+
         {/* Language & Region */}
         <Section title={t('settings.languageRegion')}>
           <div className="px-4 py-2">
@@ -201,7 +249,7 @@ export function SettingsPage() {
           <button
             onClick={() => navigate('/edit-profile')}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'rgba(123,44,255,0.1)', border: '1px solid rgba(123,44,255,0.18)' }}>
               <Shield size={16} className="text-mia-purple" />
@@ -219,7 +267,7 @@ export function SettingsPage() {
           <button
             onClick={() => setShowAgent(true)}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
               style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.18)' }}>
               <img src="/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png" alt="MIA Agent" className="w-full h-full object-contain" />
@@ -251,7 +299,7 @@ export function SettingsPage() {
               key={item.path}
               onClick={() => navigate(item.path)}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: `${item.color}10`, border: `1px solid ${item.color}18` }}>
                 <item.icon size={16} style={{ color: item.color }} />
@@ -302,7 +350,7 @@ export function SettingsPage() {
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/50"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     {t('settings.cancel')}
                   </button>
                   <button

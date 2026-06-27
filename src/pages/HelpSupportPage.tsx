@@ -190,7 +190,7 @@ export function HelpSupportPage() {
                 <div
                   key={idx}
                   className="glow-card overflow-hidden transition-all duration-300"
-                  style={{ border: isOpen ? `1px solid ${faq.color}30` : '1px solid rgba(255,255,255,0.03)' }}
+                  style={{ border: isOpen ? `1px solid ${faq.color}30` : '1px solid var(--border-subtle)' }}
                 >
                   <button
                     onClick={() => setOpenFaq(isOpen ? null : idx)}

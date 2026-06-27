@@ -96,11 +96,11 @@ function OrderDetailModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center page-transition">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
-        style={{ background: 'linear-gradient(180deg, #141820, #0D1117)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-5 pt-5 pb-4"
-          style={{ background: 'rgba(13,17,23,0.95)', borderBottom: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)' }}>
+          style={{ background: 'var(--bg-card)', borderBottom: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)' }}>
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-bold text-white font-mono">{order.order_number || '#' + order.id.slice(-8).toUpperCase()}</p>
@@ -137,7 +137,7 @@ function OrderDetailModal({
 
           {/* Progress Stepper */}
           {!isCancelled && (
-            <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.05)' }}>
               <p className="text-xs text-white/40 font-medium mb-4">{t('orders.orderProgress')}</p>
               {/* Horizontal steps */}
               <div className="flex items-center">
@@ -209,7 +209,7 @@ function OrderDetailModal({
           )}
 
           {/* Delivery Address */}
-          <div className="rounded-2xl p-4 space-y-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="rounded-2xl p-4 space-y-2" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.05)' }}>
             <p className="text-xs text-white/40 font-medium uppercase tracking-wider mb-2">{t('orders.delivery')}</p>
             <div className="flex items-center gap-2 text-sm text-white"><Phone size={12} className="text-white/30" /> {addr.phone || '—'}</div>
             <div className="flex items-start gap-2 text-xs text-white/60"><MapPin size={12} className="text-white/30 shrink-0 mt-0.5" /> {addr.address}{addr.area ? `, ${addr.area}` : ''}</div>
@@ -223,7 +223,7 @@ function OrderDetailModal({
           <div className="space-y-2">
             <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{t('orders.items')} ({items.length})</p>
             {items.map((item: any, i: number) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
                 {item.image && <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white/80 truncate">{item.name}</p>
@@ -397,7 +397,7 @@ export function OrdersPage() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all shrink-0"
                 style={filterStatus === tab.key
                   ? { background: 'linear-gradient(135deg, rgba(255,138,0,0.12), rgba(255,46,201,0.12))', border: '1px solid rgba(255,138,0,0.25)', color: '#FF8A00' }
-                  : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }
+                  : { background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }
                 }>
                 {tab.label}
                 {count > 0 && (

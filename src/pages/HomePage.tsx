@@ -106,7 +106,7 @@ export function HomePage() {
           <button
             onClick={() => navigate('/search')}
             className="w-full flex items-center gap-3 pl-4 pr-4 py-3 rounded-2xl text-sm text-white/30 text-left transition-all hover:border-mia-orange/30"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <Search size={16} className="text-white/25 shrink-0" />
             <span>{t('home.searchPlaceholder')}</span>
           </button>

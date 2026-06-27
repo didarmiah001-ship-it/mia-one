@@ -112,18 +112,18 @@ export function NotificationsPage() {
     cat === 'all' ? notifs.length : notifs.filter(n => n.category === cat).length;
 
   return (
-    <div className="page-transition pb-28 min-h-screen" style={{ background: '#0A0A0E' }}>
+    <div className="page-transition pb-28 min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Header */}
       <header
         className="sticky top-0 z-30 px-4 py-3"
-        style={{ background: 'rgba(10,10,14,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
       >
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/profile')}
               className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/8 transition-colors"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               <ArrowLeft size={16} className="text-white/70" />
             </button>
@@ -169,7 +169,7 @@ export function NotificationsPage() {
                 className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-medium transition-all"
                 style={active
                   ? { background: `${tab.color}15`, color: tab.color, border: `1px solid ${tab.color}30` }
-                  : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.06)' }
+                  : { background: 'var(--bg-input)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.06)' }
                 }
               >
                 <TabIcon size={13} />
@@ -198,7 +198,7 @@ export function NotificationsPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
             style={showUnread
               ? { background: 'rgba(0,209,255,0.1)', color: '#00D1FF', border: '1px solid rgba(0,209,255,0.2)' }
-              : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.06)' }
+              : { background: 'var(--bg-input)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.06)' }
             }
           >
             <Bell size={11} />
@@ -242,7 +242,7 @@ export function NotificationsPage() {
                   }}
                   className="relative flex gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.99]"
                   style={{
-                    background: notif.is_read ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.045)',
+                    background: notif.is_read ? 'var(--bg-surface)' : 'var(--bg-card)',
                     border: notif.is_read ? '1px solid rgba(255,255,255,0.04)' : `1px solid ${meta.color}22`,
                   }}
                 >

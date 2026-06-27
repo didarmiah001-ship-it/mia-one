@@ -10,6 +10,7 @@ import { RippleEffect } from './components/RippleEffect';
 import { PWAUpdateBanner } from './components/PWAUpdateBanner';
 import { PageSkeleton, ListPageSkeleton } from './components/Skeleton';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ThemeProvider } from './lib/theme';
 
 // Route-based code splitting — each page is a separate chunk
 const HomePage               = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -93,18 +94,20 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <DataProvider>
-          <StoreProvider>
-            <RouterProvider>
-              <ToastProvider>
-                <RippleEffect />
-                <CustomerShell />
-              </ToastProvider>
-            </RouterProvider>
-          </StoreProvider>
-        </DataProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <DataProvider>
+            <StoreProvider>
+              <RouterProvider>
+                <ToastProvider>
+                  <RippleEffect />
+                  <CustomerShell />
+                </ToastProvider>
+              </RouterProvider>
+            </StoreProvider>
+          </DataProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

@@ -160,7 +160,7 @@ function ResultCard({ product }: { product: Product }) {
             <button
               onClick={e => { e.stopPropagation(); dispatch({ type: 'TOGGLE_WISHLIST', product }); }}
               className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-              style={{ background: isWishlisted ? 'rgba(255,46,201,0.12)' : 'rgba(255,255,255,0.04)' }}>
+              style={{ background: isWishlisted ? 'rgba(255,46,201,0.12)' : 'var(--bg-surface)' }}>
               <Heart size={13} className={isWishlisted ? 'fill-mia-pink text-mia-pink' : 'text-white/40'} />
             </button>
             <button
@@ -343,7 +343,7 @@ export function SearchPage() {
             <button
               onClick={() => navigate(-1 as any)}
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
               <ArrowLeft size={16} className="text-white/60" />
             </button>
 
@@ -359,7 +359,7 @@ export function SearchPage() {
                 autoFocus
                 className="w-full pl-11 pr-10 py-2.5 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none transition-all"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
+                  background: 'var(--bg-surface)',
                   border: query ? '1px solid rgba(255,138,0,0.3)' : '1px solid rgba(255,255,255,0.07)',
                   boxShadow: query ? '0 0 0 3px rgba(255,138,0,0.06)' : 'none',
                 }}
@@ -379,7 +379,7 @@ export function SearchPage() {
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all"
                 style={isListening
                   ? { background: 'rgba(255,46,201,0.15)', border: '1px solid rgba(255,46,201,0.3)', boxShadow: '0 0 12px rgba(255,46,201,0.3)' }
-                  : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  : { background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 {isListening
                   ? <MicOff size={15} className="text-mia-pink" style={{ filter: 'drop-shadow(0 0 6px #FF2EC9)' }} />
                   : <Mic size={15} className="text-white/50" />}
@@ -412,7 +412,7 @@ export function SearchPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                 style={showFilters || activeFilterCount > 0
                   ? { background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }
-                  : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  : { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <SlidersHorizontal size={13} />
                 {t('search.filters')}
                 {activeFilterCount > 0 && (
@@ -427,7 +427,7 @@ export function SearchPage() {
                 <button
                   onClick={() => setShowSortMenu(v => !v)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
-                  style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={{ background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <ArrowUpDown size={12} />
                   {currentSortLabel}
                   <ChevronDown size={11} className={`transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
@@ -435,7 +435,7 @@ export function SearchPage() {
                 {showSortMenu && (
                   <div
                     className="absolute top-full mt-1.5 left-0 z-50 rounded-2xl p-1.5 min-w-[180px]"
-                    style={{ background: '#1A1F2E', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.6)' }}>
+                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-normal)', boxShadow: '0 16px 40px rgba(0,0,0,0.6)' }}>
                     {SORT_OPTIONS.map(opt => (
                       <button
                         key={opt.key}
@@ -474,7 +474,7 @@ export function SearchPage() {
         {showFilters && (
           <div
             className="mb-4 rounded-3xl p-5 space-y-5"
-            style={{ background: '#141820', border: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.06)' }}>
 
             {/* Category */}
             <div>
@@ -485,7 +485,7 @@ export function SearchPage() {
                   className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                   style={!selectedCategory
                     ? { background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }
-                    : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    : { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   {t('search.all')}
                 </button>
                 {categories.map(cat => (
@@ -495,7 +495,7 @@ export function SearchPage() {
                     className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                     style={selectedCategory === cat.id
                       ? { background: `${cat.color}15`, color: cat.color, border: `1px solid ${cat.color}30` }
-                      : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      : { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     {cat.name}
                   </button>
                 ))}
@@ -512,7 +512,7 @@ export function SearchPage() {
                     className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                     style={!selectedBrand
                       ? { background: 'rgba(0,209,255,0.1)', color: '#00D1FF', border: '1px solid rgba(0,209,255,0.2)' }
-                      : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      : { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     {t('search.all')}
                   </button>
                   {brands.map((brand: any) => (
@@ -522,7 +522,7 @@ export function SearchPage() {
                       className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                       style={selectedBrand === brand.id
                         ? { background: 'rgba(0,209,255,0.1)', color: '#00D1FF', border: '1px solid rgba(0,209,255,0.2)' }
-                        : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        : { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
                       {brand.name}
                     </button>
                   ))}
@@ -545,7 +545,7 @@ export function SearchPage() {
                   className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                   style={minRating === 0
                     ? { background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }
-                    : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    : { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   {t('search.any')}
                 </button>
                 {RATING_OPTIONS.map(r => (
@@ -555,7 +555,7 @@ export function SearchPage() {
                     className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                     style={minRating === r
                       ? { background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }
-                      : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      : { background: 'var(--bg-surface)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <Star size={10} className={minRating === r ? 'fill-mia-orange text-mia-orange' : 'text-white/30'} />
                     {r}+
                   </button>
@@ -602,7 +602,7 @@ export function SearchPage() {
                       key={h}
                       onClick={() => { setQuery(h); handleSubmit(h); }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-left transition-all hover:scale-[1.01]"
-                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <Clock size={13} className="text-white/25 shrink-0" />
                       <span className="text-sm text-white/60 flex-1 truncate">{h}</span>
                       <button
@@ -663,7 +663,7 @@ export function SearchPage() {
           <div className="space-y-2 mt-1">
             {[0, 1, 2, 3].map(i => (
               <div key={i} className="flex gap-3 p-3 rounded-2xl"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div className="w-20 h-20 rounded-xl shrink-0"
                   style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite' }} />
                 <div className="flex-1 space-y-2 py-1">

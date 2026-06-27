@@ -23,10 +23,10 @@ export function BottomNav() {
       aria-label="Main navigation"
       className="fixed bottom-0 left-0 right-0 z-50"
       style={{
-        background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.8) 0%, rgba(13, 17, 23, 0.95) 100%)',
+        background: 'var(--nav-bg)',
         backdropFilter: 'blur(24px) saturate(1.5)',
-        borderTop: '1px solid rgba(255, 138, 0, 0.06)',
-        boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+        borderTop: '1px solid var(--nav-border)',
+        boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
       <div
@@ -62,14 +62,15 @@ export function BottomNav() {
                   style={isActive ? {
                     color: item.color,
                     filter: `drop-shadow(0 0 8px ${item.color})`,
-                  } : { color: 'rgba(255,255,255,0.35)' }}
+                  } : { color: 'var(--nav-icon)' }}
                 />
                 {item.path === '/cart' && cartCount > 0 && (
                   <span
                     aria-hidden="true"
-                    className="absolute -top-1 -right-1 text-white text-[9px] font-bold rounded-full flex items-center justify-center neon-pulse"
+                    className="absolute -top-1 -right-1 text-[9px] font-bold rounded-full flex items-center justify-center neon-pulse"
                     style={{
                       background: 'linear-gradient(135deg, #FF2EC9, #FF8A00)',
+                      color: '#fff',
                       width: '18px',
                       height: '18px',
                       boxShadow: '0 0 8px rgba(255, 46, 201, 0.5)',
@@ -82,7 +83,7 @@ export function BottomNav() {
               <span
                 className="text-[10px] font-medium transition-all duration-300"
                 aria-hidden="true"
-                style={{ color: isActive ? item.color : 'rgba(255,255,255,0.25)' }}
+                style={{ color: isActive ? item.color : 'var(--nav-icon)' }}
               >
                 {label}
               </span>

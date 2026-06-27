@@ -96,7 +96,7 @@ export function ProfilePage() {
               <div className="absolute inset-[-4px] rounded-2xl opacity-60 blur-md"
                 style={{ background: 'conic-gradient(from 0deg, #FF8A00, #FF2EC9, #7B2CFF, #00D1FF, #FF8A00)', animation: 'rotate-glow 3s linear infinite' }} />
               <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center overflow-hidden"
-                style={{ background: 'linear-gradient(145deg, #141820, #0D1117)', border: '2px solid rgba(255,138,0,0.2)' }}>
+                style={{ background: 'var(--card-bg)', border: '2px solid rgba(255,138,0,0.2)' }}>
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                 ) : user ? (
@@ -170,7 +170,7 @@ export function ProfilePage() {
               <button
                 onClick={() => navigate('/signup')}
                 className="flex-1 py-3 rounded-2xl text-sm font-medium text-white/70"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {t('profile.signUp')}
               </button>
             </div>

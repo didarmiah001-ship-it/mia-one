@@ -60,7 +60,7 @@ function TransactionCard({ payment }: { payment: any }) {
   const statusLabel = status.labelKey ? t(status.labelKey) : payment.status;
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-normal)' }}>
       {/* Header row */}
       <button
         className="w-full flex items-center gap-3 p-4 text-left"
@@ -103,7 +103,7 @@ function TransactionCard({ payment }: { payment: any }) {
       {expanded && (
         <div
           className="px-4 pb-4 space-y-2.5"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ borderTop: '1px solid var(--border-subtle)' }}
         >
           <div className="pt-3 grid grid-cols-2 gap-3 text-xs">
             {/* Payment ID */}
@@ -187,7 +187,7 @@ function TransactionCard({ payment }: { payment: any }) {
           {order && (
             <div
               className="rounded-xl p-3 text-xs"
-              style={{ background: 'rgba(255,255,255,0.04)' }}
+              style={{ background: 'var(--bg-surface)' }}
             >
               <p className="text-mia-gray mb-1.5 font-medium uppercase tracking-wider text-[10px]">{t('transactions.orderDetails')}</p>
               <div className="grid grid-cols-2 gap-2">
@@ -283,7 +283,7 @@ export function TransactionHistoryPage() {
       {/* Header */}
       <div
         className="sticky top-0 z-20 flex items-center gap-3 px-4 py-4"
-        style={{ background: 'rgba(10,10,14,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: 'var(--bg-base)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border-subtle)' }}
       >
         <button
           onClick={() => navigate(-1)}
@@ -332,8 +332,8 @@ export function TransactionHistoryPage() {
                 onClick={() => setFilter(f)}
                 className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all"
                 style={active
-                  ? { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }
-                  : { background: 'transparent', color: '#8B8B9A', border: '1px solid rgba(255,255,255,0.07)' }
+                  ? { background: 'var(--border-strong)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }
+                  : { background: 'transparent', color: '#8B8B9A', border: '1px solid var(--border-normal)' }
                 }
               >
                 {t(FILTER_LABELS[f])}
@@ -354,14 +354,14 @@ export function TransactionHistoryPage() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-2xl h-20 animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
+              <div key={i} className="rounded-2xl h-20 animate-pulse" style={{ background: 'var(--bg-surface)' }} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div
               className="w-20 h-20 rounded-3xl flex items-center justify-center"
-              style={{ background: 'rgba(255,255,255,0.04)' }}
+              style={{ background: 'var(--bg-surface)' }}
             >
               <CreditCard size={36} className="text-mia-gray" />
             </div>

@@ -466,7 +466,7 @@ export function CheckoutPage() {
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center gap-3">
           <button onClick={() => step === 'payment' ? setStep('info') : navigate('/cart')}
             className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <div className="flex-1">
@@ -529,7 +529,7 @@ export function CheckoutPage() {
                     {(savedAddresses || []).map((a: any) => (
                       <button key={a?.id || Math.random()} onClick={() => { applyAddress(a); setShowAddressPicker(false); }}
                         className="w-full text-left p-3 rounded-xl transition-all hover:scale-[1.01]"
-                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-xs font-semibold text-mia-orange">{a?.label || 'Address'}</span>
                           {a?.is_default && <span className="text-[9px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">{t('checkout.default')}</span>}
@@ -769,7 +769,7 @@ export function CheckoutPage() {
                       className="w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all duration-200"
                       style={isSelected
                         ? { background: `${pm.color}0E`, border: `1.5px solid ${pm.color}40` }
-                        : { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        : { background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: `${pm.color}12`, border: `1px solid ${pm.color}20` }}>
                         <Icon size={18} style={{ color: pm.color }} />
@@ -814,7 +814,7 @@ export function CheckoutPage() {
               )}
               {(paymentMethod === 'bkash' || paymentMethod === 'nagad') && (
                 <div className="mt-3 px-4 py-3 rounded-xl"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <p className="text-[11px] text-white/50 leading-relaxed">
                     {t('checkout.bankNote')}
                   </p>
@@ -908,7 +908,7 @@ export function CheckoutPage() {
             bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
             paddingBottom: '12px',
             paddingTop: '12px',
-            background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.85) 0%, rgba(10, 10, 15, 0.98) 100%)',
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-base) 85%, transparent) 0%, var(--bg-base) 100%)',
             backdropFilter: 'blur(12px)',
             borderTop: '1px solid rgba(255, 255, 255, 0.05)',
           }}

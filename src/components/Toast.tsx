@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={toast.id}
               className="flex items-start gap-3 px-4 py-3 rounded-2xl pointer-events-auto backdrop-blur-xl"
               style={{
-                background: `linear-gradient(135deg, ${c.bg}, rgba(13,17,23,0.95))`,
+                background: `linear-gradient(135deg, ${c.bg}, var(--bg-card))`,
                 border: `1px solid ${c.border}`,
                 boxShadow: `0 4px 24px rgba(0,0,0,0.4), 0 0 20px ${c.border}`,
                 animation: 'slide-up 0.3s ease-out',
