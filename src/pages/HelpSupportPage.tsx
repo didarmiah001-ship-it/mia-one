@@ -12,6 +12,22 @@ const PHONE_NUMBER = '+8801823057578';
 const EMAIL = 'miaonebd@gmail.com';
 const WHATSAPP_MESSAGE = 'Hello MIA ONE, I need help with my order.';
 
+type ContactAction =
+  | { kind: 'link'; href: string }
+  | { kind: 'button'; onClick: () => void };
+
+interface ContactItem {
+  icon?: React.ComponentType<{ size: number; style?: React.CSSProperties }>;
+  image?: string;
+  labelKey: string;
+  subtitle?: string;
+  subtitleKey?: string;
+  color: string;
+  bg: string;
+  border: string;
+  action: ContactAction;
+}
+
 const faqs = [
   {
     icon: ShoppingBag,
@@ -51,20 +67,7 @@ export function HelpSupportPage() {
   const [showAgent, setShowAgent] = useState(false);
   const { t } = useTranslation();
 
-  const handleWhatsApp = () => {
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleCall = () => {
-    window.location.href = `tel:${PHONE_NUMBER}`;
-  };
-
-  const handleEmail = () => {
-    window.location.href = `mailto:${EMAIL}`;
-  };
-
-  const contactButtons = [
+  const contactButtons: ContactItem[] = [
     {
       icon: MessageCircle,
       labelKey: 'helpSupport.whatsappHelpline',
@@ -72,7 +75,7 @@ export function HelpSupportPage() {
       color: '#25D366',
       bg: 'rgba(37, 211, 102, 0.08)',
       border: 'rgba(37, 211, 102, 0.2)',
-      onClick: handleWhatsApp,
+      action: { kind: 'link', href: `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}` },
     },
     {
       icon: Phone,
@@ -81,7 +84,7 @@ export function HelpSupportPage() {
       color: '#00D1FF',
       bg: 'rgba(0, 209, 255, 0.08)',
       border: 'rgba(0, 209, 255, 0.2)',
-      onClick: handleCall,
+      action: { kind: 'link', href: `tel:${PHONE_NUMBER}` },
     },
     {
       icon: Mail,
@@ -90,7 +93,7 @@ export function HelpSupportPage() {
       color: '#FF8A00',
       bg: 'rgba(255, 138, 0, 0.08)',
       border: 'rgba(255, 138, 0, 0.2)',
-      onClick: handleEmail,
+      action: { kind: 'link', href: `mailto:${EMAIL}` },
     },
     {
       image: '/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png',
@@ -99,7 +102,7 @@ export function HelpSupportPage() {
       color: '#FF2EC9',
       bg: 'rgba(255, 46, 201, 0.08)',
       border: 'rgba(255, 46, 201, 0.2)',
-      onClick: () => setShowAgent(true),
+      action: { kind: 'button', onClick: () => setShowAgent(true) },
     },
   ];
 
@@ -146,28 +149,49 @@ export function HelpSupportPage() {
           <div className="space-y-3">
             {contactButtons.map((btn, idx) => {
               const Icon = btn.icon;
-              return (
-                <button
-                  key={idx}
-                  onClick={btn.onClick}
-                  className="menu-glow w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group active:scale-[0.98]"
-                  style={{ border: `1px solid ${btn.border}`, background: btn.bg }}
-                >
+              const cardClass = 'menu-glow w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group active:scale-[0.97] hover:brightness-105 select-none';
+              const cardStyle = { border: `1px solid ${btn.border}`, background: btn.bg };
+              const inner = (
+                <>
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 overflow-hidden"
                     style={{ backgroundColor: `${btn.color}15`, border: `1px solid ${btn.color}30` }}
                   >
                     {btn.image ? (
                       <img src={btn.image} alt="" className="w-8 h-8 object-contain" />
-                    ) : (
+                    ) : Icon ? (
                       <Icon size={22} style={{ color: btn.color }} />
-                    )}
+                    ) : null}
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <p className="text-sm font-semibold text-white">{btn.labelKey ? t(btn.labelKey) : btn.subtitle}</p>
                     <p className="text-xs text-white/40 mt-0.5 truncate">{btn.subtitleKey ? t(btn.subtitleKey) : btn.subtitle}</p>
                   </div>
                   <ChevronDown size={16} className="text-white/20 -rotate-90 shrink-0" />
+                </>
+              );
+              if (btn.action.kind === 'link') {
+                return (
+                  <a
+                    key={idx}
+                    href={btn.action.href}
+                    target={btn.action.href.startsWith('http') ? '_blank' : undefined}
+                    rel={btn.action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    className={cardClass}
+                    style={cardStyle}
+                  >
+                    {inner}
+                  </a>
+                );
+              }
+              return (
+                <button
+                  key={idx}
+                  onClick={btn.action.onClick}
+                  className={cardClass}
+                  style={cardStyle}
+                >
+                  {inner}
                 </button>
               );
             })}
