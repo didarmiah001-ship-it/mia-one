@@ -11,6 +11,7 @@ import { PWAUpdateBanner } from './components/PWAUpdateBanner';
 import { PageSkeleton, ListPageSkeleton } from './components/Skeleton';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './lib/theme';
+import { MiaAgent, MiaAgentFloatingButton } from './components/MiaAgent';
 
 // Route-based code splitting — each page is a separate chunk
 const HomePage               = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -41,6 +42,8 @@ const HelpSupportPage        = lazy(() => import('./pages/HelpSupportPage').then
 const NotFoundPage           = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 function CustomerShell() {
+  const [showMiaAgent, setShowMiaAgent] = useState(false);
+
   return (
     <div className="min-h-screen bg-mia-black">
       <ErrorBoundary>
@@ -77,6 +80,8 @@ function CustomerShell() {
       </ErrorBoundary>
       <PWAUpdateBanner />
       <BottomNav />
+      <MiaAgentFloatingButton onClick={() => setShowMiaAgent(true)} />
+      <MiaAgent isOpen={showMiaAgent} onClose={() => setShowMiaAgent(false)} />
     </div>
   );
 }

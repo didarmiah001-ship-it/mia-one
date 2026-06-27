@@ -6,11 +6,12 @@ import {
 import { useNavigate } from '../lib/router';
 import { MiaAgent } from '../components/MiaAgent';
 import { useTranslation } from 'react-i18next';
+import { appConfig } from '../lib/config';
 
-const WHATSAPP_NUMBER = '8801823057578';
-const PHONE_NUMBER = '+8801823057578';
-const EMAIL = 'miaonebd@gmail.com';
 const WHATSAPP_MESSAGE = 'Hello MIA ONE, I need help with my order.';
+const WHATSAPP_NUMBER = appConfig.support.whatsappNumber;
+const PHONE_NUMBER = '+8801823057578';
+const EMAIL = appConfig.support.email;
 
 type ContactAction =
   | { kind: 'link'; href: string }

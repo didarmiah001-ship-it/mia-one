@@ -20,10 +20,13 @@ export const appConfig = {
 
   // Support
   support: {
-    whatsappNumber: '8801XXXXXXXXX',
-    whatsappUrl: 'https://wa.me/8801XXXXXXXXX',
-    email: 'support@miaone.app',
+    whatsappNumber: '8801823057578',
+    whatsappUrl: 'https://wa.me/8801823057578',
+    phoneUrl: 'tel:+8801823057578',
+    email: 'miaonebd@gmail.com',
+    emailUrl: 'mailto:miaonebd@gmail.com',
     welcomeMessage: 'Assalamu Alaikum.\nI am MIA Agent.\nHow can I help you today?',
+    address: 'Dashtatar Panchgaon\nTongibari, Munshiganj\nDhaka, Bangladesh',
   },
 
   // Delivery

@@ -697,6 +697,41 @@ details > summary::-webkit-details-marker { display: none; }
 .text-white\/\[0\.4\]  { color: color-mix(in srgb, var(--text-primary) 40%, transparent) !important; }
 
 /* White background helpers → theme-aware surface */
+/* ===== MIA AGENT ANIMATIONS ===== */
+.mia-float {
+  animation: mia-float 4s ease-in-out infinite;
+}
+@keyframes mia-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+.mia-glow-pulse {
+  animation: mia-glow-pulse 2.5s ease-in-out infinite;
+}
+@keyframes mia-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255,138,0,0.35), 0 0 40px rgba(255,46,201,0.2), 0 8px 24px rgba(0,0,0,0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255,138,0,0.5), 0 0 60px rgba(255,46,201,0.35), 0 0 80px rgba(123,44,255,0.15), 0 8px 30px rgba(0,0,0,0.5);
+  }
+}
+
+.rotate-hover:hover {
+  animation: rotate-close 0.3s ease-out forwards;
+}
+@keyframes rotate-close {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(90deg); }
+}
+
+/* Typing dots animation */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
 .bg-white\/5        { background-color: color-mix(in srgb, var(--bg-surface) 100%, transparent) !important; }
 .bg-white\/10       { background-color: color-mix(in srgb, var(--text-primary) 10%, transparent) !important; }
 .bg-white\/\[0\.02\] { background-color: var(--bg-surface) !important; }
