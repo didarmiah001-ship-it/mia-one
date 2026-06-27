@@ -338,7 +338,7 @@ export async function toggleWishlist(userId: string, productId: string) {
 export async function adminFetchAllOrders(filters?: { status?: string; search?: string; dateFrom?: string; dateTo?: string }) {
   let query = supabase
     .from('orders')
-    .select('*, profiles(full_name, id)')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (filters?.status && filters.status !== 'all') {
@@ -352,15 +352,17 @@ export async function adminFetchAllOrders(filters?: { status?: string; search?: 
   }
 
   const { data, error } = await query;
-  if (error) return [];
+  if (error) {
+    console.error('adminFetchAllOrders error:', error);
+    return [];
+  }
 
-  let results = data;
+  let results = data || [];
   if (filters?.search) {
     const s = filters.search.toLowerCase();
     results = results.filter((o: any) =>
       (o.order_number || '').toLowerCase().includes(s) ||
       o.id.toLowerCase().includes(s) ||
-      (o.profiles?.full_name || '').toLowerCase().includes(s) ||
       (o.address?.full_name || '').toLowerCase().includes(s) ||
       (o.address?.phone || '').includes(s)
     );

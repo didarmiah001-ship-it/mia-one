@@ -102,7 +102,7 @@ function buildInvoiceHTML(order: any) {
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
     <div>
       <p style="font-weight:700;margin-bottom:6px;font-size:11px;text-transform:uppercase;color:#888">Bill To</p>
-      <p style="font-weight:600">${addr.full_name || order.profiles?.full_name || 'Customer'}</p>
+      <p style="font-weight:600">${addr.full_name || 'Customer'}</p>
       <p style="color:#555;margin-top:2px">${addr.phone || ''}</p>
       <p style="color:#555;margin-top:2px">${addr.address || ''}</p>
       <p style="color:#555">${addr.area || ''}, ${addr.city || ''}</p>
@@ -152,7 +152,7 @@ function exportCSV(orders: any[]) {
     return [
       o.order_number || o.id.slice(-8).toUpperCase(),
       new Date(o.created_at).toLocaleDateString(),
-      addr.full_name || o.profiles?.full_name || '',
+      addr.full_name || '',
       addr.phone || '',
       addr.address || '',
       addr.area || '',
@@ -189,7 +189,7 @@ function exportPDF(orders: any[]) {
     return `<tr>
       <td>${o.order_number || o.id.slice(-8).toUpperCase()}</td>
       <td>${new Date(o.created_at).toLocaleDateString()}</td>
-      <td>${addr.full_name || o.profiles?.full_name || ''}</td>
+      <td>${addr.full_name || ''}</td>
       <td>${addr.phone || ''}</td>
       <td>${(o.items || []).length} items</td>
       <td>${(o.payment_method || '').replace(/_/g, ' ')}</td>
@@ -360,7 +360,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
             <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">Customer</p>
             <div className="flex items-center gap-2">
               <User size={12} className="text-white/30 shrink-0" />
-              <span className="text-sm text-white">{addr.full_name || order.profiles?.full_name || 'N/A'}</span>
+              <span className="text-sm text-white">{addr.full_name || 'N/A'}</span>
             </div>
             <div className="flex items-center gap-2">
               <Phone size={12} className="text-white/30 shrink-0" />
@@ -670,7 +670,7 @@ export function AdminOrders() {
                         </div>
 
                         {/* Customer */}
-                        <p className="text-sm font-semibold text-white truncate">{addr.full_name || order.profiles?.full_name || 'Customer'}</p>
+                        <p className="text-sm font-semibold text-white truncate">{addr.full_name || 'Customer'}</p>
                         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                           <span className="text-[11px] text-white/40 flex items-center gap-1"><Phone size={9} />{addr.phone || '—'}</span>
                           <span className="text-[11px] text-white/40 flex items-center gap-1"><MapPin size={9} />{addr.area || addr.city || '—'}</span>
