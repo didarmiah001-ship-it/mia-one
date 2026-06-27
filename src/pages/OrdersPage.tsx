@@ -24,8 +24,8 @@ const STATUS_STEPS = [
 
 // Legacy keys mapped to nearest step index
 const STATUS_INDEX: Record<string, number> = {
-  placed: 0, pending: 0, confirmed: 1, processing: 2,
-  packed: 3, shipped: 4, out_for_delivery: 4, delivered: 5,
+  placed: 0, pending: 0, received: 0, confirmed: 1, processing: 2,
+  packed: 3, ready_for_delivery: 3, shipped: 4, out_for_delivery: 4, delivered: 5,
   cancelled: -1,
 };
 
@@ -37,7 +37,7 @@ const PAYMENT_LABEL_KEYS: Record<string, string> = {
   cod: 'orders.cod',
 };
 
-const CANCELLABLE = new Set(['placed', 'pending', 'confirmed']);
+const CANCELLABLE = new Set(['placed', 'pending', 'received', 'confirmed']);
 
 // ── Order Detail Modal ─────────────────────────────────────────────────────────
 

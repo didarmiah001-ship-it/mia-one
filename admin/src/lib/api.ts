@@ -489,7 +489,9 @@ export async function adminGetStats() {
 
   const orderData = orders.data || [];
   const revenue = orderData.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0);
-  const pendingOrders = orderData.filter((o: any) => o.status === 'placed' || o.status === 'processing' || o.status === 'packed').length;
+  const pendingOrders = orderData.filter((o: any) =>
+    ['placed', 'pending', 'received', 'confirmed', 'processing', 'packed', 'ready_for_delivery', 'shipped', 'out_for_delivery'].includes(o.status)
+  ).length;
   const deliveredOrders = orderData.filter((o: any) => o.status === 'delivered').length;
 
   const today = new Date().toDateString();
