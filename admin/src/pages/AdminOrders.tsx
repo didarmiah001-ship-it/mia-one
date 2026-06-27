@@ -72,75 +72,117 @@ function statusMeta(key: string) {
 
 // ── Invoice Printer ────────────────────────────────────────────────────────────
 
-function buildInvoiceHTML(order: any) {
+function buildInvoiceHTML(order: any, payment?: any) {
   const addr = order.address || {};
   const items = order.items || [];
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const paymentMethod = (order.payment_method || payment?.method || '').replace(/_/g, ' ');
+  const transactionId = payment?.transaction_id || order.transaction_id || '';
+  const paymentStatus = payment?.status || order.payment_status || 'pending';
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
   <title>Invoice ${order.order_number || order.id}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Arial,sans-serif;font-size:12px;color:#111;padding:32px}
-    h1{font-size:22px;font-weight:800;color:#FF8A00}
-    .header{display:flex;justify-content:space-between;margin-bottom:24px;border-bottom:2px solid #FF8A00;padding-bottom:16px}
-    .badge{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#111;padding:32px;max-width:800px;margin:0 auto}
+    h1{font-size:24px;font-weight:800;color:#FF8A00;margin-bottom:4px}
+    .logo-sub{color:#666;font-size:11px;margin-bottom:16px}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:2px solid #FF8A00;padding-bottom:16px}
+    .badge{display:inline-block;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600}
+    .badge-success{background:#dcfce7;color:#16a34a;border:1px solid #86efac}
+    .badge-warning{background:#fef3c7;color:#d97706;border:1px solid #fcd34d}
+    .badge-default{background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db}
     table{width:100%;border-collapse:collapse;margin:16px 0}
-    th{background:#f8f9fa;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#666}
-    td{padding:8px 10px;border-bottom:1px solid #eee}
-    .total-row td{font-weight:700;border-top:2px solid #eee}
-    .footer{margin-top:32px;font-size:11px;color:#888;text-align:center}
+    th{background:#f8f9fa;padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#666;border-bottom:2px solid #e5e7eb}
+    td{padding:10px 12px;border-bottom:1px solid #f3f4f6}
+    .total-row td{font-weight:700;border-top:2px solid #111}
+    .section{margin-bottom:20px}
+    .section-title{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:8px;font-weight:600}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    .footer{margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#666;text-align:center}
+    @media print{body{padding:20px}.no-print{display:none}}
   </style></head><body>
   <div class="header">
-    <div><h1>${appConfig.name}</h1><p style="color:#888;margin-top:4px">Tax Invoice / Receipt</p></div>
+    <div>
+      <h1>MIA ONE</h1>
+      <p class="logo-sub">E-Commerce Platform</p>
+      <p style="color:#888;font-size:11px;margin-top:8px">Tax Invoice / Receipt</p>
+    </div>
     <div style="text-align:right">
-      <p style="font-weight:700;font-size:14px">${order.order_number || '#' + order.id.slice(-8).toUpperCase()}</p>
-      <p style="color:#888;margin-top:4px">${date}</p>
-      <span class="badge">${statusMeta(order.status).label}</span>
+      <p style="font-weight:700;font-size:16px;color:#111">${order.order_number || '#' + String(order.id).slice(-8).toUpperCase()}</p>
+      <p style="color:#666;margin-top:4px">${date}</p>
+      <p style="margin-top:8px"><span class="badge ${order.status === 'delivered' ? 'badge-success' : order.status === 'cancelled' ? 'badge-default' : 'badge-warning'}">${statusMeta(order.status).label}</span></p>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+  <div class="section grid-2">
     <div>
-      <p style="font-weight:700;margin-bottom:6px;font-size:11px;text-transform:uppercase;color:#888">Bill To</p>
-      <p style="font-weight:600">${addr.full_name || 'Customer'}</p>
-      <p style="color:#555;margin-top:2px">${addr.phone || ''}</p>
-      <p style="color:#555;margin-top:2px">${addr.address || ''}</p>
-      <p style="color:#555">${addr.area || ''}, ${addr.city || ''}</p>
+      <p class="section-title">Bill To</p>
+      <p style="font-weight:600;font-size:14px">${addr.full_name || 'Customer'}</p>
+      <p style="color:#555;margin-top:4px">${addr.phone || 'N/A'}</p>
+      <p style="color:#555;margin-top:6px">${addr.address || ''}</p>
+      <p style="color:#555">${[addr.area, addr.city].filter(Boolean).join(', ') || ''}</p>
     </div>
     <div>
-      <p style="font-weight:700;margin-bottom:6px;font-size:11px;text-transform:uppercase;color:#888">Payment</p>
-      <p style="font-weight:600">${(order.payment_method || '').replace(/_/g, ' ')}</p>
-      <p style="color:#555;margin-top:2px">Status: ${order.payment_status || 'Pending'}</p>
+      <p class="section-title">Payment Details</p>
+      <p style="font-weight:600;text-transform:capitalize">${paymentMethod || 'N/A'}</p>
+      ${transactionId ? `<p style="color:#555;margin-top:4px"><span style="color:#888">Transaction ID:</span> ${transactionId}</p>` : ''}
+      <p style="margin-top:4px"><span style="color:#888">Status:</span> <span style="text-transform:capitalize;color:${paymentStatus === 'submitted' || paymentStatus === 'confirmed' ? '#16a34a' : '#d97706'}">${paymentStatus}</span></p>
     </div>
   </div>
   <table>
-    <thead><tr><th>#</th><th>Product</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
+    <thead><tr><th>#</th><th>Product</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Total</th></tr></thead>
     <tbody>
-      ${items.map((item: any, i: number) => `
-        <tr><td>${i + 1}</td><td>${item.name}</td><td style="text-align:center">${item.quantity}</td>
-        <td style="text-align:right">৳${Number(item.price).toFixed(2)}</td>
-        <td style="text-align:right">৳${(Number(item.price) * item.quantity).toFixed(2)}</td></tr>
-      `).join('')}
+      ${items.length > 0 ? items.map((item: any, i: number) => `
+        <tr><td>${i + 1}</td><td>${item.name || 'Product'}</td><td style="text-align:center">${item.quantity || 1}</td>
+        <td style="text-align:right">৳${Number(item.price || 0).toLocaleString()}</td>
+        <td style="text-align:right;font-weight:500">৳${((Number(item.price) || 0) * (item.quantity || 1)).toLocaleString()}</td></tr>
+      `).join('') : '<tr><td colspan="5" style="text-align:center;color:#888">No items</td></tr>'}
     </tbody>
     <tfoot>
-      <tr><td colspan="4" style="text-align:right;padding-top:8px">Subtotal</td><td style="text-align:right;padding-top:8px">৳${Number(order.subtotal || 0).toFixed(2)}</td></tr>
-      ${Number(order.discount) > 0 ? `<tr><td colspan="4" style="text-align:right;color:#16a34a">Discount (${order.coupon_code || ''})</td><td style="text-align:right;color:#16a34a">-৳${Number(order.discount).toFixed(2)}</td></tr>` : ''}
-      <tr><td colspan="4" style="text-align:right">Delivery</td><td style="text-align:right">${Number(order.delivery_charge) === 0 ? 'Free' : '৳' + Number(order.delivery_charge).toFixed(2)}</td></tr>
-      <tr class="total-row"><td colspan="4" style="text-align:right;font-size:14px">Total</td><td style="text-align:right;font-size:14px;color:#FF8A00">৳${Number(order.total).toFixed(2)}</td></tr>
+      <tr><td colspan="4" style="text-align:right;padding-top:12px">Subtotal</td><td style="text-align:right;padding-top:12px">৳${Number(order.subtotal || 0).toLocaleString()}</td></tr>
+      ${Number(order.discount || 0) > 0 ? `<tr><td colspan="4" style="text-align:right;color:#16a34a">Discount${order.coupon_code ? ` (${order.coupon_code})` : ''}</td><td style="text-align:right;color:#16a34a">-৳${Number(order.discount).toLocaleString()}</td></tr>` : ''}
+      <tr><td colspan="4" style="text-align:right">Delivery Charge</td><td style="text-align:right">${Number(order.delivery_charge || 0) === 0 ? '<span style="color:#16a34a">Free</span>' : '৳' + Number(order.delivery_charge).toLocaleString()}</td></tr>
+      <tr class="total-row"><td colspan="4" style="text-align:right;font-size:14px">Grand Total</td><td style="text-align:right;font-size:16px;color:#FF8A00">৳${Number(order.total || 0).toLocaleString()}</td></tr>
     </tfoot>
   </table>
-  ${addr.notes ? `<p style="color:#888;font-size:11px">Note: ${addr.notes}</p>` : ''}
-  <div class="footer"><p>Thank you for shopping with ${appConfig.name}!</p><p style="margin-top:4px">${appConfig.support.email}</p></div>
+  ${addr.notes ? `<div class="section"><p class="section-title">Customer Note</p><p style="color:#555;font-style:italic">${addr.notes}</p></div>` : ''}
+  <div class="footer">
+    <p style="font-weight:600;margin-bottom:4px">Thank you for shopping with MIA ONE!</p>
+    <p>For support: support@mia-one.com</p>
+  </div>
   </body></html>`;
 }
 
-function printInvoice(order: any) {
-  const w = window.open('', '_blank', 'width=800,height=600');
-  if (!w) return;
-  w.document.write(buildInvoiceHTML(order));
-  w.document.close();
-  w.focus();
-  setTimeout(() => { w.print(); }, 400);
+function printInvoice(order: any, payment?: any) {
+  const invoiceHtml = buildInvoiceHTML(order, payment);
+  const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+
+  if (!printWindow || printWindow.closed) {
+    alert('Popup blocked. Please allow popups to print the invoice, or try downloading.');
+    return;
+  }
+
+  try {
+    printWindow.document.open();
+    printWindow.document.write(invoiceHtml);
+    printWindow.document.close();
+    printWindow.focus();
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+
+    setTimeout(() => {
+      if (!printWindow.closed) {
+        printWindow.print();
+      }
+    }, 500);
+  } catch (e) {
+    console.error('Print error:', e);
+    alert('Unable to print. Please try again.');
+  }
 }
 
 // ── CSV Export ─────────────────────────────────────────────────────────────────
@@ -288,7 +330,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
             <h3 className="text-sm font-bold text-white mt-0.5">Order Details</h3>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => printInvoice(order)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
+            <button onClick={() => printInvoice(order, payment)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
               <Printer size={13} className="text-white/50" />
             </button>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
