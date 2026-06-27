@@ -94,7 +94,7 @@ function OrderDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center page-transition">
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 backdrop-blur-sm modal-overlay" style={{ background: "rgba(17,24,39,0.5)" }} onClick={onClose} />
       <div className="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
         style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
 
@@ -467,7 +467,7 @@ export function OrdersPage() {
                           } />
                         {idx < STATUS_STEPS.length - 1 && (
                           <div className="flex-1 h-px mx-0.5 rounded-full"
-                            style={{ background: idx < stepIdx ? '#22c55e' : 'rgba(255,255,255,0.07)' }} />
+                            style={{ background: idx < stepIdx ? '#22c55e' : 'var(--border-normal)' }} />
                         )}
                       </div>
                     );

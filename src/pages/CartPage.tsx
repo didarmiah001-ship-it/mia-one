@@ -58,7 +58,7 @@ export function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-mia-black">
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Scrollable Content Area */}
       <div className="pb-[160px]">
         {/* Header */}

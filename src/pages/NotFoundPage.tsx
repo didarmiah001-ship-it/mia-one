@@ -7,7 +7,7 @@ export function NotFoundPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center px-6 pb-24 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 pb-24 text-center" style={{ background: "var(--bg-base)" }}>
       {/* Ambient glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-[0.05] blur-3xl"

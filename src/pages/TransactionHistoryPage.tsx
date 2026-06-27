@@ -268,7 +268,7 @@ export function TransactionHistoryPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center gap-4 p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6" style={{ background: "var(--bg-base)" }}>
         <CreditCard size={48} className="text-mia-gray" />
         <p className="text-white font-semibold text-lg">{t('transactions.signInToView')}</p>
         <button className="glow-btn px-6 py-3 rounded-2xl font-semibold" onClick={() => navigate('/login')}>
@@ -279,7 +279,7 @@ export function TransactionHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-mia-black pb-24">
+    <div className="min-h-screen pb-24" style={{ background: "var(--bg-base)" }}>
       {/* Header */}
       <div
         className="sticky top-0 z-20 flex items-center gap-3 px-4 py-4"

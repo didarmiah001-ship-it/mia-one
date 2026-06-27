@@ -92,55 +92,55 @@
 
 /* ─── LIGHT THEME OVERRIDES ─── */
 [data-theme="light"] {
-  /* Backgrounds */
-  --bg-base:        #F5F6FA;
+  /* Backgrounds — exact spec */
+  --bg-base:        #F8FAFC;
   --bg-nav:         #FFFFFF;
   --bg-card:        #FFFFFF;
-  --bg-surface:     #EEF0F6;
-  --bg-input:       rgba(0,0,0,0.03);
+  --bg-surface:     #F1F5F9;
+  --bg-input:       #FFFFFF;
   --bg-input-focus: rgba(255,138,0,0.04);
   --bg-hover:       rgba(255,138,0,0.06);
-  --bg-overlay:     rgba(240,241,245,0.85);
-  --bg-skeleton:    rgba(0,0,0,0.07);
+  --bg-overlay:     rgba(248,250,252,0.90);
+  --bg-skeleton:    #E5E7EB;
 
   /* Glass / Header */
-  --glass-bg:       linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(245,246,250,0.98) 100%);
-  --glass-border:   rgba(0,0,0,0.06);
-  --glass-shadow:   0 4px 30px rgba(0,0,0,0.08);
+  --glass-bg:       linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.99) 100%);
+  --glass-border:   #E5E7EB;
+  --glass-shadow:   0 4px 24px rgba(0,0,0,0.06);
 
   /* Card */
-  --card-bg:        linear-gradient(145deg, #ffffff, #f9fafc);
-  --card-border:    rgba(255,138,0,0.12);
-  --card-shadow:    0 2px 12px rgba(0,0,0,0.07);
-  --card-inset:     inset 0 1px 0 rgba(255,255,255,0.9);
+  --card-bg:        #FFFFFF;
+  --card-border:    #E5E7EB;
+  --card-shadow:    0 1px 6px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --card-inset:     inset 0 1px 0 rgba(255,255,255,1);
 
-  /* Text */
-  --text-primary:   #0D0D14;
-  --text-secondary: rgba(13,13,20,0.65);
-  --text-muted:     rgba(13,13,20,0.42);
-  --text-subtle:    rgba(13,13,20,0.25);
-  --text-disabled:  rgba(13,13,20,0.15);
+  /* Text — exact spec */
+  --text-primary:   #111827;
+  --text-secondary: #6B7280;
+  --text-muted:     #9CA3AF;
+  --text-subtle:    #D1D5DB;
+  --text-disabled:  #E5E7EB;
 
-  /* Borders */
-  --border-subtle:  rgba(0,0,0,0.05);
-  --border-normal:  rgba(0,0,0,0.08);
-  --border-strong:  rgba(0,0,0,0.13);
-  --border-orange:  rgba(255,138,0,0.2);
+  /* Borders — exact spec */
+  --border-subtle:  #F3F4F6;
+  --border-normal:  #E5E7EB;
+  --border-strong:  #D1D5DB;
+  --border-orange:  rgba(255,138,0,0.25);
 
   /* Inputs */
-  --input-bg:       rgba(0,0,0,0.03);
-  --input-border:   rgba(0,0,0,0.10);
-  --input-text:     #0D0D14;
-  --input-placeholder: rgba(13,13,20,0.35);
+  --input-bg:       #FFFFFF;
+  --input-border:   #E5E7EB;
+  --input-text:     #111827;
+  --input-placeholder: #9CA3AF;
 
   /* Bottom Nav */
-  --nav-bg:         rgba(255,255,255,0.97);
-  --nav-border:     rgba(0,0,0,0.06);
-  --nav-icon:       rgba(13,13,20,0.30);
+  --nav-bg:         rgba(255,255,255,0.98);
+  --nav-border:     #E5E7EB;
+  --nav-icon:       #9CA3AF;
   --nav-icon-active: #FF8A00;
 
   /* Scrollbar */
-  --scroll-track:   #eef0f6;
+  --scroll-track:   #F1F5F9;
 
   /* Shimmer */
   --shimmer-color:  rgba(0,0,0,0.04);
@@ -149,18 +149,18 @@
   --menu-hover-bg:  rgba(255,138,0,0.05);
 
   /* Backdrop-filter fallback */
-  --glass-fallback: rgba(255,255,255,0.99);
-  --card-fallback:  rgba(255,255,255,0.99);
+  --glass-fallback: #FFFFFF;
+  --card-fallback:  #FFFFFF;
 
-  /* Status chips */
-  --chip-success-bg:   rgba(22,163,74,0.10);
-  --chip-success-text: #15803d;
-  --chip-error-bg:     rgba(220,38,38,0.10);
-  --chip-error-text:   #b91c1c;
-  --chip-warn-bg:      rgba(217,119,6,0.10);
-  --chip-warn-text:    #b45309;
-  --chip-info-bg:      rgba(37,99,235,0.10);
-  --chip-info-text:    #1d4ed8;
+  /* Status chips — accessible on white */
+  --chip-success-bg:   #DCFCE7;
+  --chip-success-text: #166534;
+  --chip-error-bg:     #FEE2E2;
+  --chip-error-text:   #991B1B;
+  --chip-warn-bg:      #FEF3C7;
+  --chip-warn-text:    #92400E;
+  --chip-info-bg:      #DBEAFE;
+  --chip-info-text:    #1E40AF;
 }
 
 /* ─── THEME TRANSITION ─── */
@@ -603,35 +603,80 @@ details > summary::-webkit-details-marker { display: none; }
 
 /* ===== THEME-AWARE UTILITY HELPERS ===== */
 
-/* Light mode: tone down glow effects slightly */
+/* Light mode: clean white cards */
+[data-theme="light"] .glow-card {
+  background: #FFFFFF !important;
+  border-color: #E5E7EB !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
+}
+[data-theme="light"] .glow-card::after {
+  display: none;
+}
 [data-theme="light"] .glow-card:hover,
 [data-theme="light"] .glow-card:active {
-  box-shadow:
-    0 8px 30px rgba(255,138,0,0.08),
-    0 2px 10px rgba(0,0,0,0.08),
-    var(--card-inset);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05) !important;
+  border-color: rgba(255,138,0,0.3) !important;
+  transform: translateY(-2px) scale(1.005);
 }
 
+/* Light mode: clean white glass header */
+[data-theme="light"] .glass {
+  background: rgba(255,255,255,0.98) !important;
+  border-color: #E5E7EB !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06) !important;
+}
+
+/* Light: glow-btn stays same brand gradient, just softer shadow */
 [data-theme="light"] .glow-btn {
-  box-shadow: 0 4px 16px rgba(255,138,0,0.18);
+  box-shadow: 0 4px 16px rgba(255,138,0,0.20);
 }
-
 [data-theme="light"] .glow-btn:hover,
 [data-theme="light"] .glow-btn:active {
-  box-shadow:
-    0 0 18px rgba(255,138,0,0.30),
-    0 4px 20px rgba(0,0,0,0.12);
+  box-shadow: 0 0 20px rgba(255,138,0,0.32), 0 4px 20px rgba(0,0,0,0.10);
 }
 
-/* Light: scrollbar track */
+/* Light: scrollbar */
 [data-theme="light"] ::-webkit-scrollbar-track {
-  background: var(--scroll-track);
+  background: #F1F5F9;
 }
 
-/* mia-gray helper used in several pages */
+/* bg-mia-black and bg-mia-navy must be overridden in light mode */
+[data-theme="light"] .bg-mia-black,
+[data-theme="light"] .page-root {
+  background-color: #F8FAFC !important;
+}
+[data-theme="light"] .bg-mia-navy {
+  background-color: #F1F5F9 !important;
+}
+
+/* Modal/sheet backdrops */
+[data-theme="light"] .modal-overlay {
+  background: rgba(17,24,39,0.4) !important;
+}
+
+/* Section divider */
+[data-theme="light"] .section-glow::after {
+  background: linear-gradient(90deg, transparent, rgba(255,138,0,0.2), rgba(0,0,0,0.06), transparent);
+}
+
+/* Banner glass in light */
+[data-theme="light"] .banner-glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(248,250,252,0.45) 100%) !important;
+  border-color: rgba(255,255,255,0.7) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 20px rgba(0,0,0,0.06) !important;
+}
+
+/* neon-pulse badge looks same in light */
+[data-theme="light"] .neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* ===== GLOBAL TEXT / BG REMAP (Tailwind white/* → CSS vars) ===== */
+
+/* mia-gray helper */
 .text-mia-gray { color: var(--text-secondary); }
 
-/* White/opacity helpers used throughout — remap to theme tokens */
+/* White text classes → theme-aware primary */
 .text-white    { color: var(--text-primary) !important; }
 .text-white\/90 { color: color-mix(in srgb, var(--text-primary) 90%, transparent) !important; }
 .text-white\/80 { color: color-mix(in srgb, var(--text-primary) 80%, transparent) !important; }
@@ -645,28 +690,44 @@ details > summary::-webkit-details-marker { display: none; }
 .text-white\/20 { color: color-mix(in srgb, var(--text-primary) 20%, transparent) !important; }
 .text-white\/15 { color: color-mix(in srgb, var(--text-primary) 15%, transparent) !important; }
 .text-white\/10 { color: color-mix(in srgb, var(--text-primary) 10%, transparent) !important; }
+.text-white\/\[0\.9\]  { color: color-mix(in srgb, var(--text-primary) 90%, transparent) !important; }
+.text-white\/\[0\.85\] { color: color-mix(in srgb, var(--text-primary) 85%, transparent) !important; }
+.text-white\/\[0\.7\]  { color: color-mix(in srgb, var(--text-primary) 70%, transparent) !important; }
+.text-white\/\[0\.55\] { color: color-mix(in srgb, var(--text-primary) 55%, transparent) !important; }
+.text-white\/\[0\.4\]  { color: color-mix(in srgb, var(--text-primary) 40%, transparent) !important; }
 
-/* Background helpers */
-.bg-white\/5  { background-color: color-mix(in srgb, var(--text-primary)  5%, transparent) !important; }
-.bg-white\/10 { background-color: color-mix(in srgb, var(--text-primary) 10%, transparent) !important; }
-.bg-white\/\[0\.03\] { background-color: color-mix(in srgb, var(--text-primary) 3%, transparent) !important; }
-.bg-white\/\[0\.05\] { background-color: color-mix(in srgb, var(--text-primary) 5%, transparent) !important; }
+/* White background helpers → theme-aware surface */
+.bg-white\/5        { background-color: color-mix(in srgb, var(--bg-surface) 100%, transparent) !important; }
+.bg-white\/10       { background-color: color-mix(in srgb, var(--text-primary) 10%, transparent) !important; }
+.bg-white\/\[0\.02\] { background-color: var(--bg-surface) !important; }
+.bg-white\/\[0\.03\] { background-color: var(--bg-input) !important; }
+.bg-white\/\[0\.04\] { background-color: var(--bg-surface) !important; }
+.bg-white\/\[0\.05\] { background-color: var(--bg-surface) !important; }
+.bg-white\/\[0\.06\] { background-color: var(--bg-skeleton) !important; }
 
-/* Border helpers */
-.border-white\/5  { border-color: color-mix(in srgb, var(--text-primary)  5%, transparent) !important; }
-.border-white\/8  { border-color: color-mix(in srgb, var(--text-primary)  8%, transparent) !important; }
-.border-white\/10 { border-color: color-mix(in srgb, var(--text-primary) 10%, transparent) !important; }
+/* White border helpers → theme-aware borders */
+.border-white\/5   { border-color: var(--border-subtle)  !important; }
+.border-white\/8   { border-color: var(--border-normal)  !important; }
+.border-white\/10  { border-color: var(--border-normal)  !important; }
+.border-white\/\[0\.03\] { border-color: var(--border-subtle) !important; }
+.border-white\/\[0\.05\] { border-color: var(--border-subtle) !important; }
+.border-white\/\[0\.08\] { border-color: var(--border-normal) !important; }
 
-/* ===== INLINE STYLE OVERRIDES FOR HARDCODED DARK BACKGROUNDS ===== */
-/* These are applied when pages use inline style={{ background: 'rgba(20,24,32...)' }} */
+/* ===== INPUT OVERRIDES ===== */
+/* Customer app inputs using app-input class */
+.app-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-text);
+}
+.app-input::placeholder { color: var(--input-placeholder); }
+.app-input:focus {
+  border-color: rgba(255,138,0,0.5);
+  background: var(--bg-input-focus);
+}
 
-/* Bottom nav bg */
+/* Bottom nav themed overrides */
 [data-theme="light"] .bottom-nav-themed {
   background: var(--nav-bg) !important;
   border-color: var(--nav-border) !important;
-}
-
-/* Skeleton loading */
-[data-theme="light"] .bg-white\/\[0\.06\] {
-  background-color: color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
 }

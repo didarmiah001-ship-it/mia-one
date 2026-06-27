@@ -28,7 +28,7 @@ export function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center px-4 page-transition">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 page-transition" style={{ background: "var(--bg-base)" }}>
         <div className="text-center max-w-sm">
           <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
             style={{ background: 'rgba(0,209,255,0.1)', border: '1px solid rgba(0,209,255,0.2)' }}>
@@ -47,7 +47,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center px-4 page-transition">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 page-transition" style={{ background: "var(--bg-base)" }}>
       <div className="relative w-full max-w-sm">
         <button onClick={() => navigate('/login')}
           className="mb-6 flex items-center gap-2 text-sm text-white/50 hover:text-white/80 transition-colors">

@@ -50,7 +50,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       style={{
         background: on
           ? 'linear-gradient(135deg, #FF8A00, #FF2EC9)'
-          : 'rgba(255,255,255,0.08)',
+          : 'var(--border-normal)',
         boxShadow: on ? '0 0 12px rgba(255,138,0,0.3)' : 'none',
       }}>
       <div
@@ -96,7 +96,7 @@ function SettingRow({
   return (
     <div
       className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-      style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: `${color}10`, border: `1px solid ${color}18` }}>
@@ -141,7 +141,7 @@ export function SettingsPage() {
           <button
             onClick={() => navigate('/profile')}
             className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border-normal)' }}>
             <ArrowLeft size={16} className="text-white/60" />
           </button>
           <h1 className="text-lg font-bold text-white">{t('settings.title')}</h1>
@@ -208,7 +208,7 @@ export function SettingsPage() {
                     className="flex flex-col items-center gap-2 px-2 py-3.5 rounded-2xl transition-all duration-300 active:scale-95"
                     style={{
                       background: active ? `${opt.color}12` : 'var(--bg-surface)',
-                      border: active ? `1.5px solid ${opt.color}50` : '1px solid rgba(255,255,255,0.06)',
+                      border: active ? `1.5px solid ${opt.color}50` : '1px solid var(--border-subtle)',
                       boxShadow: active ? `0 0 16px ${opt.color}18` : 'none',
                     }}
                   >
@@ -249,7 +249,7 @@ export function SettingsPage() {
           <button
             onClick={() => navigate('/edit-profile')}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-            style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'rgba(123,44,255,0.1)', border: '1px solid rgba(123,44,255,0.18)' }}>
               <Shield size={16} className="text-mia-purple" />
@@ -267,7 +267,7 @@ export function SettingsPage() {
           <button
             onClick={() => setShowAgent(true)}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-            style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
               style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.18)' }}>
               <img src="/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png" alt="MIA Agent" className="w-full h-full object-contain" />
@@ -299,7 +299,7 @@ export function SettingsPage() {
               key={item.path}
               onClick={() => navigate(item.path)}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all hover:scale-[1.01]"
-              style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: `${item.color}10`, border: `1px solid ${item.color}18` }}>
                 <item.icon size={16} style={{ color: item.color }} />
@@ -350,7 +350,7 @@ export function SettingsPage() {
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/50"
-                    style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-normal)' }}>
                     {t('settings.cancel')}
                   </button>
                   <button

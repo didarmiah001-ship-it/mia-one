@@ -46,7 +46,7 @@ export function ProductDetailPage() {
     : product.price * quantity;
 
   return (
-    <div className="min-h-screen bg-mia-black">
+    <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
       {/* Scrollable Content Area */}
       <div className="pb-[200px]">
         {/* Header */}
@@ -67,7 +67,7 @@ export function ProductDetailPage() {
         <div className="max-w-lg md:max-w-2xl mx-auto page-transition">
           {/* Gallery */}
           <div className="px-4 mt-2">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-mia-navy mb-3 flex items-center justify-center">
+            <div className="aspect-square rounded-2xl overflow-hidden mb-3 flex items-center justify-center" style={{ background: "var(--bg-surface)" }}>
               <img
                 src={product.images[selectedImage]}
                 alt={product.name}
@@ -189,9 +189,9 @@ export function ProductDetailPage() {
         <div
           className="w-full"
           style={{
-            background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)',
-            borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
+            background: 'var(--bg-nav)',
+            borderTop: '1px solid var(--border-normal)',
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.10)',
             paddingTop: '12px',
             paddingBottom: '12px',
             paddingLeft: '16px',
@@ -201,8 +201,8 @@ export function ProductDetailPage() {
           <div className="max-w-lg md:max-w-2xl mx-auto">
             {/* Top row: Total Price */}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">{t('product.total')}</span>
-              <span className="text-xl font-bold text-gray-900">৳{totalPrice.toLocaleString()}</span>
+              <span className="text-sm font-medium text-white/60">{t('product.total')}</span>
+              <span className="text-xl font-bold text-white">৳{totalPrice.toLocaleString()}</span>
             </div>
 
             {/* Bottom row: QTY, Buy Now, Add to Cart */}
@@ -214,18 +214,18 @@ export function ProductDetailPage() {
                   className="w-10 h-full flex items-center justify-center hover:bg-gray-100 transition-colors"
                   disabled={product.stock === 0}
                 >
-                  <Minus size={16} className="text-gray-600" />
+                  <Minus size={16} className="text-white/60" />
                 </button>
                 <div className="px-3 min-w-[40px] text-center flex flex-col items-center justify-center border-x border-gray-200 h-full bg-white">
-                  <span className="text-xs text-gray-500">{t('common.qty')}</span>
-                  <span className="text-sm font-bold text-gray-900">{quantity}</span>
+                  <span className="text-xs text-white/50">{t('common.qty')}</span>
+                  <span className="text-sm font-bold text-white">{quantity}</span>
                 </div>
                 <button
                   onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                   className="w-10 h-full flex items-center justify-center hover:bg-gray-100 transition-colors"
                   disabled={product.stock === 0}
                 >
-                  <Plus size={16} className="text-gray-600" />
+                  <Plus size={16} className="text-white/60" />
                 </button>
               </div>
 

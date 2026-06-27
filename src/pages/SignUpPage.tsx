@@ -36,7 +36,7 @@ export function SignUpPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center px-4 page-transition">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 page-transition" style={{ background: "var(--bg-base)" }}>
         <div className="text-center max-w-sm">
           <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
             style={{ background: 'rgba(255,138,0,0.1)', border: '1px solid rgba(255,138,0,0.2)' }}>
@@ -55,7 +55,7 @@ export function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center px-4 page-transition">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 page-transition" style={{ background: "var(--bg-base)" }}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full opacity-[0.04] blur-3xl"
           style={{ background: 'radial-gradient(circle, #7B2CFF, transparent)' }} />

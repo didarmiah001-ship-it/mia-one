@@ -26,7 +26,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
       role="article"
       aria-label={product.name}
     >
-      <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-mia-navy/50">
+      <div className="relative aspect-square rounded-2xl overflow-hidden mb-3" style={{ background: "var(--bg-surface)" }}>
         {imgError ? (
           <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
             <ImageOff size={32} className="text-white/15" />

@@ -647,9 +647,9 @@ export function CheckoutPage() {
                         formErrors.district ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
                       } ${!form.district ? 'text-white/30' : ''}`}
                     >
-                      <option value="" disabled className="bg-mia-navy text-white/50">{t('checkout.selectDistrict')}</option>
+                      <option value="" disabled className="">{t('checkout.selectDistrict')}</option>
                       {BANGLADESH_DISTRICTS.map(d => (
-                        <option key={d} value={d} className="bg-mia-navy text-white">{d}</option>
+                        <option key={d} value={d} className="">{d}</option>
                       ))}
                     </select>
                     <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -675,11 +675,11 @@ export function CheckoutPage() {
                         formErrors.thana ? 'border-red-500/50' : 'border-white/[0.08] focus:border-mia-orange/50'
                       } ${!form.thana ? 'text-white/30' : ''}`}
                     >
-                      <option value="" disabled className="bg-mia-navy text-white/50">
+                      <option value="" disabled className="">
                         {form.district ? t('checkout.selectThana') : t('checkout.selectDistrictFirst')}
                       </option>
                       {availableThanas.map(t => (
-                        <option key={t} value={t} className="bg-mia-navy text-white">{t}</option>
+                        <option key={t} value={t} className="">{t}</option>
                       ))}
                     </select>
                     <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />

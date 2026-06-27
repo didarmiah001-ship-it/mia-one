@@ -141,7 +141,7 @@ export function ProfilePage() {
           {/* Stats row */}
           {user ? (
             <div className="grid grid-cols-3 gap-3 mt-5 pt-4"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+              style={{ borderTop: '1px solid var(--border-subtle)' }}>
               {[
                 { value: orderCount, label: t('profile.orders'), icon: ShoppingBag, color: '#FF8A00', path: '/orders' },
                 { value: state.wishlist.length, label: t('profile.wishlist'), icon: Heart, color: '#FF2EC9', path: '/wishlist' },
@@ -170,7 +170,7 @@ export function ProfilePage() {
               <button
                 onClick={() => navigate('/signup')}
                 className="flex-1 py-3 rounded-2xl text-sm font-medium text-white/70"
-                style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-normal)' }}>
                 {t('profile.signUp')}
               </button>
             </div>
@@ -197,7 +197,7 @@ export function ProfilePage() {
                       }
                     }}
                     className="menu-glow w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group"
-                    style={{ border: '1px solid rgba(255,255,255,0.03)' }}>
+                    style={{ border: '1px solid var(--border-subtle)' }}>
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 shrink-0"
                       style={{ backgroundColor: `${item.color}10`, border: `1px solid ${item.color}18` }}>

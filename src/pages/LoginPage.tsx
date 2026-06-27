@@ -29,7 +29,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-mia-black flex flex-col items-center justify-center px-4 page-transition">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 page-transition" style={{ background: "var(--bg-base)" }}>
       {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full opacity-[0.04] blur-3xl"

@@ -190,7 +190,7 @@ export function HomePage() {
                       <button
                         onClick={handlePrev}
                         className="banner-nav-btn absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10"
-                        style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(4px)' }}
+                        style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(8px)' }}
                         aria-label="Previous banner"
                       >
                         <ChevronLeft size={16} className="text-white/80" />
@@ -198,7 +198,7 @@ export function HomePage() {
                       <button
                         onClick={handleNext}
                         className="banner-nav-btn absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10"
-                        style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(4px)' }}
+                        style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(8px)' }}
                         aria-label="Next banner"
                       >
                         <ChevronRight size={16} className="text-white/80" />
