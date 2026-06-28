@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import html2pdf from 'html2pdf.js';
 import {
   Search, X, Printer, Download, ChevronRight,
   Package, Clock, CheckCircle, Truck, PackageCheck, XCircle,
@@ -37,18 +38,15 @@ function statusMeta(key: string) {
 
 function buildReceiptText(order: any): string {
   const addr = order.address || {};
-  const items = order.items || [];
+  const items = resolveItems(order);
+  const computedSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = Number(order.subtotal) || computedSubtotal;
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const orderNum = order.order_number || ('#' + order.id.slice(-8).toUpperCase());
 
-  const computedSubtotal = items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
-  const subtotal = Number(order.subtotal) || computedSubtotal;
-
-  const itemLines = items.map((item: any) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.price) || 0;
-    return `  • ${item.name} x${qty} = ৳${(price * qty).toLocaleString()}`;
-  }).join('\n');
+  const itemLines = items.map(item =>
+    `  • ${item.name} x${item.quantity} = ৳${(item.price * item.quantity).toLocaleString()}`
+  ).join('\n');
 
   const lines = [
     `🛍️ *${appConfig.name} — Order Receipt*`,
@@ -103,26 +101,24 @@ function shareOnWhatsApp(order: any) {
 
 function buildInvoiceHTML(order: any, logoUrl: string) {
   const addr = order.address || {};
-  const items = order.items || [];
+  const items = resolveItems(order);
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const orderNum = order.order_number || ('#' + order.id.slice(-8).toUpperCase());
   const sm = statusMeta(order.status);
 
-  const computedSubtotal = items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
+  const computedSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const subtotal = Number(order.subtotal) || computedSubtotal;
 
-  const itemRows = items.map((item: any, i: number) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.price) || 0;
-    const lineTotal = (price * qty).toFixed(2);
+  const itemRows = items.map((item, i) => {
+    const lineTotal = (item.price * item.quantity).toFixed(2);
     const imgTag = item.image
       ? `<img src="${item.image}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px" />`
       : '';
     return `<tr>
       <td>${i + 1}</td>
       <td>${imgTag}<span style="vertical-align:middle">${item.name}</span></td>
-      <td style="text-align:center">${qty}</td>
-      <td style="text-align:right">৳${price.toFixed(2)}</td>
+      <td style="text-align:center">${item.quantity}</td>
+      <td style="text-align:right">৳${item.price.toFixed(2)}</td>
       <td style="text-align:right">৳${lineTotal}</td>
     </tr>`;
   }).join('');
@@ -226,55 +222,88 @@ function buildInvoiceHTML(order: any, logoUrl: string) {
 </html>`;
 }
 
-// ── Print (hidden iframe, no about:blank) ────────────────────────────────────
+// ── Resolve order items from any possible field name ─────────────────────────
 
-function printInvoice(order: any) {
-  const logoUrl = window.location.origin + appConfig.logo;
-  const html = buildInvoiceHTML(order, logoUrl);
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:0;visibility:hidden';
-  document.body.appendChild(iframe);
-
-  // srcdoc triggers onload reliably without about:blank
-  iframe.srcdoc = html;
-
-  iframe.onload = () => {
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    } catch (_) {}
-    setTimeout(() => {
-      if (document.body.contains(iframe)) document.body.removeChild(iframe);
-    }, 3000);
-  };
+function resolveItems(order: any): any[] {
+  const raw = order.items ?? order.order_items ?? order.line_items ?? order.products ?? [];
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item: any) => ({
+    name: item.name || item.product_name || item.title || 'Product',
+    price: Number(item.price ?? item.unit_price ?? item.amount ?? 0),
+    quantity: Number(item.quantity ?? item.qty ?? item.count ?? 1),
+    image: item.image ?? item.image_url ?? item.thumbnail ?? null,
+  }));
 }
 
-// ── PDF Download (opens print-to-PDF in new tab) ─────────────────────────────
+// ── Print using @media print on current page ──────────────────────────────────
 
-function downloadPDF(order: any) {
-  const logoUrl = window.location.origin + appConfig.logo;
-  const html = buildInvoiceHTML(order, logoUrl);
-  const orderNum = order.order_number || order.id.slice(-8).toUpperCase();
+const PRINT_STYLE_ID = 'receipt-print-style';
 
-  // Write to a blob URL and open in new tab — user saves as PDF via Ctrl+P → Save as PDF
-  // This is the only cross-browser way to get a true PDF without a server or library.
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-
-  // Open in new tab (user presses Ctrl+P or uses browser menu to save as PDF)
-  const tab = window.open(url, '_blank', 'noopener');
-  if (!tab) {
-    // Fallback: direct download as .html if popup blocked
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Invoice-${orderNum}.html`;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+function printReceiptElement(el: HTMLElement) {
+  // Inject @media print CSS that shows only the receipt element
+  let style = document.getElementById(PRINT_STYLE_ID) as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement('style');
+    style.id = PRINT_STYLE_ID;
+    document.head.appendChild(style);
   }
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  el.id = 'receipt-print-target';
+  style.textContent = `
+    @media print {
+      body > *:not(#receipt-print-root) { display: none !important; }
+      #receipt-print-root { display: block !important; position: static !important; }
+      #receipt-print-root > *:not(#receipt-print-target) { display: none !important; }
+      #receipt-print-target { display: block !important; background: #fff !important; color: #111 !important; }
+    }
+  `;
+  // Wrap: move element to a top-level container
+  const root = document.createElement('div');
+  root.id = 'receipt-print-root';
+  root.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:99999;overflow:auto;display:none';
+  document.body.appendChild(root);
+  // Clone the element so original stays in the modal
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.id = 'receipt-print-target';
+  root.appendChild(clone);
+
+  window.print();
+
+  // Clean up after print dialog closes (afterprint or timeout fallback)
+  const cleanup = () => {
+    if (document.body.contains(root)) document.body.removeChild(root);
+    style!.textContent = '';
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(cleanup, 30000);
+}
+
+// ── PDF Download using html2pdf.js (real .pdf file) ───────────────────────────
+
+async function downloadReceiptAsPDF(el: HTMLElement, orderId: string) {
+  const orderNum = orderId.slice(-8).toUpperCase();
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.style.cssText = 'background:#fff;color:#111;padding:24px;width:595px;font-family:Arial,sans-serif';
+  // Ensure images that are base64 render correctly — html2pdf handles them natively
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;background:#fff';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  try {
+    await html2pdf()
+      .set({
+        margin: [10, 10, 10, 10],
+        filename: `Invoice-${orderNum}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      })
+      .from(clone)
+      .save();
+  } finally {
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+  }
 }
 
 // ── CSV Export ─────────────────────────────────────────────────────────────────
@@ -364,16 +393,27 @@ function exportPDF(orders: any[]) {
 
 function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
   const addr = order.address || {};
-  const items: any[] = order.items || [];
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const orderNum = order.order_number || ('#' + order.id.slice(-8).toUpperCase());
   const sm = statusMeta(order.status);
   const printRef = useRef<HTMLDivElement>(null);
-  const computedSubtotal = items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
+  const [downloading, setDownloading] = useState(false);
+  const items = resolveItems(order);
+  const computedSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const subtotal = Number(order.subtotal) || computedSubtotal;
 
-  const handlePrint = () => printInvoice(order);
-  const handleDownload = () => downloadPDF(order);
+  const handlePrint = () => {
+    if (printRef.current) printReceiptElement(printRef.current);
+  };
+  const handleDownload = async () => {
+    if (!printRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      await downloadReceiptAsPDF(printRef.current, order.order_number || order.id);
+    } finally {
+      setDownloading(false);
+    }
+  };
   const handleWhatsApp = () => shareOnWhatsApp(order);
 
   const canWhatsApp = !!(addr.phone || '').replace(/\D/g, '');
@@ -438,25 +478,21 @@ function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
             <tbody>
               {items.length === 0 ? (
                 <tr><td colSpan={4} style={{ padding: '12px 8px', textAlign: 'center', color: '#aaa' }}>No items</td></tr>
-              ) : items.map((item: any, i: number) => {
-                const qty = Number(item.quantity) || 0;
-                const price = Number(item.price) || 0;
-                return (
-                  <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '7px 8px', color: '#333' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {item.image && (
-                          <img src={item.image} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
-                        )}
-                        <span>{item.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '7px 8px', textAlign: 'center', color: '#555' }}>{qty}</td>
-                    <td style={{ padding: '7px 8px', textAlign: 'right', color: '#555' }}>৳{price.toFixed(2)}</td>
-                    <td style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 600, color: '#333' }}>৳{(price * qty).toFixed(2)}</td>
-                  </tr>
-                );
-              })}
+              ) : items.map((item, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '7px 8px', color: '#333' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {item.image && (
+                        <img src={item.image} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+                      )}
+                      <span>{item.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '7px 8px', textAlign: 'center', color: '#555' }}>{item.quantity}</td>
+                  <td style={{ padding: '7px 8px', textAlign: 'right', color: '#555' }}>৳{item.price.toFixed(2)}</td>
+                  <td style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 600, color: '#333' }}>৳{(item.price * item.quantity).toFixed(2)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
@@ -497,10 +533,10 @@ function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
             title={canWhatsApp ? 'Share on WhatsApp' : 'No phone number'}>
             <MessageCircle size={15} /> WhatsApp
           </button>
-          <button onClick={handleDownload}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+          <button onClick={handleDownload} disabled={downloading}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60"
             style={{ background: 'rgba(255,138,0,0.12)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.25)' }}>
-            <Download size={15} /> Download
+            <Download size={15} /> {downloading ? 'Generating…' : 'Download PDF'}
           </button>
           <button onClick={handlePrint}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
