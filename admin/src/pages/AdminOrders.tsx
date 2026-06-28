@@ -125,13 +125,25 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
   };
 
   const handleWhatsAppShare = () => {
+    const customerPhone = addr.phone;
+
+    if (!customerPhone) {
+      alert('Customer WhatsApp number not available.');
+      return;
+    }
+
+    const normalizedPhone = normalizeBangladeshPhone(customerPhone);
+
+    if (!normalizedPhone) {
+      alert('Customer WhatsApp number not available.');
+      return;
+    }
+
     const message = buildWhatsAppMessage(order, payment);
     const encodedMessage = encodeURIComponent(message);
-    const phoneNumber = addr.phone ? addr.phone.replace(/\D/g, '') : '';
-    const url = phoneNumber
-      ? `https://wa.me/${phoneNumber}?text=${encodedMessage}`
-      : `https://wa.me/?text=${encodedMessage}`;
-    window.open(url, '_blank');
+    const waUrl = `https://wa.me/${normalizedPhone}?text=${encodedMessage}`;
+
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -286,61 +298,103 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
   );
 }
 
+function normalizeBangladeshPhone(phone: string): string | null {
+  if (!phone) return null;
+
+  // Remove all non-digit characters
+  let digits = phone.replace(/\D/g, '');
+
+  // Remove leading + if present (already handled by \D removal)
+  // Check various formats:
+  // 01812345678 (11 digits, starts with 0) -> 8801812345678
+  // 8801812345678 (13 digits, starts with 880) -> keep as is
+  // +8801812345678 -> 8801812345678
+
+  if (digits.startsWith('880')) {
+    // Already has country code
+    digits = digits; // keep as is
+  } else if (digits.startsWith('0') && digits.length === 11) {
+    // Local format: 01812345678
+    digits = '880' + digits.substring(1);
+  } else if (digits.length === 10 && !digits.startsWith('0')) {
+    // Missing leading 0: 1812345678
+    digits = '880' + digits;
+  }
+
+  // Validate: must be 880 followed by 10 digits (total 13)
+  if (/^880[0-9]{10}$/.test(digits)) {
+    return digits;
+  }
+
+  // If validation fails but we have digits, return as-is (might still work)
+  if (digits.length >= 10) {
+    return digits;
+  }
+
+  return null;
+}
+
 function buildWhatsAppMessage(order: any, payment?: any): string {
   const addr = order.address || {};
   const items = order.items || [];
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const paymentMethod = (order.payment_method || payment?.method || '').replace(/_/g, ' ');
-  const transactionId = payment?.transaction_id || order.transaction_id || '';
-  const paymentStatus = payment?.status || order.payment_status || 'pending';
+  const sm = statusMeta(order.status);
 
-  let message = `🛒 *MIA ONE - Order Receipt*\n\n`;
-  message += `📋 *Order ID:* ${order.order_number || '#' + String(order.id).slice(-8).toUpperCase()}\n`;
-  message += `📅 *Date:* ${date}\n`;
-  message += `📍 *Status:* ${statusMeta(order.status).label}\n\n`;
+  let message = `🛍️ MIA ONE\n`;
+  message += `Invoice: ${order.order_number || '#' + String(order.id).slice(-8).toUpperCase()}\n`;
+  message += `Date: ${date}\n\n`;
 
-  message += `👤 *Customer Details:*\n`;
-  message += `   Name: ${addr.full_name || 'N/A'}\n`;
-  message += `   Phone: ${addr.phone || 'N/A'}\n`;
-  if (addr.address) message += `   Address: ${addr.address}${addr.area ? `, ${addr.area}` : ''}${addr.city ? `, ${addr.city}` : ''}\n`;
+  message += `Customer:\n`;
+  message += `${addr.full_name || 'N/A'}\n`;
+  message += `${addr.phone || 'N/A'}\n`;
+  if (addr.address) {
+    message += `${addr.address}`;
+    if (addr.area) message += `, ${addr.area}`;
+    if (addr.city) message += `, ${addr.city}`;
+    message += `\n`;
+  }
 
-  message += `\n📦 *Order Items:*\n`;
+  message += `\nProducts:\n`;
   items.forEach((item: any, i: number) => {
-    const total = (Number(item.price) || 0) * (item.quantity || 1);
-    message += `   ${i + 1}. ${item.name || 'Product'} x${item.quantity || 1} = ৳${total.toLocaleString()}\n`;
+    const itemTotal = (Number(item.price) || 0) * (item.quantity || 1);
+    message += `${i + 1}. ${item.name || 'Product'} x${item.quantity || 1} = ৳${itemTotal.toLocaleString()}\n`;
   });
 
-  message += `\n💳 *Payment Info:*\n`;
-  message += `   Method: ${paymentMethod || 'N/A'}\n`;
-  if (transactionId) message += `   Transaction ID: ${transactionId}\n`;
-  message += `   Payment Status: ${paymentStatus}\n`;
+  message += `\nTotal: ৳${Number(order.total || 0).toLocaleString()}\n`;
 
-  message += `\n💰 *Order Summary:*\n`;
-  message += `   Subtotal: ৳${Number(order.subtotal || 0).toLocaleString()}\n`;
-  if (Number(order.discount || 0) > 0) {
-    message += `   Discount: -৳${Number(order.discount).toLocaleString()}\n`;
-  }
-  const deliveryCharge = Number(order.delivery_charge || 0);
-  message += `   Delivery: ${deliveryCharge === 0 ? 'Free' : '৳' + deliveryCharge.toLocaleString()}\n`;
-  message += `   *Grand Total: ৳${Number(order.total || 0).toLocaleString()}*\n`;
+  message += `\nPayment:\n`;
+  message += `${paymentMethod || 'N/A'}\n`;
 
-  if (addr.notes) {
-    message += `\n📝 *Note:* ${addr.notes}\n`;
-  }
+  message += `\nStatus:\n`;
+  message += `${sm.label}\n`;
 
-  message += `\n✅ Thank you for shopping with MIA ONE!`;
+  message += `\nThank you for shopping with MIA ONE.`;
 
   return message;
 }
 
-function shareOnWhatsApp(order: any, phone?: string, payment?: any) {
+function shareOnWhatsApp(order: any, payment?: any) {
+  const addr = order.address || {};
+  const customerPhone = addr.phone;
+
+  if (!customerPhone) {
+    alert('Customer WhatsApp number not available.');
+    return;
+  }
+
+  const normalizedPhone = normalizeBangladeshPhone(customerPhone);
+
+  if (!normalizedPhone) {
+    alert('Customer WhatsApp number not available.');
+    return;
+  }
+
   const message = buildWhatsAppMessage(order, payment);
   const encodedMessage = encodeURIComponent(message);
-  const phoneNumber = phone || (order.address?.phone ? order.address.phone.replace(/\D/g, '') : '');
-  const url = phoneNumber
-    ? `https://wa.me/${phoneNumber}?text=${encodedMessage}`
-    : `https://wa.me/?text=${encodedMessage}`;
-  window.open(url, '_blank');
+  const waUrl = `https://wa.me/${normalizedPhone}?text=${encodedMessage}`;
+
+  window.open(waUrl, '_blank', 'noopener,noreferrer');
 }
 
 // ── CSV Export ─────────────────────────────────────────────────────────────────
@@ -489,7 +543,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
             <h3 className="text-sm font-bold text-white mt-0.5">Order Details</h3>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => shareOnWhatsApp(order, undefined, payment)} className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="Share on WhatsApp">
+            <button onClick={() => shareOnWhatsApp(order, payment)} className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="Share on WhatsApp">
               <MessageCircle size={13} className="text-green-500" />
             </button>
             <button onClick={() => setShowInvoice(true)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
@@ -906,7 +960,7 @@ export function AdminOrders() {
                           <button onClick={() => setSelectedOrder(order)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
                             <Printer size={11} className="text-white/40" />
                           </button>
-                          <button onClick={() => shareOnWhatsApp(order)} className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="WhatsApp">
+                          <button onClick={() => shareOnWhatsApp(order)} className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="Share on WhatsApp">
                             <MessageCircle size={11} className="text-green-500" />
                           </button>
                           <button onClick={() => setSelectedOrder(order)} className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors" style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.15)' }} title="View">
