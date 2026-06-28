@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Home, Grid3x3, ShoppingCart, Heart, User } from 'lucide-react';
 import { useLocation, useNavigate } from '../lib/router';
 import { useStore } from '../store/StoreContext';
@@ -14,6 +14,7 @@ const navItems = [
 
 const ACTIVE_COLOR = '#2563EB';
 const INACTIVE_ICON = '#1e293b';
+const NAV_PADDING = 24;
 
 export function BottomNav() {
   const { t } = useTranslation();
@@ -27,7 +28,33 @@ export function BottomNav() {
   );
   const safeActive = activeIndex >= 0 ? activeIndex : 0;
 
-  // Track previous cart count for badge animation
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [bubbleLeft, setBubbleLeft] = useState(0);
+
+  const bubbleSize = typeof window !== 'undefined'
+    ? window.innerWidth < 640 ? 74
+    : window.innerWidth < 1024 ? 78
+    : 82
+    : 74;
+
+  const updateBubblePosition = useCallback(() => {
+    const container = containerRef.current;
+    const activeItem = itemRefs.current[safeActive];
+    if (container && activeItem) {
+      const containerRect = container.getBoundingClientRect();
+      const itemRect = activeItem.getBoundingClientRect();
+      const itemCenter = itemRect.left - containerRect.left + itemRect.width / 2;
+      setBubbleLeft(itemCenter);
+    }
+  }, [safeActive]);
+
+  useEffect(() => {
+    updateBubblePosition();
+    window.addEventListener('resize', updateBubblePosition);
+    return () => window.removeEventListener('resize', updateBubblePosition);
+  }, [updateBubblePosition]);
+
   const prevCartCount = useRef(cartCount);
   const [badgePop, setBadgePop] = useState(false);
   useEffect(() => {
@@ -39,7 +66,6 @@ export function BottomNav() {
     }
   }, [cartCount]);
 
-  // Click animation state
   const [clickAnim, setClickAnim] = useState<number | null>(null);
 
   const handleClick = (path: string, index: number) => {
@@ -50,7 +76,6 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Spacer to prevent content from hiding behind the floating nav */}
       <div aria-hidden="true" style={{ height: 'calc(120px + env(safe-area-inset-bottom, 0px))' }} />
 
       <nav
@@ -62,7 +87,8 @@ export function BottomNav() {
         }}
       >
         <div
-          className="relative flex items-center justify-around"
+          ref={containerRef}
+          className="relative flex items-center"
           style={{
             width: '92%',
             maxWidth: '1100px',
@@ -80,6 +106,8 @@ export function BottomNav() {
               inset 0 -1px 0 rgba(0, 0, 0, 0.03)
             `,
             pointerEvents: 'auto',
+            paddingLeft: `${NAV_PADDING}px`,
+            paddingRight: `${NAV_PADDING}px`,
           }}
         >
           {/* Sliding active bubble */}
@@ -88,16 +116,17 @@ export function BottomNav() {
             className="nav-bubble-active"
             style={{
               position: 'absolute',
-              width: 'clamp(72px, 5vw + 64px, 82px)',
-              height: 'clamp(72px, 5vw + 64px, 82px)',
+              width: `${bubbleSize}px`,
+              height: `${bubbleSize}px`,
               borderRadius: '50%',
               background: 'linear-gradient(145deg, #ffffff 0%, #f0f6ff 50%, #e0ecff 100%)',
               top: '50%',
-              left: `${(safeActive / (navItems.length - 1)) * 100}%`,
+              left: bubbleLeft,
               transform: 'translate(-50%, -50%)',
               transition: 'left 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
               zIndex: 0,
               willChange: 'left, transform',
+              marginLeft: `-${NAV_PADDING}px`,
             }}
           />
 
@@ -111,6 +140,7 @@ export function BottomNav() {
             return (
               <button
                 key={item.path}
+                ref={el => { itemRefs.current[index] = el; }}
                 onClick={() => handleClick(item.path, index)}
                 aria-label={isCart && cartCount > 0 ? `${label} (${cartCount} ${t('common.items') || 'items'})` : label}
                 aria-current={isActive ? 'page' : undefined}
