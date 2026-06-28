@@ -82,12 +82,12 @@ function statusMeta(key: string) {
 const COMPANY = {
   name: 'MIA ONE',
   tagline: 'Everything You Need',
-  website: 'https://miaone.shop',
+  website: 'miaone.shop',
   email: 'miaonebd@gmail.com',
-  whatsapp: '+8801823057578',
+  whatsapp: '01823057578',
   whatsappRaw: '8801823057578',
   logo: '/mia-one-logo.png',
-  address: 'মিয়া শপ\nদশত্তর, পাঁচগাঁও\nটংগিবাড়ি, মুন্সিগঞ্জ\nঢাকা, বাংলাদেশ',
+  address: 'মিয়া শপ, দশত্তর, পাঁচগাঁও, টংগিবাড়ি, মুন্সিগঞ্জ, ঢাকা, বাংলাদেশ',
 };
 
 // ── Resolve order items from any possible field name ───────────────────────────
@@ -410,7 +410,7 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
               <span>•</span>
               <span>WhatsApp: {COMPANY.whatsapp}</span>
             </div>
-            <div style={{ fontSize: '11px', color: '#999', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+            <div style={{ fontSize: '11px', color: '#999', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
               {COMPANY.address}
             </div>
           </div>
