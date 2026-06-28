@@ -1,4 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
   Search, X, Printer, Download, ChevronRight,
   Package, Clock, CheckCircle, Truck, PackageCheck, XCircle,
@@ -74,45 +77,87 @@ function statusMeta(key: string) {
 
 // ── Invoice Modal Component ─────────────────────────────────────────────────────
 
+// ── Resolve order items from any possible field name ─────────────────────────
+
+function resolveItems(order: any): any[] {
+  const raw = order.items ?? order.order_items ?? order.line_items ?? order.products ?? [];
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item: any) => ({
+    name: item.name || item.product_name || item.title || 'Product',
+    price: Number(item.price ?? item.unit_price ?? item.amount ?? 0),
+    quantity: Number(item.quantity ?? item.qty ?? item.count ?? 1),
+    image: item.image ?? item.image_url ?? item.thumbnail ?? null,
+  }));
+}
+
+// ── PDF Download via jsPDF + html2canvas → real .pdf file ──────────────────────
+
+async function downloadInvoicePDF(el: HTMLElement, orderNum: string) {
+  const clone = el.cloneNode(true) as HTMLElement;
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:-1';
+  clone.style.cssText = 'background:#fff;color:#111;padding:40px 48px;width:794px;font-family:Arial,Helvetica,sans-serif';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while (heightLeft > 0) {
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    pdf.save(`Invoice-${orderNum}.pdf`);
+  } finally {
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+  }
+}
+
 function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; onClose: () => void }) {
   const addr = order.address || {};
-  const items = order.items || [];
+  const items = resolveItems(order);
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const paymentMethod = (order.payment_method || payment?.method || '').replace(/_/g, ' ');
   const transactionId = payment?.transaction_id || order.transaction_id || '';
   const paymentStatus = payment?.status || order.payment_status || 'pending';
   const sm = statusMeta(order.status);
 
-  const handlePrint = () => {
-    const logoUrl = window.location.origin + '/mia-one-logo.png';
-    const html = buildInvoiceHTML(order, payment, logoUrl);
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0';
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) { document.body.removeChild(iframe); return; }
-    doc.open(); doc.write(html); doc.close();
-    iframe.onload = () => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      setTimeout(() => document.body.removeChild(iframe), 2000);
-    };
-  };
+  const invoiceRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
 
-  const handleDownloadPDF = () => {
-    const logoUrl = window.location.origin + '/mia-one-logo.png';
-    const html = buildInvoiceHTML(order, payment, logoUrl);
-    const orderNum = order.order_number || order.id.slice(-8).toUpperCase();
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `invoice-${orderNum}.html`;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  const handlePrint = useReactToPrint({
+    contentRef: invoiceRef,
+    documentTitle: `Invoice-${(order.order_number || order.id.slice(-8)).toUpperCase()}`,
+  });
+
+  const handleDownloadPDF = async () => {
+    if (downloading || !invoiceRef.current) return;
+    setDownloading(true);
+    try {
+      await downloadInvoicePDF(invoiceRef.current, (order.order_number || order.id.slice(-8)).toUpperCase());
+    } catch (err) {
+      console.error('PDF download failed:', err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleWhatsAppShare = () => {
@@ -149,8 +194,8 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
             <button onClick={handlePrint} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500 text-white text-xs font-semibold hover:bg-blue-600 transition-colors">
               <Printer size={14} /> Print
             </button>
-            <button onClick={handleDownloadPDF} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500 text-white text-xs font-semibold hover:bg-purple-600 transition-colors">
-              <Download size={14} /> Download
+            <button onClick={handleDownloadPDF} disabled={downloading} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500 text-white text-xs font-semibold hover:bg-purple-600 transition-colors disabled:opacity-60">
+              <Download size={14} /> {downloading ? 'Generating…' : 'Download'}
             </button>
             <button onClick={handleWhatsAppShare} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-500 text-white text-xs font-semibold hover:bg-green-600 transition-colors">
               <MessageCircle size={14} /> WhatsApp
@@ -162,7 +207,7 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
         </div>
 
         {/* Invoice Content */}
-        <div id="invoice-content" className="p-8 print:p-6">
+        <div id="invoice-content" ref={invoiceRef} className="p-8 print:p-6" style={{ background: '#fff', color: '#111' }}>
           {/* Header with Logo */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', borderBottom: '2px solid #FF8A00', paddingBottom: '16px' }}>
             <div>
@@ -228,10 +273,17 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
               {items.length > 0 ? items.map((item: any, i: number) => (
                 <tr key={i}>
                   <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6' }}>{i + 1}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6' }}>{item.name || 'Product'}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>{item.quantity || 1}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>৳{Number(item.price || 0).toLocaleString()}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', fontWeight: 500 }}>৳{((Number(item.price) || 0) * (item.quantity || 1)).toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {item.image && (
+                        <img src={item.image} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+                      )}
+                      <span>{item.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>{item.quantity}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>৳{item.price.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', fontWeight: 500 }}>৳{(item.price * item.quantity).toLocaleString()}</td>
                 </tr>
               )) : (
                 <tr><td colSpan={5} style={{ padding: '10px 12px', textAlign: 'center', color: '#888' }}>No items</td></tr>
@@ -439,7 +491,7 @@ function normalizeBangladeshPhone(phone: string): string | null {
 
 function buildWhatsAppMessage(order: any, payment?: any): string {
   const addr = order.address || {};
-  const items = order.items || [];
+  const items = resolveItems(order);
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const paymentMethod = (order.payment_method || payment?.method || '').replace(/_/g, ' ');
   const sm = statusMeta(order.status);
@@ -460,8 +512,7 @@ function buildWhatsAppMessage(order: any, payment?: any): string {
 
   message += `\nProducts:\n`;
   items.forEach((item: any, i: number) => {
-    const itemTotal = (Number(item.price) || 0) * (item.quantity || 1);
-    message += `${i + 1}. ${item.name || 'Product'} x${item.quantity || 1} = ৳${itemTotal.toLocaleString()}\n`;
+    message += `${i + 1}. ${item.name} x${item.quantity} = ৳${(item.price * item.quantity).toLocaleString()}\n`;
   });
 
   message += `\nTotal: ৳${Number(order.total || 0).toLocaleString()}\n`;

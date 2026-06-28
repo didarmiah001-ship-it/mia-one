@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import html2pdf from 'html2pdf.js';
+import { useReactToPrint } from 'react-to-print';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
   Search, X, Printer, Download, ChevronRight,
   Package, Clock, CheckCircle, Truck, PackageCheck, XCircle,
@@ -235,64 +237,51 @@ function resolveItems(order: any): any[] {
   }));
 }
 
-// ── Print via hidden srcdoc iframe (no about:blank, no new tab) ──────────────
+// ── PDF Download via jsPDF + html2canvas → real .pdf file ──────────────────────
 
-function printInvoice(order: any) {
-  const logoUrl = window.location.origin + appConfig.logo;
-  const html = buildInvoiceHTML(order, logoUrl);
-
-  // Create off-screen iframe, set srcdoc (avoids about:blank & popup blockers)
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.cssText = 'position:absolute;width:1px;height:1px;top:-9999px;left:-9999px;border:0;opacity:0';
-  document.body.appendChild(iframe);
-
-  // srcdoc is the only way to inject HTML without document.write or a new URL
-  iframe.srcdoc = html;
-
-  iframe.addEventListener('load', () => {
-    try {
-      iframe.contentWindow!.focus();
-      iframe.contentWindow!.print();
-    } catch (_) { /* silent */ }
-    // afterprint fires when dialog closes; fallback: 60 s timeout
-    const remove = () => { if (document.body.contains(iframe)) document.body.removeChild(iframe); };
-    iframe.contentWindow!.addEventListener('afterprint', remove);
-    setTimeout(remove, 60_000);
-  }, { once: true });
-}
-
-// ── PDF Download via html2pdf.js → real .pdf file ─────────────────────────────
-
-async function downloadInvoicePDF(order: any) {
-  const logoUrl = window.location.origin + appConfig.logo;
-  const html = buildInvoiceHTML(order, logoUrl);
-  const orderNum = (order.order_number || order.id.slice(-8)).toUpperCase();
-
-  // Parse the HTML string into a detached DOM element
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const page = doc.querySelector('.page') as HTMLElement;
-
-  if (!page) return;
-
-  // Attach off-screen so html2canvas can measure it
-  page.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;padding:40px 48px';
-  document.body.appendChild(page);
+async function downloadInvoicePDF(receiptEl: HTMLElement, orderNum: string) {
+  // Clone the receipt element off-screen so html2canvas can rasterize it cleanly
+  const clone = receiptEl.cloneNode(true) as HTMLElement;
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:-1';
+  clone.style.cssText = 'background:#fff;color:#111;padding:40px 48px;width:794px;font-family:Arial,Helvetica,sans-serif';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
 
   try {
-    await html2pdf()
-      .set({
-        margin: [8, 8, 8, 8],
-        filename: `Invoice-${orderNum}.pdf`,
-        image: { type: 'jpeg', quality: 0.92 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      })
-      .from(page)
-      .save();
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // First page
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    // Additional pages if content is taller than one A4 page
+    while (heightLeft > 0) {
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(`Invoice-${orderNum}.pdf`);
   } finally {
-    if (document.body.contains(page)) document.body.removeChild(page);
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
   }
 }
 
@@ -392,13 +381,21 @@ function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
   const computedSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const subtotal = Number(order.subtotal) || computedSubtotal;
 
-  const handlePrint = () => printInvoice(order);
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    documentTitle: `Invoice-${(order.order_number || order.id.slice(-8)).toUpperCase()}`,
+  });
 
   const handleDownload = async () => {
-    if (downloading) return;
+    if (downloading || !printRef.current) return;
     setDownloading(true);
-    try { await downloadInvoicePDF(order); }
-    finally { setDownloading(false); }
+    try {
+      await downloadInvoicePDF(printRef.current, (order.order_number || order.id.slice(-8)).toUpperCase());
+    } catch (err) {
+      console.error('PDF download failed:', err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleWhatsApp = () => shareOnWhatsApp(order);
@@ -411,7 +408,7 @@ function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
         style={{ background: '#fff', boxShadow: '0 25px 80px rgba(0,0,0,0.6)' }}>
 
         {/* Receipt Content */}
-        <div ref={printRef} className="p-6" style={{ color: '#111' }}>
+        <div ref={printRef} className="p-6" style={{ color: '#111', background: '#fff' }}>
           {/* Logo + Brand */}
           <div className="flex items-center gap-3 mb-5 pb-5 border-b-2 border-orange-400">
             <img src={appConfig.logo} alt="MIA ONE" className="h-10 w-auto" onError={e => (e.currentTarget.style.display = 'none')} />
