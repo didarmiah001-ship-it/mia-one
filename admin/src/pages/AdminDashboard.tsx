@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ShoppingBag, Users, Package, TrendingUp, Clock, CheckCircle2, DollarSign, Zap } from 'lucide-react';
+import { ShoppingBag, Users, Package, TrendingUp, Clock, CheckCircle2, DollarSign, Zap, Truck, MapPin, BarChart2 } from 'lucide-react';
 import { adminGetStats } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 interface Stats {
   totalProducts: number;
@@ -13,12 +14,61 @@ interface Stats {
   revenueChart: { day: string; revenue: number }[];
 }
 
+interface DeliveryStats {
+  totalDeliveryIncome: number;
+  freeDeliveryOrders: number;
+  paidDeliveryOrders: number;
+  avgDeliveryCharge: number;
+  ordersByZone: { zone: string; label: string; count: number; revenue: number; color: string }[];
+}
+
+const ZONE_LABELS: Record<string, { label: string; color: string }> = {
+  munshiganj: { label: 'Munshiganj', color: '#FF2EC9' },
+  inside_dhaka: { label: 'Inside Dhaka', color: '#FF8A00' },
+  outside_dhaka: { label: 'Outside Dhaka', color: '#00D1FF' },
+  remote_area: { label: 'Remote Area', color: '#7B2CFF' },
+};
+
 export function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [deliveryStats, setDeliveryStats] = useState<DeliveryStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     adminGetStats().then(s => { setStats(s as Stats); setLoading(false); });
+    // Fetch delivery analytics
+    supabase.from('orders').select('delivery_charge, delivery_zone, status').then(({ data }) => {
+      if (!data) return;
+      const orders = data as any[];
+      const paid = orders.filter(o => Number(o.delivery_charge) > 0);
+      const free = orders.filter(o => Number(o.delivery_charge) === 0);
+      const totalIncome = paid.reduce((s, o) => s + Number(o.delivery_charge), 0);
+      const avgCharge = paid.length > 0 ? Math.round(totalIncome / paid.length) : 0;
+
+      const zoneMap: Record<string, { count: number; revenue: number }> = {};
+      orders.forEach(o => {
+        const z = o.delivery_zone || 'outside_dhaka';
+        if (!zoneMap[z]) zoneMap[z] = { count: 0, revenue: 0 };
+        zoneMap[z].count++;
+        zoneMap[z].revenue += Number(o.delivery_charge || 0);
+      });
+
+      const ordersByZone = Object.entries(zoneMap).map(([zone, v]) => ({
+        zone,
+        label: ZONE_LABELS[zone]?.label || 'Outside Dhaka',
+        count: v.count,
+        revenue: v.revenue,
+        color: ZONE_LABELS[zone]?.color || '#00D1FF',
+      })).sort((a, b) => b.count - a.count);
+
+      setDeliveryStats({
+        totalDeliveryIncome: totalIncome,
+        freeDeliveryOrders: free.length,
+        paidDeliveryOrders: paid.length,
+        avgDeliveryCharge: avgCharge,
+        ordersByZone,
+      });
+    });
   }, []);
 
   if (loading) return <DashboardSkeleton />;
@@ -112,6 +162,94 @@ export function AdminDashboard() {
           <p className="text-[10px] text-white/25 mt-2">Total: ৳{stats.totalRevenue.toLocaleString()}</p>
         </div>
       </div>
+
+      {/* Delivery Analytics */}
+      {deliveryStats && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pt-2">
+            <Truck size={16} className="text-mia-orange" />
+            <h3 className="text-sm font-bold text-white">Delivery Analytics</h3>
+          </div>
+
+          {/* Delivery KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="glow-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,138,0,0.08)' }}>
+                  <DollarSign size={13} className="text-mia-orange" />
+                </div>
+                <p className="text-[10px] text-white/40 font-medium">Delivery Income</p>
+              </div>
+              <p className="text-xl font-bold text-white">৳{deliveryStats.totalDeliveryIncome.toLocaleString()}</p>
+            </div>
+            <div className="glow-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.08)' }}>
+                  <CheckCircle2 size={13} className="text-green-400" />
+                </div>
+                <p className="text-[10px] text-white/40 font-medium">Free Delivery</p>
+              </div>
+              <p className="text-xl font-bold text-green-400">{deliveryStats.freeDeliveryOrders}</p>
+              <p className="text-[9px] text-white/25 mt-1">orders</p>
+            </div>
+            <div className="glow-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,209,255,0.08)' }}>
+                  <Truck size={13} className="text-mia-blue" />
+                </div>
+                <p className="text-[10px] text-white/40 font-medium">Paid Delivery</p>
+              </div>
+              <p className="text-xl font-bold text-mia-blue">{deliveryStats.paidDeliveryOrders}</p>
+              <p className="text-[9px] text-white/25 mt-1">orders</p>
+            </div>
+            <div className="glow-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,46,201,0.08)' }}>
+                  <BarChart2 size={13} className="text-mia-pink" />
+                </div>
+                <p className="text-[10px] text-white/40 font-medium">Avg Charge</p>
+              </div>
+              <p className="text-xl font-bold text-mia-pink">৳{deliveryStats.avgDeliveryCharge}</p>
+              <p className="text-[9px] text-white/25 mt-1">per paid order</p>
+            </div>
+          </div>
+
+          {/* Orders by Delivery Zone */}
+          <div className="glow-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin size={14} className="text-white/40" />
+              <h4 className="text-xs font-semibold text-white/70">Orders by Delivery Zone</h4>
+            </div>
+            <div className="space-y-3">
+              {deliveryStats.ordersByZone.length === 0 && (
+                <p className="text-xs text-white/30 text-center py-4">No delivery data yet</p>
+              )}
+              {deliveryStats.ordersByZone.map(zone => {
+                const maxCount = Math.max(...deliveryStats.ordersByZone.map(z => z.count), 1);
+                const pct = Math.round((zone.count / maxCount) * 100);
+                return (
+                  <div key={zone.zone}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: zone.color }} />
+                        <span className="text-xs font-medium text-white/80">{zone.label}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-white/40">{zone.count} orders</span>
+                        <span className="text-[10px] font-semibold" style={{ color: zone.color }}>৳{zone.revenue.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%`, background: zone.color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

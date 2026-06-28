@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { adminFetchSettings, adminUpsertSettings } from '../lib/api';
 import { useToast } from '../components/Toast';
-import { Truck, MapPin, Zap, Save, TrendingUp } from 'lucide-react';
+import { Truck, MapPin, Zap, Save, TrendingUp, Navigation, Globe } from 'lucide-react';
 
 const DEFAULTS = {
+  munshiganj: 80,
   inside_dhaka: 60,
   outside_dhaka: 120,
+  remote_area: 150,
   free_delivery_min: 500,
   express_delivery: 100,
   express_enabled: false,
@@ -52,7 +54,7 @@ export function AdminDeliveryCharges() {
       </div>
 
       <p className="text-xs text-white/40 -mt-2">
-        Set delivery rates for different zones. Changes apply to all new orders instantly. Existing orders keep their original charge.
+        Set delivery rates for each zone. Changes apply to all new orders instantly. Existing orders keep their original charge.
       </p>
 
       <form onSubmit={handleSave} className="space-y-4">
@@ -66,6 +68,20 @@ export function AdminDeliveryCharges() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[11px] text-white/40 block mb-1.5 flex items-center gap-1">
+                <Navigation size={10} className="text-mia-pink" /> Munshiganj (৳)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={settings.munshiganj}
+                onChange={e => update('munshiganj', Number(e.target.value))}
+                className="admin-input"
+                placeholder="80"
+              />
+              <p className="text-[10px] text-white/25 mt-1">Charge for deliveries within Munshiganj district</p>
+            </div>
             <div>
               <label className="text-[11px] text-white/40 block mb-1.5">Inside Dhaka (৳)</label>
               <input
@@ -88,7 +104,21 @@ export function AdminDeliveryCharges() {
                 className="admin-input"
                 placeholder="120"
               />
-              <p className="text-[10px] text-white/25 mt-1">Charge for deliveries outside Dhaka</p>
+              <p className="text-[10px] text-white/25 mt-1">Charge for other districts (default)</p>
+            </div>
+            <div>
+              <label className="text-[11px] text-white/40 block mb-1.5 flex items-center gap-1">
+                <Globe size={10} className="text-mia-blue" /> Remote Area / Upazila (৳)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={settings.remote_area}
+                onChange={e => update('remote_area', Number(e.target.value))}
+                className="admin-input"
+                placeholder="150"
+              />
+              <p className="text-[10px] text-white/25 mt-1">Charge for remote areas or upazilas</p>
             </div>
           </div>
         </div>
@@ -149,7 +179,7 @@ export function AdminDeliveryCharges() {
                 className="admin-input"
                 placeholder="100"
               />
-              <p className="text-[10px] text-white/25 mt-1">Additional charge for express/fast delivery option</p>
+              <p className="text-[10px] text-white/25 mt-1">Additional charge added on top of zone charge when customer selects express</p>
             </div>
           )}
         </div>

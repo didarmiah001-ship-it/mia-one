@@ -162,12 +162,21 @@ const DELIVERY_ZONES: Record<string, { charge: number; zone: string }> = {
 
 // Default delivery settings — overridden by admin-configured values from DB
 const DEFAULT_DELIVERY_SETTINGS = {
+  munshiganj: 80,
   inside_dhaka: 60,
   outside_dhaka: 120,
+  remote_area: 150,
   free_delivery_min: 500,
   express_delivery: 100,
   express_enabled: false,
 };
+
+// Districts considered remote areas / upazilas (island, haor, hill tract, border areas)
+const REMOTE_DISTRICTS = [
+  'Rangamati', 'Khagrachari', 'Bandarban', 'Cox\'s Bazar',
+  'Bhola', 'Patuakhali', 'Barguna', 'Pirojpur', 'Jhalokati',
+  'Sunamganj', 'Netrokona', 'Kurigram', 'Lalmonirhat', 'Panchagarh', 'Thakurgaon',
+];
 
 // Dynamic payment methods fetched from database
 interface PaymentMethodDB {
@@ -221,6 +230,8 @@ export function CheckoutPage() {
     district: '',
     thana: '',
     notes: '',
+    isRemoteArea: false,
+    isExpress: false,
   });
 
   // Form validation errors
@@ -251,21 +262,27 @@ export function CheckoutPage() {
   // Get thanas for selected district - with safe fallback
   const availableThanas = form.district && BANGLADESH_THANAS[form.district] ? BANGLADESH_THANAS[form.district] : [];
 
-  // Determine if district is inside Dhaka city or outside
+  // Determine delivery zone based on district and customer selection
   const isInsideDhaka = form.district === 'Dhaka';
-  const isDhakaSuburb = ['Gazipur', 'Narayanganj', 'Munshiganj', 'Narsingdi', 'Manikganj', 'Tangail', 'Kishoreganj'].includes(form.district || '');
+  const isMunshiganj = form.district === 'Munshiganj';
+  const isRemoteDistrict = REMOTE_DISTRICTS.includes(form.district || '');
+  // Customer can manually mark any address as remote area / upazila
+  const isRemote = form.isRemoteArea || isRemoteDistrict;
 
-  // Calculate delivery charge from admin settings, with per-district fallback
-  const areaCharge = (() => {
+  // Determine the delivery zone label for storage
+  const deliveryZone = isRemote ? 'remote_area' : isMunshiganj ? 'munshiganj' : isInsideDhaka ? 'inside_dhaka' : 'outside_dhaka';
+
+  // Calculate base delivery charge from admin settings based on zone
+  const baseCharge = (() => {
+    if (isRemote) return deliverySettings.remote_area;
+    if (isMunshiganj) return deliverySettings.munshiganj;
     if (isInsideDhaka) return deliverySettings.inside_dhaka;
-    if (isDhakaSuburb) {
-      const zone = form.district && DELIVERY_ZONES[form.district] ? DELIVERY_ZONES[form.district].charge : null;
-      return zone ?? deliverySettings.inside_dhaka;
-    }
-    // Outside Dhaka — use per-district zone if available, otherwise outside_dhaka rate
-    const zone = form.district && DELIVERY_ZONES[form.district] ? DELIVERY_ZONES[form.district].charge : null;
-    return zone ?? deliverySettings.outside_dhaka;
+    return deliverySettings.outside_dhaka;
   })();
+
+  // Add express delivery charge if selected and enabled
+  const expressAddOn = form.isExpress && deliverySettings.express_enabled ? deliverySettings.express_delivery : 0;
+  const areaCharge = baseCharge + expressAddOn;
 
   // Safe subtotal calculation with null checks
   const subtotal = Math.round((state?.cart || []).reduce((s, i) => s + (i?.product?.discount_price || i?.product?.price || 0) * (i?.quantity || 0), 0));
@@ -412,6 +429,7 @@ export function CheckoutPage() {
       },
       coupon_code: couponApplied?.code ?? null,
       city: form.district,
+      delivery_zone: deliveryZone,
     };
 
     let orderId = generateOrderId();
@@ -738,6 +756,58 @@ export function CheckoutPage() {
                     className="w-full px-4 py-3.5 text-sm text-white placeholder:text-white/30 focus:outline-none transition-all rounded-2xl bg-white/[0.04] border border-white/[0.08] focus:border-mia-orange/50 resize-none"
                   />
                 </div>
+
+                {/* Remote Area Toggle */}
+                {form.district && !isRemoteDistrict && (
+                  <div className="flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                    <div className="flex items-center gap-2.5">
+                      <MapPin size={16} className="text-mia-blue" />
+                      <div>
+                        <p className="text-xs font-medium text-white/80">Remote Area / Upazila</p>
+                        <p className="text-[10px] text-white/40">Enable if delivery is to a remote or hard-to-reach area</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, isRemoteArea: !f.isRemoteArea }))}
+                      className="relative w-11 h-6 rounded-full transition-colors shrink-0"
+                      style={{ background: form.isRemoteArea ? '#00D1FF' : 'rgba(255,255,255,0.1)' }}
+                    >
+                      <div
+                        className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
+                        style={{ transform: form.isRemoteArea ? 'translateX(22px)' : 'translateX(2px)' }}
+                      />
+                    </button>
+                  </div>
+                )}
+
+                {/* Express Delivery Toggle */}
+                {deliverySettings.express_enabled && form.district && (
+                  <div className="flex items-center justify-between px-4 py-3.5 rounded-2xl"
+                    style={{
+                      background: form.isExpress ? 'rgba(0,209,255,0.08)' : 'rgba(255,255,255,0.03)',
+                      border: form.isExpress ? '1px solid rgba(0,209,255,0.25)' : '1px solid rgba(255,255,255,0.06)',
+                    }}>
+                    <div className="flex items-center gap-2.5">
+                      <Zap size={16} className="text-mia-blue" />
+                      <div>
+                        <p className="text-xs font-medium text-white/80">Express Delivery</p>
+                        <p className="text-[10px] text-white/40">Get it faster — adds ৳{deliverySettings.express_delivery} to delivery charge</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, isExpress: !f.isExpress }))}
+                      className="relative w-11 h-6 rounded-full transition-colors shrink-0"
+                      style={{ background: form.isExpress ? '#00D1FF' : 'rgba(255,255,255,0.1)' }}
+                    >
+                      <div
+                        className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
+                        style={{ transform: form.isExpress ? 'translateX(22px)' : 'translateX(2px)' }}
+                      />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -758,7 +828,10 @@ export function CheckoutPage() {
                     <p className="text-xs text-white/70">
                       {t('checkout.deliveringTo')} <span className="text-white font-medium">{form.thana ? `${form.thana}, ` : ''}{form.district}</span>
                     </p>
-                    <p className="text-[10px] text-white/40">{deliveryInfo.zone}</p>
+                    <p className="text-[10px] text-white/40">
+                      {isRemote ? 'Remote Area / Upazila' : isMunshiganj ? 'Munshiganj' : isInsideDhaka ? 'Inside Dhaka' : 'Outside Dhaka'}
+                      {form.isExpress && deliverySettings.express_enabled ? ' + Express' : ''}
+                    </p>
                   </div>
                 </div>
                 <span className={`text-base font-bold ${deliveryCharge === 0 ? 'text-green-400' : 'text-mia-orange'}`}>
