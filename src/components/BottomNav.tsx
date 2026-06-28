@@ -13,7 +13,7 @@ const navItems = [
 ];
 
 const ACTIVE_COLOR = '#2563EB';
-const INACTIVE_ICON = '#1e293b';
+const INACTIVE_COLOR = '#1e293b';
 const NAV_PADDING = 24;
 
 export function BottomNav() {
@@ -31,12 +31,14 @@ export function BottomNav() {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [bubbleLeft, setBubbleLeft] = useState(0);
+  const [dimensions, setDimensions] = useState({ bubbleSize: 70, navHeight: 62 });
 
-  const bubbleSize = typeof window !== 'undefined'
-    ? window.innerWidth < 640 ? 74
-    : window.innerWidth < 1024 ? 78
-    : 82
-    : 74;
+  const updateDimensions = useCallback(() => {
+    const width = window.innerWidth;
+    const bubbleSize = width < 640 ? 70 : width < 1024 ? 74 : 78;
+    const navHeight = width < 640 ? 62 : width < 1024 ? 66 : 70;
+    setDimensions({ bubbleSize, navHeight });
+  }, []);
 
   const updateBubblePosition = useCallback(() => {
     const container = containerRef.current;
@@ -50,10 +52,19 @@ export function BottomNav() {
   }, [safeActive]);
 
   useEffect(() => {
+    updateDimensions();
     updateBubblePosition();
-    window.addEventListener('resize', updateBubblePosition);
-    return () => window.removeEventListener('resize', updateBubblePosition);
-  }, [updateBubblePosition]);
+    const handleResize = () => {
+      updateDimensions();
+      updateBubblePosition();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateDimensions, updateBubblePosition]);
+
+  useEffect(() => {
+    updateBubblePosition();
+  }, [safeActive, updateBubblePosition]);
 
   const prevCartCount = useRef(cartCount);
   const [badgePop, setBadgePop] = useState(false);
@@ -74,63 +85,71 @@ export function BottomNav() {
     navigate(path);
   };
 
+  const { bubbleSize, navHeight } = dimensions;
+
   return (
     <>
-      <div aria-hidden="true" style={{ height: 'calc(120px + env(safe-area-inset-bottom, 0px))' }} />
+      <div aria-hidden="true" style={{ height: `calc(${navHeight + 50}px + env(safe-area-inset-bottom, 0px))` }} />
 
       <nav
         aria-label="Main navigation"
         className="fixed left-0 right-0 z-50 flex justify-center"
         style={{
-          bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
           pointerEvents: 'none',
         }}
       >
         <div
           ref={containerRef}
-          className="relative flex items-center"
+          className="relative flex items-center justify-around"
           style={{
-            width: '92%',
-            maxWidth: '1100px',
-            height: 'clamp(78px, 5vw + 70px, 90px)',
+            width: 'auto',
+            minWidth: '280px',
+            maxWidth: '420px',
+            height: `${navHeight}px`,
+            padding: `0 ${NAV_PADDING}px`,
             borderRadius: '999px',
-            background: 'rgba(255, 255, 255, 0.72)',
-            backdropFilter: 'blur(24px) saturate(1.8)',
-            WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-            border: '1px solid rgba(255, 255, 255, 0.6)',
+            background: 'rgba(255, 255, 255, 0.75)',
+            backdropFilter: 'blur(28px) saturate(2)',
+            WebkitBackdropFilter: 'blur(28px) saturate(2)',
+            border: '1.5px solid rgba(255, 255, 255, 0.85)',
             boxShadow: `
-              0 12px 40px rgba(37, 99, 235, 0.12),
-              0 4px 16px rgba(0, 0, 0, 0.08),
-              0 0 0 1px rgba(255, 255, 255, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8),
-              inset 0 -1px 0 rgba(0, 0, 0, 0.03)
+              0 10px 40px rgba(37, 99, 235, 0.15),
+              0 4px 20px rgba(0, 0, 0, 0.08),
+              0 0 0 1px rgba(255, 255, 255, 0.2),
+              inset 0 2px 0 rgba(255, 255, 255, 0.9),
+              inset 0 -2px 0 rgba(0, 0, 0, 0.02)
             `,
             pointerEvents: 'auto',
-            paddingLeft: `${NAV_PADDING}px`,
-            paddingRight: `${NAV_PADDING}px`,
           }}
         >
-          {/* Sliding active bubble */}
+          {/* Sliding active bubble with blue neon glow */}
           <div
             aria-hidden="true"
-            className="nav-bubble-active"
             style={{
               position: 'absolute',
               width: `${bubbleSize}px`,
               height: `${bubbleSize}px`,
               borderRadius: '50%',
-              background: 'linear-gradient(145deg, #ffffff 0%, #f0f6ff 50%, #e0ecff 100%)',
+              background: 'linear-gradient(145deg, #ffffff 0%, #f0f6ff 30%, #e0ecff 70%, #d4e4ff 100%)',
               top: '50%',
               left: bubbleLeft,
               transform: 'translate(-50%, -50%)',
-              transition: 'left 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+              transition: 'left 250ms cubic-bezier(0.34, 1.2, 0.64, 1)',
               zIndex: 0,
-              willChange: 'left, transform',
+              willChange: 'left',
               marginLeft: `-${NAV_PADDING}px`,
+              boxShadow: `
+                0 0 20px rgba(37, 99, 235, 0.35),
+                0 0 40px rgba(37, 99, 235, 0.2),
+                0 4px 12px rgba(37, 99, 235, 0.25),
+                inset 0 2px 4px rgba(255, 255, 255, 0.95),
+                inset 0 -2px 4px rgba(37, 99, 235, 0.08)
+              `,
             }}
           />
 
-          {/* Nav items */}
+          {/* Nav items - icon only */}
           {navItems.map((item, index) => {
             const isActive = index === safeActive;
             const Icon = item.icon;
@@ -144,38 +163,32 @@ export function BottomNav() {
                 onClick={() => handleClick(item.path, index)}
                 aria-label={isCart && cartCount > 0 ? `${label} (${cartCount} ${t('common.items') || 'items'})` : label}
                 aria-current={isActive ? 'page' : undefined}
-                className="relative flex flex-col items-center justify-center gap-1 bg-transparent border-0 cursor-pointer outline-none"
+                className="relative flex items-center justify-center bg-transparent border-0 cursor-pointer outline-none"
                 style={{
-                  flex: '1 1 0',
-                  height: '100%',
+                  width: `${bubbleSize - 8}px`,
+                  height: `${bubbleSize - 8}px`,
                   zIndex: 1,
-                  transition: 'transform 250ms ease',
+                  transition: 'transform 250ms cubic-bezier(0.34, 1.2, 0.64, 1)',
+                  transform: clickAnim === index ? 'scale(0.92)' : 'scale(1)',
                 }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.transform = 'scale(1.08)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                onFocus={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-                onBlur={e => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <div
                   className="flex items-center justify-center relative"
                   style={{
-                    width: 'clamp(40px, 4vw + 32px, 48px)',
-                    height: 'clamp(40px, 4vw + 32px, 48px)',
-                    transition: 'all 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    transform: clickAnim === index ? 'scale(1.15)' : isActive ? 'scale(1)' : 'scale(1)',
+                    transition: 'all 250ms cubic-bezier(0.34, 1.2, 0.64, 1)',
+                    transform: isActive ? 'scale(1.05)' : 'scale(1)',
                   }}
                 >
                   <Icon
-                    size={isActive ? 34 : 24}
+                    size={isActive ? 30 : 24}
                     strokeWidth={isActive ? 2.5 : 2}
                     aria-hidden="true"
-                    className={clickAnim === index ? 'nav-click-anim' : ''}
                     style={{
-                      color: isActive ? ACTIVE_COLOR : INACTIVE_ICON,
+                      color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR,
                       filter: isActive
-                        ? 'drop-shadow(0 2px 8px rgba(37, 99, 235, 0.4))'
+                        ? 'drop-shadow(0 2px 10px rgba(37, 99, 235, 0.5))'
                         : 'none',
-                      transition: 'all 320ms ease',
+                      transition: 'all 250ms ease',
                     }}
                   />
 
@@ -186,10 +199,10 @@ export function BottomNav() {
                       className={badgePop ? 'nav-badge-anim' : ''}
                       style={{
                         position: 'absolute',
-                        top: '-4px',
-                        right: '-8px',
-                        minWidth: '20px',
-                        height: '20px',
+                        top: '-6px',
+                        right: '-10px',
+                        minWidth: '18px',
+                        height: '18px',
                         padding: '0 5px',
                         borderRadius: '999px',
                         background: 'linear-gradient(135deg, #2563EB, #1d4ed8)',
@@ -199,29 +212,16 @@ export function BottomNav() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.5), 0 0 0 2px rgba(255,255,255,0.9)',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.5), 0 0 0 2px rgba(255,255,255,0.95)',
                         zIndex: 2,
+                        transform: badgePop ? 'scale(1.2)' : 'scale(1)',
+                        transition: 'transform 200ms ease',
                       }}
                     >
                       {cartCount > 99 ? '99+' : cartCount}
                     </span>
                   )}
                 </div>
-
-                {/* Label */}
-                <span
-                  aria-hidden="true"
-                  style={{
-                    fontSize: 'clamp(9px, 1vw + 7px, 11px)',
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? ACTIVE_COLOR : '#94a3b8',
-                    transition: 'all 320ms ease',
-                    whiteSpace: 'nowrap',
-                    textShadow: isActive ? '0 0 12px rgba(37, 99, 235, 0.3)' : 'none',
-                  }}
-                >
-                  {label}
-                </span>
               </button>
             );
           })}
