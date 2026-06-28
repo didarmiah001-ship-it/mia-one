@@ -3,7 +3,7 @@ import {
   Search, X, Printer, Download, ChevronRight,
   Package, Clock, CheckCircle, Truck, PackageCheck, XCircle,
   Filter, RefreshCw, FileText, MapPin, Phone, User, Calendar,
-  ArrowUpDown, Eye, CreditCard, Image as ImageIcon
+  ArrowUpDown, Eye, CreditCard, Image as ImageIcon, MessageCircle
 } from 'lucide-react';
 import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline, fetchPayment } from '../lib/api';
 import { useToast } from '../components/Toast';
@@ -185,6 +185,63 @@ function printInvoice(order: any, payment?: any) {
   }
 }
 
+function buildWhatsAppMessage(order: any, payment?: any): string {
+  const addr = order.address || {};
+  const items = order.items || [];
+  const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const paymentMethod = (order.payment_method || payment?.method || '').replace(/_/g, ' ');
+  const transactionId = payment?.transaction_id || order.transaction_id || '';
+  const paymentStatus = payment?.status || order.payment_status || 'pending';
+
+  let message = `🛒 *MIA ONE - Order Receipt*\n\n`;
+  message += `📋 *Order ID:* ${order.order_number || '#' + String(order.id).slice(-8).toUpperCase()}\n`;
+  message += `📅 *Date:* ${date}\n`;
+  message += `📍 *Status:* ${statusMeta(order.status).label}\n\n`;
+
+  message += `👤 *Customer Details:*\n`;
+  message += `   Name: ${addr.full_name || 'N/A'}\n`;
+  message += `   Phone: ${addr.phone || 'N/A'}\n`;
+  if (addr.address) message += `   Address: ${addr.address}${addr.area ? `, ${addr.area}` : ''}${addr.city ? `, ${addr.city}` : ''}\n`;
+
+  message += `\n📦 *Order Items:*\n`;
+  items.forEach((item: any, i: number) => {
+    const total = (Number(item.price) || 0) * (item.quantity || 1);
+    message += `   ${i + 1}. ${item.name || 'Product'} x${item.quantity || 1} = ৳${total.toLocaleString()}\n`;
+  });
+
+  message += `\n💳 *Payment Info:*\n`;
+  message += `   Method: ${paymentMethod || 'N/A'}\n`;
+  if (transactionId) message += `   Transaction ID: ${transactionId}\n`;
+  message += `   Payment Status: ${paymentStatus}\n`;
+
+  message += `\n💰 *Order Summary:*\n`;
+  message += `   Subtotal: ৳${Number(order.subtotal || 0).toLocaleString()}\n`;
+  if (Number(order.discount || 0) > 0) {
+    message += `   Discount: -৳${Number(order.discount).toLocaleString()}\n`;
+  }
+  const deliveryCharge = Number(order.delivery_charge || 0);
+  message += `   Delivery: ${deliveryCharge === 0 ? 'Free' : '৳' + deliveryCharge.toLocaleString()}\n`;
+  message += `   *Grand Total: ৳${Number(order.total || 0).toLocaleString()}*\n`;
+
+  if (addr.notes) {
+    message += `\n📝 *Note:* ${addr.notes}\n`;
+  }
+
+  message += `\n✅ Thank you for shopping with MIA ONE!`;
+
+  return message;
+}
+
+function shareOnWhatsApp(order: any, phone?: string, payment?: any) {
+  const message = buildWhatsAppMessage(order, payment);
+  const encodedMessage = encodeURIComponent(message);
+  const phoneNumber = phone || (order.address?.phone ? order.address.phone.replace(/\D/g, '') : '');
+  const url = phoneNumber
+    ? `https://wa.me/${phoneNumber}?text=${encodedMessage}`
+    : `https://wa.me/?text=${encodedMessage}`;
+  window.open(url, '_blank');
+}
+
 // ── CSV Export ─────────────────────────────────────────────────────────────────
 
 function exportCSV(orders: any[]) {
@@ -330,6 +387,9 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
             <h3 className="text-sm font-bold text-white mt-0.5">Order Details</h3>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => shareOnWhatsApp(order, undefined, payment)} className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="Share on WhatsApp">
+              <MessageCircle size={13} className="text-green-500" />
+            </button>
             <button onClick={() => printInvoice(order, payment)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
               <Printer size={13} className="text-white/50" />
             </button>
@@ -734,6 +794,9 @@ export function AdminOrders() {
                           ))}
                           <button onClick={() => printInvoice(order)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print">
                             <Printer size={11} className="text-white/40" />
+                          </button>
+                          <button onClick={() => shareOnWhatsApp(order)} className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="WhatsApp">
+                            <MessageCircle size={11} className="text-green-500" />
                           </button>
                           <button onClick={() => setSelectedOrder(order)} className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors" style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.15)' }} title="View">
                             <Eye size={11} className="text-mia-orange" />
