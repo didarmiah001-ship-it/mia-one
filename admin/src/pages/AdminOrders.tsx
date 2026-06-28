@@ -388,6 +388,12 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
                   <span style={{ color: '#16a34a', fontWeight: 500 }}>-৳{couponDiscount.toLocaleString()}</span>
                 </div>
               )}
+              {Number(order.delivery_discount || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '12px' }}>
+                  <span style={{ color: '#16a34a' }}>Delivery Discount</span>
+                  <span style={{ color: '#16a34a', fontWeight: 500 }}>-৳{Number(order.delivery_discount).toLocaleString()}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: '12px' }}>
                 <span style={{ color: '#666' }}>Delivery Charge</span>
                 <span style={{ fontWeight: 500 }}>
@@ -606,6 +612,13 @@ function buildWhatsAppMessage(order: any, payment?: any): string {
   });
 
   message += `\n💰 Grand Total: ৳${Number(order.total || 0).toLocaleString()}\n`;
+
+  // Coupon details
+  if (order.coupon_code || Number(order.coupon_discount || 0) > 0) {
+    message += `\n🎟️ Coupon: ${order.coupon_code || 'N/A'}\n`;
+    if (Number(order.coupon_discount || 0) > 0) message += `Coupon Discount: -৳${Number(order.coupon_discount).toLocaleString()}\n`;
+    if (Number(order.delivery_discount || 0) > 0) message += `Delivery Discount: -৳${Number(order.delivery_discount).toLocaleString()}\n`;
+  }
 
   message += `\n💳 Payment: ${paymentMethod || 'N/A'}\n`;
   message += `📋 Status: ${sm.label}\n`;

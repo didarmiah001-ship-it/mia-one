@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
-import { Trash2, Heart, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Truck, Tag } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Trash2, Heart, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Truck, Tag, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useAuth } from '../lib/auth';
-import { toggleWishlist } from '../lib/api';
+import { toggleWishlist, validateCoupon } from '../lib/api';
 import { useTranslation } from 'react-i18next';
 
 export function CartPage() {
@@ -13,6 +13,13 @@ export function CartPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number; free_delivery: boolean } | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponSuccess, setCouponSuccess] = useState('');
+
   const totals = useMemo(() => {
     const subtotal = Math.round(
       state.cart.reduce((sum, item) => sum + (item.product.discount_price ?? item.product.price) * item.quantity, 0)
@@ -20,13 +27,39 @@ export function CartPage() {
     const originalTotal = Math.round(
       state.cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
     );
-    const discount = originalTotal - subtotal;
-    const deliveryCharge = subtotal >= appConfig.delivery.freeDeliveryThreshold ? 0 : appConfig.delivery.deliveryCharge;
-    const total = subtotal + deliveryCharge;
-    return { subtotal, discount, total, deliveryCharge };
-  }, [state.cart]);
+    const productDiscount = originalTotal - subtotal;
+    const hasFreeDeliveryCoupon = couponApplied?.free_delivery === true;
+    const deliveryCharge = (subtotal >= appConfig.delivery.freeDeliveryThreshold || hasFreeDeliveryCoupon) ? 0 : appConfig.delivery.deliveryCharge;
+    const deliveryDiscount = hasFreeDeliveryCoupon ? appConfig.delivery.deliveryCharge : 0;
+    const couponDiscount = couponApplied?.discount ?? 0;
+    const total = Math.max(0, subtotal + deliveryCharge - couponDiscount);
+    return { subtotal, discount: productDiscount, total, deliveryCharge, deliveryDiscount, couponDiscount };
+  }, [state.cart, couponApplied]);
 
   const totalItems = state.cart.reduce((s, i) => s + i.quantity, 0);
+
+  const handleCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    setCouponSuccess('');
+    const result = await validateCoupon(couponInput.trim(), totals.subtotal, state.cart, user?.id);
+    if (result.error) {
+      setCouponError(result.error);
+      setCouponApplied(null);
+    } else {
+      setCouponApplied({ code: couponInput.trim().toUpperCase(), discount: result.discount, free_delivery: result.free_delivery });
+      setCouponSuccess('✅ কুপন সফলভাবে প্রয়োগ হয়েছে।');
+    }
+    setCouponLoading(false);
+  };
+
+  const removeCoupon = () => {
+    setCouponApplied(null);
+    setCouponInput('');
+    setCouponError('');
+    setCouponSuccess('');
+  };
 
   const handleSaveForLater = async (productId: string) => {
     const product = state.cart.find(i => i.product.id === productId)?.product;
@@ -172,7 +205,7 @@ export function CartPage() {
           })}
 
           {/* Delivery notice */}
-          {totals.deliveryCharge > 0 ? (
+          {totals.deliveryCharge > 0 && !couponApplied?.free_delivery ? (
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs"
               style={{ background: 'rgba(255,138,0,0.05)', border: '1px solid rgba(255,138,0,0.12)' }}>
               <Tag size={12} className="text-mia-orange shrink-0" />
@@ -188,6 +221,52 @@ export function CartPage() {
             </div>
           )}
 
+          {/* Coupon Input */}
+          <div className="glow-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag size={14} className="text-mia-purple" />
+              <h3 className="text-sm font-semibold text-white">Coupon Code</h3>
+            </div>
+            {couponApplied ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-4 py-3 rounded-xl"
+                  style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-green-400" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-400 font-mono">{couponApplied.code}</p>
+                      <p className="text-xs text-green-400/60">
+                        Discount: ৳{couponApplied.discount}
+                        {couponApplied.free_delivery && ' · Free Delivery'}
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={removeCoupon} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                    <X size={13} className="text-white/50" />
+                  </button>
+                </div>
+                {couponSuccess && (
+                  <p className="text-xs text-green-400 font-medium">{couponSuccess}</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Enter coupon code" value={couponInput}
+                    onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleCoupon()}
+                    className="flex-1 px-4 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-purple/50 transition-colors font-mono tracking-wider" />
+                  <button onClick={handleCoupon} disabled={couponLoading || !couponInput.trim()}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-opacity"
+                    style={{ background: 'linear-gradient(135deg, #7B2CFF, #FF2EC9)' }}>
+                    {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
+                  </button>
+                </div>
+                {couponError && <p className="text-xs text-red-400">{couponError}</p>}
+              </div>
+            )}
+          </div>
+
           {/* Order Summary */}
           <div className="glow-card p-4 space-y-2.5">
             <h3 className="text-sm font-semibold text-white mb-3">{t('cart.orderSummary')}</h3>
@@ -201,12 +280,24 @@ export function CartPage() {
                 <span className="text-green-400 font-medium">-৳{totals.discount.toLocaleString()}</span>
               </div>
             )}
+            {couponApplied && totals.couponDiscount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-green-400">Coupon ({couponApplied.code})</span>
+                <span className="text-green-400 font-medium">-৳{totals.couponDiscount.toLocaleString()}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-white/50">{t('cart.deliveryCharge')}</span>
               <span className={totals.deliveryCharge === 0 ? 'text-green-400 font-medium' : 'text-white'}>
                 {totals.deliveryCharge === 0 ? t('common.free') : `${appConfig.delivery.currency}${totals.deliveryCharge}`}
               </span>
             </div>
+            {couponApplied?.free_delivery && totals.deliveryDiscount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-green-400">Delivery Discount</span>
+                <span className="text-green-400 font-medium">-৳{totals.deliveryDiscount.toLocaleString()}</span>
+              </div>
+            )}
             <div className="border-t border-white/5 pt-3 flex justify-between">
               <span className="text-sm font-semibold text-white">{t('cart.total')}</span>
               <span className="text-xl font-bold text-mia-orange">{appConfig.delivery.currency}{totals.total.toLocaleString()}</span>

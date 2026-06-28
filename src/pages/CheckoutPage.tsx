@@ -892,18 +892,24 @@ export function CheckoutPage() {
                 <Tag size={14} className="text-mia-purple" /> {t('checkout.couponCode')}
               </h3>
               {couponApplied ? (
-                <div className="flex items-center justify-between px-4 py-3 rounded-xl"
-                  style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={15} className="text-green-400" />
-                    <div>
-                      <p className="text-sm font-semibold text-green-400">{couponApplied.code}</p>
-                      <p className="text-xs text-green-400/60">{t('checkout.saved')} ৳{couponApplied.discount}</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-4 py-3 rounded-xl"
+                    style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 size={15} className="text-green-400" />
+                      <div>
+                        <p className="text-sm font-semibold text-green-400 font-mono">{couponApplied.code}</p>
+                        <p className="text-xs text-green-400/60">
+                          Discount: ৳{couponApplied.discount}
+                          {couponApplied.free_delivery && ' · Free Delivery'}
+                        </p>
+                      </div>
                     </div>
+                    <button onClick={removeCoupon} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                      <X size={13} className="text-white/50" />
+                    </button>
                   </div>
-                  <button onClick={removeCoupon} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center">
-                    <X size={13} className="text-white/50" />
-                  </button>
+                  <p className="text-xs text-green-400 font-medium">✅ কুপন সফলভাবে প্রয়োগ হয়েছে।</p>
                 </div>
               ) : (
                 <div className="space-y-2">
