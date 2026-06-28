@@ -6,9 +6,10 @@ import {
   Search, X, Printer, Download, ChevronRight,
   Package, Clock, CheckCircle, Truck, PackageCheck, XCircle,
   Filter, RefreshCw, FileText, MapPin, Phone, User, Calendar,
-  ArrowUpDown, Eye, CreditCard, Image as ImageIcon, MessageCircle
+  ArrowUpDown, Eye, CreditCard, Image as ImageIcon, MessageCircle, Pencil
 } from 'lucide-react';
 import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline, fetchPayment } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { useToast } from '../components/Toast';
 import { appConfig } from '../lib/config';
 
@@ -730,6 +731,13 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState(order.status);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [editingDelivery, setEditingDelivery] = useState(false);
+  const [overrideCharge, setOverrideCharge] = useState(String(order.delivery_charge ?? 0));
+  const [savingDelivery, setSavingDelivery] = useState(false);
+  const [localOrder, setLocalOrder] = useState(order);
+
+  // Use localOrder for display so manual override reflects immediately
+  const displayOrder = localOrder;
 
   useEffect(() => {
     fetchOrderTimeline(order.id).then(setTimeline);
@@ -785,6 +793,25 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
     setUpdating(false);
   };
 
+  const handleSaveDeliveryOverride = async () => {
+    const newCharge = Number(overrideCharge) || 0;
+    setSavingDelivery(true);
+    const newTotal = Math.max(0, Number(displayOrder.subtotal || 0) + newCharge - Number(displayOrder.discount || 0));
+    const { error } = await supabase
+      .from('orders')
+      .update({ delivery_charge: newCharge, total: newTotal, updated_at: new Date().toISOString() })
+      .eq('id', displayOrder.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      const updated = { ...displayOrder, delivery_charge: newCharge, total: newTotal };
+      setLocalOrder(updated);
+      toast.success(`Delivery charge updated to ৳${newCharge}. Grand total recalculated.`);
+      setEditingDelivery(false);
+    }
+    setSavingDelivery(false);
+  };
+
   const paymentScreenshotUrl = payment?.screenshot_url || payment?.payment_screenshot_url || order.payment_screenshot_url;
   const customerPaymentNote = payment?.customer_note || order.customer_payment_note;
 
@@ -821,7 +848,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
               {sm.label}
             </span>
             <div className="text-right">
-              <p className="text-xl font-bold text-mia-orange">৳{Number(order.total).toLocaleString()}</p>
+              <p className="text-xl font-bold text-mia-orange">৳{Number(displayOrder.total).toLocaleString()}</p>
               <p className="text-[10px] text-white/30 mt-0.5">{new Date(order.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
@@ -918,11 +945,62 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
             )}
             {/* Totals */}
             <div className="pt-2 space-y-1.5 border-t border-white/5">
-              <div className="flex justify-between text-xs"><span className="text-white/40">Subtotal</span><span className="text-white/70">৳{Number(order.subtotal || 0).toLocaleString()}</span></div>
-              {Number(order.discount) > 0 && <div className="flex justify-between text-xs"><span className="text-green-400">Coupon {order.coupon_code && `(${order.coupon_code})`}</span><span className="text-green-400">-৳{Number(order.discount).toLocaleString()}</span></div>}
-              <div className="flex justify-between text-xs"><span className="text-white/40">Delivery</span><span className={Number(order.delivery_charge) === 0 ? 'text-green-400' : 'text-white/70'}>{Number(order.delivery_charge) === 0 ? 'Free' : `৳${Number(order.delivery_charge).toLocaleString()}`}</span></div>
-              <div className="flex justify-between text-sm font-bold pt-1"><span className="text-white">Total</span><span className="text-mia-orange">৳{Number(order.total).toLocaleString()}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-white/40">Subtotal</span><span className="text-white/70">৳{Number(displayOrder.subtotal || 0).toLocaleString()}</span></div>
+              {Number(displayOrder.discount) > 0 && <div className="flex justify-between text-xs"><span className="text-green-400">Coupon {displayOrder.coupon_code && `(${displayOrder.coupon_code})`}</span><span className="text-green-400">-৳{Number(displayOrder.discount).toLocaleString()}</span></div>}
+
+              {/* Delivery Charge with Manual Override */}
+              <div className="flex justify-between text-xs items-center">
+                <span className="text-white/40">Delivery Charge</span>
+                {editingDelivery ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      value={overrideCharge}
+                      onChange={e => setOverrideCharge(e.target.value)}
+                      className="w-20 px-2 py-1 rounded-lg text-xs text-white text-right"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,138,0,0.3)' }}
+                      min={0}
+                    />
+                    <button
+                      onClick={handleSaveDeliveryOverride}
+                      disabled={savingDelivery}
+                      className="px-2 py-1 rounded-lg text-[10px] font-semibold text-white"
+                      style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
+                    >
+                      {savingDelivery ? '...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => { setEditingDelivery(false); setOverrideCharge(String(displayOrder.delivery_charge ?? 0)); }}
+                      className="px-2 py-1 rounded-lg text-[10px] text-white/50 hover:text-white/80"
+                      style={{ background: 'rgba(255,255,255,0.05)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className={Number(displayOrder.delivery_charge) === 0 ? 'text-green-400' : 'text-white/70'}>
+                      {Number(displayOrder.delivery_charge) === 0 ? 'Free' : `৳${Number(displayOrder.delivery_charge).toLocaleString()}`}
+                    </span>
+                    <button
+                      onClick={() => { setEditingDelivery(true); setOverrideCharge(String(displayOrder.delivery_charge ?? 0)); }}
+                      className="text-[10px] text-mia-orange/70 hover:text-mia-orange transition-colors"
+                      title="Manual override delivery charge"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between text-sm font-bold pt-1"><span className="text-white">Grand Total</span><span className="text-mia-orange">৳{Number(displayOrder.total).toLocaleString()}</span></div>
             </div>
+
+            {editingDelivery && (
+              <p className="text-[10px] text-white/30 mt-1.5 px-1">
+                Grand total will be recalculated as: Subtotal + New Delivery Charge - Discount
+              </p>
+            )}
           </div>
 
           {/* Payment Details */}
@@ -1016,7 +1094,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
       {/* Invoice Modal */}
       {showInvoice && (
         <InvoiceModal
-          order={order}
+          order={displayOrder}
           payment={payment}
           onClose={() => setShowInvoice(false)}
         />

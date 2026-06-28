@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { useNavigate, useParams, useLocation } from '../lib/router';
 import {
-  LayoutDashboard, Package, Tag, Image, ShoppingCart, Users, LogOut,
+  LayoutDashboard, Package, Tag, Image, ShoppingCart, Users, LogOut, Truck,
   Ticket, Bell, Zap, BarChart2, Settings, Star, Menu, X, ChevronLeft,
   ChevronRight as ChevronRightIcon, CreditCard,
 } from 'lucide-react';
@@ -19,6 +19,7 @@ import { AdminCoupons } from './AdminCoupons';
 import { AdminNotifications } from './AdminNotifications';
 import { AdminReports } from './AdminReports';
 import { AdminSettings } from './AdminSettings';
+import { AdminDeliveryCharges } from './AdminDeliveryCharges';
 import { AdminPayments } from './AdminPayments';
 import { AdminPaymentSettings } from './AdminPaymentSettings';
 
@@ -60,7 +61,8 @@ const NAV_GROUPS = [
   {
     label: 'System',
     items: [
-      { id: 'settings',      label: 'Settings',      icon: Settings        },
+      { id: 'settings',           label: 'Settings',          icon: Settings        },
+      { id: 'delivery-charges',   label: 'Delivery Charges',  icon: Truck            },
     ],
   },
 ];
@@ -202,7 +204,8 @@ function SectionContent({ section }: { section: string }) {
     case 'payments':      return <AdminPayments />;
     case 'payment-settings': return <AdminPaymentSettings />;
     case 'reports':       return <AdminReports />;
-    case 'settings':      return <AdminSettings />;
+    case 'settings':           return <AdminSettings />;
+    case 'delivery-charges':   return <AdminDeliveryCharges />;
     default:              return <AdminDashboard />;
   }
 }

@@ -92,9 +92,9 @@ const BANGLADESH_THANAS: Record<string, string[]> = {
   'Joypurhat': ['Joypurhat Sadar', 'Akkelpur', 'Kalai', 'Khetlal', 'Panchbibi'],
 };
 
-// Delivery charges based on location
+// Delivery zones — fallback only, overridden by admin settings from DB
 const DELIVERY_ZONES: Record<string, { charge: number; zone: string }> = {
-  'Dhaka': { charge: 60, zone: 'Dhaka City' },
+  'Dhaka': { charge: 60, zone: 'Inside Dhaka' },
   'Gazipur': { charge: 70, zone: 'Dhaka Suburb' },
   'Narayanganj': { charge: 70, zone: 'Dhaka Suburb' },
   'Munshiganj': { charge: 80, zone: 'Dhaka Suburb' },
@@ -158,6 +158,15 @@ const DELIVERY_ZONES: Record<string, { charge: number; zone: string }> = {
   'Pirojpur': { charge: 130, zone: 'Barishal' },
   'Barguna': { charge: 140, zone: 'Barishal' },
   'Jhalokati': { charge: 130, zone: 'Barishal' },
+};
+
+// Default delivery settings — overridden by admin-configured values from DB
+const DEFAULT_DELIVERY_SETTINGS = {
+  inside_dhaka: 60,
+  outside_dhaka: 120,
+  free_delivery_min: 500,
+  express_delivery: 100,
+  express_enabled: false,
 };
 
 // Dynamic payment methods fetched from database
@@ -229,15 +238,38 @@ export function CheckoutPage() {
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  const [deliverySettings, setDeliverySettings] = useState<any>(DEFAULT_DELIVERY_SETTINGS);
+
+  // Fetch delivery charge settings from admin-configured DB values
+  useEffect(() => {
+    supabase.from('settings').select('value').eq('key', 'delivery_charges').maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) setDeliverySettings({ ...DEFAULT_DELIVERY_SETTINGS, ...data.value });
+      });
+  }, []);
 
   // Get thanas for selected district - with safe fallback
   const availableThanas = form.district && BANGLADESH_THANAS[form.district] ? BANGLADESH_THANAS[form.district] : [];
-  const deliveryInfo = form.district && DELIVERY_ZONES[form.district] ? DELIVERY_ZONES[form.district] : { charge: appConfig.delivery.deliveryCharge, zone: 'Outside Dhaka' };
 
-  const areaCharge = deliveryInfo?.charge ?? appConfig.delivery.deliveryCharge;
+  // Determine if district is inside Dhaka city or outside
+  const isInsideDhaka = form.district === 'Dhaka';
+  const isDhakaSuburb = ['Gazipur', 'Narayanganj', 'Munshiganj', 'Narsingdi', 'Manikganj', 'Tangail', 'Kishoreganj'].includes(form.district || '');
+
+  // Calculate delivery charge from admin settings, with per-district fallback
+  const areaCharge = (() => {
+    if (isInsideDhaka) return deliverySettings.inside_dhaka;
+    if (isDhakaSuburb) {
+      const zone = form.district && DELIVERY_ZONES[form.district] ? DELIVERY_ZONES[form.district].charge : null;
+      return zone ?? deliverySettings.inside_dhaka;
+    }
+    // Outside Dhaka — use per-district zone if available, otherwise outside_dhaka rate
+    const zone = form.district && DELIVERY_ZONES[form.district] ? DELIVERY_ZONES[form.district].charge : null;
+    return zone ?? deliverySettings.outside_dhaka;
+  })();
+
   // Safe subtotal calculation with null checks
   const subtotal = Math.round((state?.cart || []).reduce((s, i) => s + (i?.product?.discount_price || i?.product?.price || 0) * (i?.quantity || 0), 0));
-  const deliveryCharge = subtotal >= (appConfig?.delivery?.freeDeliveryThreshold || 0) ? 0 : areaCharge;
+  const deliveryCharge = subtotal >= (deliverySettings.free_delivery_min || 0) ? 0 : areaCharge;
   const discount = couponApplied?.discount ?? 0;
   const total = Math.round(Math.max(0, subtotal + deliveryCharge - discount));
 
