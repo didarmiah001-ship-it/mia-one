@@ -235,74 +235,64 @@ function resolveItems(order: any): any[] {
   }));
 }
 
-// ── Print using @media print on current page ──────────────────────────────────
+// ── Print via hidden srcdoc iframe (no about:blank, no new tab) ──────────────
 
-const PRINT_STYLE_ID = 'receipt-print-style';
+function printInvoice(order: any) {
+  const logoUrl = window.location.origin + appConfig.logo;
+  const html = buildInvoiceHTML(order, logoUrl);
 
-function printReceiptElement(el: HTMLElement) {
-  // Inject @media print CSS that shows only the receipt element
-  let style = document.getElementById(PRINT_STYLE_ID) as HTMLStyleElement | null;
-  if (!style) {
-    style = document.createElement('style');
-    style.id = PRINT_STYLE_ID;
-    document.head.appendChild(style);
-  }
-  el.id = 'receipt-print-target';
-  style.textContent = `
-    @media print {
-      body > *:not(#receipt-print-root) { display: none !important; }
-      #receipt-print-root { display: block !important; position: static !important; }
-      #receipt-print-root > *:not(#receipt-print-target) { display: none !important; }
-      #receipt-print-target { display: block !important; background: #fff !important; color: #111 !important; }
-    }
-  `;
-  // Wrap: move element to a top-level container
-  const root = document.createElement('div');
-  root.id = 'receipt-print-root';
-  root.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:99999;overflow:auto;display:none';
-  document.body.appendChild(root);
-  // Clone the element so original stays in the modal
-  const clone = el.cloneNode(true) as HTMLElement;
-  clone.id = 'receipt-print-target';
-  root.appendChild(clone);
+  // Create off-screen iframe, set srcdoc (avoids about:blank & popup blockers)
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:absolute;width:1px;height:1px;top:-9999px;left:-9999px;border:0;opacity:0';
+  document.body.appendChild(iframe);
 
-  window.print();
+  // srcdoc is the only way to inject HTML without document.write or a new URL
+  iframe.srcdoc = html;
 
-  // Clean up after print dialog closes (afterprint or timeout fallback)
-  const cleanup = () => {
-    if (document.body.contains(root)) document.body.removeChild(root);
-    style!.textContent = '';
-    window.removeEventListener('afterprint', cleanup);
-  };
-  window.addEventListener('afterprint', cleanup);
-  setTimeout(cleanup, 30000);
+  iframe.addEventListener('load', () => {
+    try {
+      iframe.contentWindow!.focus();
+      iframe.contentWindow!.print();
+    } catch (_) { /* silent */ }
+    // afterprint fires when dialog closes; fallback: 60 s timeout
+    const remove = () => { if (document.body.contains(iframe)) document.body.removeChild(iframe); };
+    iframe.contentWindow!.addEventListener('afterprint', remove);
+    setTimeout(remove, 60_000);
+  }, { once: true });
 }
 
-// ── PDF Download using html2pdf.js (real .pdf file) ───────────────────────────
+// ── PDF Download via html2pdf.js → real .pdf file ─────────────────────────────
 
-async function downloadReceiptAsPDF(el: HTMLElement, orderId: string) {
-  const orderNum = orderId.slice(-8).toUpperCase();
-  const clone = el.cloneNode(true) as HTMLElement;
-  clone.style.cssText = 'background:#fff;color:#111;padding:24px;width:595px;font-family:Arial,sans-serif';
-  // Ensure images that are base64 render correctly — html2pdf handles them natively
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;background:#fff';
-  wrapper.appendChild(clone);
-  document.body.appendChild(wrapper);
+async function downloadInvoicePDF(order: any) {
+  const logoUrl = window.location.origin + appConfig.logo;
+  const html = buildInvoiceHTML(order, logoUrl);
+  const orderNum = (order.order_number || order.id.slice(-8)).toUpperCase();
+
+  // Parse the HTML string into a detached DOM element
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const page = doc.querySelector('.page') as HTMLElement;
+
+  if (!page) return;
+
+  // Attach off-screen so html2canvas can measure it
+  page.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;padding:40px 48px';
+  document.body.appendChild(page);
 
   try {
     await html2pdf()
       .set({
-        margin: [10, 10, 10, 10],
+        margin: [8, 8, 8, 8],
         filename: `Invoice-${orderNum}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       })
-      .from(clone)
+      .from(page)
       .save();
   } finally {
-    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+    if (document.body.contains(page)) document.body.removeChild(page);
   }
 }
 
@@ -402,20 +392,16 @@ function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
   const computedSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const subtotal = Number(order.subtotal) || computedSubtotal;
 
-  const handlePrint = () => {
-    if (printRef.current) printReceiptElement(printRef.current);
-  };
-  const handleDownload = async () => {
-    if (!printRef.current || downloading) return;
-    setDownloading(true);
-    try {
-      await downloadReceiptAsPDF(printRef.current, order.order_number || order.id);
-    } finally {
-      setDownloading(false);
-    }
-  };
-  const handleWhatsApp = () => shareOnWhatsApp(order);
+  const handlePrint = () => printInvoice(order);
 
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try { await downloadInvoicePDF(order); }
+    finally { setDownloading(false); }
+  };
+
+  const handleWhatsApp = () => shareOnWhatsApp(order);
   const canWhatsApp = !!(addr.phone || '').replace(/\D/g, '');
 
   return (
