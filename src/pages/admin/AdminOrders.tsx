@@ -41,9 +41,14 @@ function buildReceiptText(order: any): string {
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const orderNum = order.order_number || ('#' + order.id.slice(-8).toUpperCase());
 
-  const itemLines = items.map((item: any) =>
-    `  • ${item.name} x${item.quantity} = ৳${(Number(item.price) * item.quantity).toLocaleString()}`
-  ).join('\n');
+  const computedSubtotal = items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
+  const subtotal = Number(order.subtotal) || computedSubtotal;
+
+  const itemLines = items.map((item: any) => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.price) || 0;
+    return `  • ${item.name} x${qty} = ৳${(price * qty).toLocaleString()}`;
+  }).join('\n');
 
   const lines = [
     `🛍️ *${appConfig.name} — Order Receipt*`,
@@ -60,7 +65,7 @@ function buildReceiptText(order: any): string {
     itemLines,
     ``,
     `💰 *Summary*`,
-    `Subtotal: ৳${Number(order.subtotal || 0).toLocaleString()}`,
+    `Subtotal: ৳${subtotal.toLocaleString()}`,
   ];
 
   if (Number(order.discount) > 0) {
@@ -103,14 +108,24 @@ function buildInvoiceHTML(order: any, logoUrl: string) {
   const orderNum = order.order_number || ('#' + order.id.slice(-8).toUpperCase());
   const sm = statusMeta(order.status);
 
-  const itemRows = items.map((item: any, i: number) => `
-    <tr>
+  const computedSubtotal = items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
+  const subtotal = Number(order.subtotal) || computedSubtotal;
+
+  const itemRows = items.map((item: any, i: number) => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.price) || 0;
+    const lineTotal = (price * qty).toFixed(2);
+    const imgTag = item.image
+      ? `<img src="${item.image}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px" />`
+      : '';
+    return `<tr>
       <td>${i + 1}</td>
-      <td>${item.name}</td>
-      <td style="text-align:center">${item.quantity}</td>
-      <td style="text-align:right">৳${Number(item.price).toFixed(2)}</td>
-      <td style="text-align:right">৳${(Number(item.price) * item.quantity).toFixed(2)}</td>
-    </tr>`).join('');
+      <td>${imgTag}<span style="vertical-align:middle">${item.name}</span></td>
+      <td style="text-align:center">${qty}</td>
+      <td style="text-align:right">৳${price.toFixed(2)}</td>
+      <td style="text-align:right">৳${lineTotal}</td>
+    </tr>`;
+  }).join('');
 
   const discountRow = Number(order.discount) > 0
     ? `<tr><td colspan="4" style="text-align:right;color:#16a34a">Discount${order.coupon_code ? ` (${order.coupon_code})` : ''}</td><td style="text-align:right;color:#16a34a">-৳${Number(order.discount).toFixed(2)}</td></tr>`
@@ -195,7 +210,7 @@ function buildInvoiceHTML(order: any, logoUrl: string) {
     </thead>
     <tbody>${itemRows}</tbody>
     <tfoot>
-      <tr class="totals"><td colspan="4" style="text-align:right;color:#555">Subtotal</td><td style="text-align:right">৳${Number(order.subtotal || 0).toFixed(2)}</td></tr>
+      <tr class="totals"><td colspan="4" style="text-align:right;color:#555">Subtotal</td><td style="text-align:right">৳${subtotal.toFixed(2)}</td></tr>
       ${discountRow}
       <tr class="totals"><td colspan="4" style="text-align:right;color:#555">Delivery Charge</td><td style="text-align:right">${deliveryText}</td></tr>
       <tr class="grand-total"><td colspan="4" style="text-align:right">Grand Total</td><td class="amount" style="text-align:right">৳${Number(order.total).toFixed(2)}</td></tr>
@@ -211,51 +226,55 @@ function buildInvoiceHTML(order: any, logoUrl: string) {
 </html>`;
 }
 
-// ── Print (no popup — uses hidden iframe) ─────────────────────────────────────
+// ── Print (hidden iframe, no about:blank) ────────────────────────────────────
 
 function printInvoice(order: any) {
   const logoUrl = window.location.origin + appConfig.logo;
   const html = buildInvoiceHTML(order, logoUrl);
 
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0';
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:0;visibility:hidden';
   document.body.appendChild(iframe);
 
-  const doc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!doc) { document.body.removeChild(iframe); return; }
-
-  doc.open();
-  doc.write(html);
-  doc.close();
+  // srcdoc triggers onload reliably without about:blank
+  iframe.srcdoc = html;
 
   iframe.onload = () => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
-    setTimeout(() => document.body.removeChild(iframe), 2000);
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (_) {}
+    setTimeout(() => {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+    }, 3000);
   };
 }
 
-// ── PDF Download (no popup — data URL download) ───────────────────────────────
+// ── PDF Download (opens print-to-PDF in new tab) ─────────────────────────────
 
 function downloadPDF(order: any) {
   const logoUrl = window.location.origin + appConfig.logo;
   const html = buildInvoiceHTML(order, logoUrl);
   const orderNum = order.order_number || order.id.slice(-8).toUpperCase();
 
-  // Use a hidden iframe with print-to-PDF via the browser's built-in mechanism
-  // by triggering save-as-PDF from the iframe print dialog.
-  // For direct download we embed as a blob HTML file.
+  // Write to a blob URL and open in new tab — user saves as PDF via Ctrl+P → Save as PDF
+  // This is the only cross-browser way to get a true PDF without a server or library.
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
 
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `invoice-${orderNum}.html`;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  // Open in new tab (user presses Ctrl+P or uses browser menu to save as PDF)
+  const tab = window.open(url, '_blank', 'noopener');
+  if (!tab) {
+    // Fallback: direct download as .html if popup blocked
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Invoice-${orderNum}.html`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // ── CSV Export ─────────────────────────────────────────────────────────────────
@@ -345,11 +364,13 @@ function exportPDF(orders: any[]) {
 
 function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
   const addr = order.address || {};
-  const items = order.items || [];
+  const items: any[] = order.items || [];
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const orderNum = order.order_number || ('#' + order.id.slice(-8).toUpperCase());
   const sm = statusMeta(order.status);
   const printRef = useRef<HTMLDivElement>(null);
+  const computedSubtotal = items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
+  const subtotal = Number(order.subtotal) || computedSubtotal;
 
   const handlePrint = () => printInvoice(order);
   const handleDownload = () => downloadPDF(order);
@@ -415,21 +436,34 @@ function ReceiptModal({ order, onClose }: { order: any; onClose: () => void }) {
               </tr>
             </thead>
             <tbody>
-              {items.map((item: any, i: number) => (
-                <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={{ padding: '7px 8px', color: '#333' }}>{item.name}</td>
-                  <td style={{ padding: '7px 8px', textAlign: 'center', color: '#555' }}>{item.quantity}</td>
-                  <td style={{ padding: '7px 8px', textAlign: 'right', color: '#555' }}>৳{Number(item.price).toFixed(2)}</td>
-                  <td style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 600, color: '#333' }}>৳{(Number(item.price) * item.quantity).toFixed(2)}</td>
-                </tr>
-              ))}
+              {items.length === 0 ? (
+                <tr><td colSpan={4} style={{ padding: '12px 8px', textAlign: 'center', color: '#aaa' }}>No items</td></tr>
+              ) : items.map((item: any, i: number) => {
+                const qty = Number(item.quantity) || 0;
+                const price = Number(item.price) || 0;
+                return (
+                  <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <td style={{ padding: '7px 8px', color: '#333' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {item.image && (
+                          <img src={item.image} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+                        )}
+                        <span>{item.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '7px 8px', textAlign: 'center', color: '#555' }}>{qty}</td>
+                    <td style={{ padding: '7px 8px', textAlign: 'right', color: '#555' }}>৳{price.toFixed(2)}</td>
+                    <td style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 600, color: '#333' }}>৳{(price * qty).toFixed(2)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
           {/* Totals */}
           <div className="space-y-1.5 pt-3 border-t border-gray-100">
             <div className="flex justify-between text-xs text-gray-500">
-              <span>Subtotal</span><span>৳{Number(order.subtotal || 0).toFixed(2)}</span>
+              <span>Subtotal</span><span>৳{subtotal.toFixed(2)}</span>
             </div>
             {Number(order.discount) > 0 && (
               <div className="flex justify-between text-xs text-green-600">
