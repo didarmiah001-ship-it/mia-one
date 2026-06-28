@@ -14,7 +14,7 @@ const navItems = [
 
 const ACTIVE_COLOR = '#2563EB';
 const INACTIVE_COLOR = '#1e293b';
-const NAV_PADDING = 24;
+const NAV_PADDING = 20;
 
 export function BottomNav() {
   const { t } = useTranslation();
@@ -30,13 +30,13 @@ export function BottomNav() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [bubbleLeft, setBubbleLeft] = useState(0);
-  const [dimensions, setDimensions] = useState({ bubbleSize: 70, navHeight: 62 });
+  const [bubbleOffset, setBubbleOffset] = useState(0);
+  const [dimensions, setDimensions] = useState({ bubbleSize: 68, navHeight: 60 });
 
   const updateDimensions = useCallback(() => {
     const width = window.innerWidth;
-    const bubbleSize = width < 640 ? 70 : width < 1024 ? 74 : 78;
-    const navHeight = width < 640 ? 62 : width < 1024 ? 66 : 70;
+    const bubbleSize = width < 640 ? 68 : width < 1024 ? 72 : 74;
+    const navHeight = width < 640 ? 60 : width < 1024 ? 64 : 68;
     setDimensions({ bubbleSize, navHeight });
   }, []);
 
@@ -46,8 +46,9 @@ export function BottomNav() {
     if (container && activeItem) {
       const containerRect = container.getBoundingClientRect();
       const itemRect = activeItem.getBoundingClientRect();
-      const itemCenter = itemRect.left - containerRect.left + itemRect.width / 2;
-      setBubbleLeft(itemCenter);
+      const containerCenter = containerRect.left + containerRect.width / 2 - NAV_PADDING;
+      const itemCenter = itemRect.left + itemRect.width / 2;
+      setBubbleOffset(itemCenter - containerCenter);
     }
   }, [safeActive]);
 
@@ -89,41 +90,38 @@ export function BottomNav() {
 
   return (
     <>
-      <div aria-hidden="true" style={{ height: `calc(${navHeight + 50}px + env(safe-area-inset-bottom, 0px))` }} />
+      <div aria-hidden="true" style={{ height: `calc(${navHeight + 48}px + env(safe-area-inset-bottom, 0px))` }} />
 
       <nav
         aria-label="Main navigation"
         className="fixed left-0 right-0 z-50 flex justify-center"
         style={{
-          bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
           pointerEvents: 'none',
         }}
       >
         <div
           ref={containerRef}
-          className="relative flex items-center justify-around"
+          className="relative flex items-center"
           style={{
-            width: 'auto',
-            minWidth: '280px',
-            maxWidth: '420px',
             height: `${navHeight}px`,
             padding: `0 ${NAV_PADDING}px`,
             borderRadius: '999px',
-            background: 'rgba(255, 255, 255, 0.75)',
-            backdropFilter: 'blur(28px) saturate(2)',
-            WebkitBackdropFilter: 'blur(28px) saturate(2)',
-            border: '1.5px solid rgba(255, 255, 255, 0.85)',
+            background: 'rgba(255, 255, 255, 0.78)',
+            backdropFilter: 'blur(30px) saturate(2.2)',
+            WebkitBackdropFilter: 'blur(30px) saturate(2.2)',
+            border: '1.5px solid rgba(255, 255, 255, 0.9)',
             boxShadow: `
-              0 10px 40px rgba(37, 99, 235, 0.15),
-              0 4px 20px rgba(0, 0, 0, 0.08),
-              0 0 0 1px rgba(255, 255, 255, 0.2),
-              inset 0 2px 0 rgba(255, 255, 255, 0.9),
-              inset 0 -2px 0 rgba(0, 0, 0, 0.02)
+              0 8px 32px rgba(37, 99, 235, 0.12),
+              0 3px 12px rgba(0, 0, 0, 0.06),
+              0 0 0 1px rgba(255, 255, 255, 0.25),
+              inset 0 2px 0 rgba(255, 255, 255, 0.95),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.02)
             `,
             pointerEvents: 'auto',
           }}
         >
-          {/* Sliding active bubble with blue neon glow */}
+          {/* Sliding active bubble with reduced glow */}
           <div
             aria-hidden="true"
             style={{
@@ -131,20 +129,19 @@ export function BottomNav() {
               width: `${bubbleSize}px`,
               height: `${bubbleSize}px`,
               borderRadius: '50%',
-              background: 'linear-gradient(145deg, #ffffff 0%, #f0f6ff 30%, #e0ecff 70%, #d4e4ff 100%)',
+              background: 'linear-gradient(145deg, #ffffff 0%, #f5f9ff 40%, #e8f0ff 70%, #dbe7ff 100%)',
               top: '50%',
-              left: bubbleLeft,
-              transform: 'translate(-50%, -50%)',
-              transition: 'left 250ms cubic-bezier(0.34, 1.2, 0.64, 1)',
+              left: '50%',
+              transform: `translate(calc(-50% + ${bubbleOffset}px), -50%)`,
+              transition: 'transform 250ms cubic-bezier(0.34, 1.2, 0.64, 1)',
               zIndex: 0,
-              willChange: 'left',
-              marginLeft: `-${NAV_PADDING}px`,
+              willChange: 'transform',
               boxShadow: `
-                0 0 20px rgba(37, 99, 235, 0.35),
-                0 0 40px rgba(37, 99, 235, 0.2),
-                0 4px 12px rgba(37, 99, 235, 0.25),
-                inset 0 2px 4px rgba(255, 255, 255, 0.95),
-                inset 0 -2px 4px rgba(37, 99, 235, 0.08)
+                0 0 14px rgba(37, 99, 235, 0.22),
+                0 0 28px rgba(37, 99, 235, 0.12),
+                0 3px 8px rgba(37, 99, 235, 0.18),
+                inset 0 2px 3px rgba(255, 255, 255, 0.95),
+                inset 0 -1px 3px rgba(37, 99, 235, 0.06)
               `,
             }}
           />
@@ -165,63 +162,54 @@ export function BottomNav() {
                 aria-current={isActive ? 'page' : undefined}
                 className="relative flex items-center justify-center bg-transparent border-0 cursor-pointer outline-none"
                 style={{
-                  width: `${bubbleSize - 8}px`,
-                  height: `${bubbleSize - 8}px`,
+                  width: `${bubbleSize - 6}px`,
+                  height: `${bubbleSize - 6}px`,
                   zIndex: 1,
-                  transition: 'transform 250ms cubic-bezier(0.34, 1.2, 0.64, 1)',
-                  transform: clickAnim === index ? 'scale(0.92)' : 'scale(1)',
+                  transition: 'transform 200ms ease',
+                  transform: clickAnim === index ? 'scale(0.9)' : 'scale(1)',
                 }}
               >
-                <div
-                  className="flex items-center justify-center relative"
+                <Icon
+                  size={isActive ? 28 : 24}
+                  strokeWidth={isActive ? 2.5 : 2}
+                  aria-hidden="true"
                   style={{
-                    transition: 'all 250ms cubic-bezier(0.34, 1.2, 0.64, 1)',
-                    transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                    color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR,
+                    filter: isActive
+                      ? 'drop-shadow(0 1px 6px rgba(37, 99, 235, 0.35))'
+                      : 'none',
+                    transition: 'all 200ms ease',
                   }}
-                >
-                  <Icon
-                    size={isActive ? 30 : 24}
-                    strokeWidth={isActive ? 2.5 : 2}
+                />
+
+                {/* Cart badge */}
+                {isCart && cartCount > 0 && (
+                  <span
                     aria-hidden="true"
                     style={{
-                      color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR,
-                      filter: isActive
-                        ? 'drop-shadow(0 2px 10px rgba(37, 99, 235, 0.5))'
-                        : 'none',
-                      transition: 'all 250ms ease',
+                      position: 'absolute',
+                      top: '-4px',
+                      right: '-8px',
+                      minWidth: '16px',
+                      height: '16px',
+                      padding: '0 4px',
+                      borderRadius: '999px',
+                      background: 'linear-gradient(135deg, #2563EB, #1d4ed8)',
+                      color: '#fff',
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 1px 6px rgba(37, 99, 235, 0.45), 0 0 0 1.5px rgba(255,255,255,0.95)',
+                      zIndex: 2,
+                      transform: badgePop ? 'scale(1.15)' : 'scale(1)',
+                      transition: 'transform 180ms ease',
                     }}
-                  />
-
-                  {/* Cart badge */}
-                  {isCart && cartCount > 0 && (
-                    <span
-                      aria-hidden="true"
-                      className={badgePop ? 'nav-badge-anim' : ''}
-                      style={{
-                        position: 'absolute',
-                        top: '-6px',
-                        right: '-10px',
-                        minWidth: '18px',
-                        height: '18px',
-                        padding: '0 5px',
-                        borderRadius: '999px',
-                        background: 'linear-gradient(135deg, #2563EB, #1d4ed8)',
-                        color: '#fff',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.5), 0 0 0 2px rgba(255,255,255,0.95)',
-                        zIndex: 2,
-                        transform: badgePop ? 'scale(1.2)' : 'scale(1)',
-                        transition: 'transform 200ms ease',
-                      }}
-                    >
-                      {cartCount > 99 ? '99+' : cartCount}
-                    </span>
-                  )}
-                </div>
+                  >
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
               </button>
             );
           })}
