@@ -506,6 +506,44 @@ body {
   50%       { box-shadow: 0 0 12px currentColor, 0 0 24px currentColor; opacity: 1; }
 }
 
+/* ===== PREMIUM BOTTOM NAV: breathing blue glow ===== */
+@keyframes nav-bubble-breathe {
+  0%, 100% {
+    box-shadow:
+      0 8px 24px rgba(37, 99, 235, 0.35),
+      0 4px 12px rgba(37, 99, 235, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -2px 6px rgba(37, 99, 235, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 12px 36px rgba(37, 99, 235, 0.5),
+      0 6px 18px rgba(37, 99, 235, 0.35),
+      0 0 48px rgba(37, 99, 235, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      inset 0 -2px 8px rgba(37, 99, 235, 0.12);
+  }
+}
+.nav-bubble-active {
+  animation: nav-bubble-breathe 3s ease-in-out infinite;
+}
+
+/* Click pop animation */
+@keyframes nav-click-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.nav-click-anim { animation: nav-click-pop 250ms ease-out; }
+
+/* Cart badge pop */
+@keyframes nav-badge-pop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.nav-badge-anim { animation: nav-badge-pop 300ms ease-out; }
+
 /* ===== LUXURY SECTION DIVIDER ===== */
 .section-glow { position: relative; }
 .section-glow::after {

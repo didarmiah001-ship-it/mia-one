@@ -1,15 +1,19 @@
-import { Home, Search, ShoppingCart, Package, User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Home, Grid3x3, ShoppingCart, Heart, User } from 'lucide-react';
 import { useLocation, useNavigate } from '../lib/router';
 import { useStore } from '../store/StoreContext';
 import { useTranslation } from 'react-i18next';
 
 const navItems = [
-  { path: '/', icon: Home, labelKey: 'nav.home', color: '#FF8A00' },
-  { path: '/search', icon: Search, labelKey: 'nav.search', color: '#00D1FF' },
-  { path: '/cart', icon: ShoppingCart, labelKey: 'nav.cart', color: '#FF2EC9' },
-  { path: '/orders', icon: Package, labelKey: 'nav.orders', color: '#7B2CFF' },
-  { path: '/profile', icon: User, labelKey: 'nav.profile', color: '#FF8A00' },
+  { path: '/',           icon: Home,         labelKey: 'nav.home' },
+  { path: '/categories', icon: Grid3x3,      labelKey: 'nav.category' },
+  { path: '/cart',       icon: ShoppingCart, labelKey: 'nav.cart' },
+  { path: '/wishlist',   icon: Heart,        labelKey: 'nav.wishlist' },
+  { path: '/profile',    icon: User,         labelKey: 'nav.account' },
 ];
+
+const ACTIVE_COLOR = '#2563EB';
+const INACTIVE_ICON = '#1e293b';
 
 export function BottomNav() {
   const { t } = useTranslation();
@@ -18,89 +22,181 @@ export function BottomNav() {
   const { state } = useStore();
   const cartCount = state.cart.reduce((sum, i) => sum + i.quantity, 0);
 
+  const activeIndex = navItems.findIndex(item =>
+    item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
+  );
+  const safeActive = activeIndex >= 0 ? activeIndex : 0;
+
+  // Track previous cart count for badge animation
+  const prevCartCount = useRef(cartCount);
+  const [badgePop, setBadgePop] = useState(false);
+  useEffect(() => {
+    if (cartCount !== prevCartCount.current) {
+      setBadgePop(true);
+      const timer = setTimeout(() => setBadgePop(false), 300);
+      prevCartCount.current = cartCount;
+      return () => clearTimeout(timer);
+    }
+  }, [cartCount]);
+
+  // Click animation state
+  const [clickAnim, setClickAnim] = useState<number | null>(null);
+
+  const handleClick = (path: string, index: number) => {
+    setClickAnim(index);
+    setTimeout(() => setClickAnim(null), 250);
+    navigate(path);
+  };
+
   return (
-    <nav
-      aria-label="Main navigation"
-      className="fixed bottom-0 left-0 right-0 z-50"
-      style={{
-        background: 'var(--nav-bg)',
-        backdropFilter: 'blur(24px) saturate(1.5)',
-        borderTop: '1px solid var(--nav-border)',
-        boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
-      }}
-    >
-      <div
-        className="max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-around py-2 px-4"
-        style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}
+    <>
+      {/* Spacer to prevent content from hiding behind the floating nav */}
+      <div aria-hidden="true" style={{ height: 'calc(120px + env(safe-area-inset-bottom, 0px))' }} />
+
+      <nav
+        aria-label="Main navigation"
+        className="fixed left-0 right-0 z-50 flex justify-center"
+        style={{
+          bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+          pointerEvents: 'none',
+        }}
       >
-        {navItems.map(item => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          const label = t(item.labelKey);
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              aria-label={item.path === '/cart' && cartCount > 0 ? `${label} (${cartCount} ${t('common.items')})` : label}
-              aria-current={isActive ? 'page' : undefined}
-              className="relative flex flex-col items-center gap-0.5 py-1 px-3 transition-all duration-400"
-            >
-              <div
-                className={`relative p-2.5 rounded-2xl transition-all duration-400 ${
-                  isActive ? 'scale-110' : 'hover:scale-105'
-                }`}
-                style={isActive ? {
-                  background: `linear-gradient(135deg, ${item.color}20, ${item.color}08)`,
-                  boxShadow: `0 4px 16px ${item.color}20, 0 0 24px ${item.color}10`,
-                  border: `1px solid ${item.color}30`,
-                } : {}}
+        <div
+          className="relative flex items-center justify-around"
+          style={{
+            width: '92%',
+            maxWidth: '1100px',
+            height: 'clamp(78px, 5vw + 70px, 90px)',
+            borderRadius: '999px',
+            background: 'rgba(255, 255, 255, 0.72)',
+            backdropFilter: 'blur(24px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
+            boxShadow: `
+              0 12px 40px rgba(37, 99, 235, 0.12),
+              0 4px 16px rgba(0, 0, 0, 0.08),
+              0 0 0 1px rgba(255, 255, 255, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.03)
+            `,
+            pointerEvents: 'auto',
+          }}
+        >
+          {/* Sliding active bubble */}
+          <div
+            aria-hidden="true"
+            className="nav-bubble-active"
+            style={{
+              position: 'absolute',
+              width: 'clamp(72px, 5vw + 64px, 82px)',
+              height: 'clamp(72px, 5vw + 64px, 82px)',
+              borderRadius: '50%',
+              background: 'linear-gradient(145deg, #ffffff 0%, #f0f6ff 50%, #e0ecff 100%)',
+              top: '50%',
+              left: `${(safeActive / (navItems.length - 1)) * 100}%`,
+              transform: 'translate(-50%, -50%)',
+              transition: 'left 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+              zIndex: 0,
+              willChange: 'left, transform',
+            }}
+          />
+
+          {/* Nav items */}
+          {navItems.map((item, index) => {
+            const isActive = index === safeActive;
+            const Icon = item.icon;
+            const label = t(item.labelKey);
+            const isCart = item.path === '/cart';
+
+            return (
+              <button
+                key={item.path}
+                onClick={() => handleClick(item.path, index)}
+                aria-label={isCart && cartCount > 0 ? `${label} (${cartCount} ${t('common.items') || 'items'})` : label}
+                aria-current={isActive ? 'page' : undefined}
+                className="relative flex flex-col items-center justify-center gap-1 bg-transparent border-0 cursor-pointer outline-none"
+                style={{
+                  flex: '1 1 0',
+                  height: '100%',
+                  zIndex: 1,
+                  transition: 'transform 250ms ease',
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.transform = 'scale(1.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                onFocus={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+                onBlur={e => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
-                <Icon
-                  size={22}
-                  aria-hidden="true"
-                  className="transition-all duration-300"
-                  style={isActive ? {
-                    color: item.color,
-                    filter: `drop-shadow(0 0 8px ${item.color})`,
-                  } : { color: 'var(--nav-icon)' }}
-                />
-                {item.path === '/cart' && cartCount > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-1 -right-1 text-[9px] font-bold rounded-full flex items-center justify-center neon-pulse"
-                    style={{
-                      background: 'linear-gradient(135deg, #FF2EC9, #FF8A00)',
-                      color: '#fff',
-                      width: '18px',
-                      height: '18px',
-                      boxShadow: '0 0 8px rgba(255, 46, 201, 0.5)',
-                    }}
-                  >
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
-              </div>
-              <span
-                className="text-[10px] font-medium transition-all duration-300"
-                aria-hidden="true"
-                style={{ color: isActive ? item.color : 'var(--nav-icon)' }}
-              >
-                {label}
-              </span>
-              {isActive && (
                 <div
-                  aria-hidden="true"
-                  className="absolute -bottom-2 w-6 h-0.5 rounded-full"
+                  className="flex items-center justify-center relative"
                   style={{
-                    background: `linear-gradient(90deg, transparent, ${item.color}, transparent)`,
-                    boxShadow: `0 0 8px ${item.color}`,
+                    width: 'clamp(40px, 4vw + 32px, 48px)',
+                    height: 'clamp(40px, 4vw + 32px, 48px)',
+                    transition: 'all 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transform: clickAnim === index ? 'scale(1.15)' : isActive ? 'scale(1)' : 'scale(1)',
                   }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+                >
+                  <Icon
+                    size={isActive ? 34 : 24}
+                    strokeWidth={isActive ? 2.5 : 2}
+                    aria-hidden="true"
+                    className={clickAnim === index ? 'nav-click-anim' : ''}
+                    style={{
+                      color: isActive ? ACTIVE_COLOR : INACTIVE_ICON,
+                      filter: isActive
+                        ? 'drop-shadow(0 2px 8px rgba(37, 99, 235, 0.4))'
+                        : 'none',
+                      transition: 'all 320ms ease',
+                    }}
+                  />
+
+                  {/* Cart badge */}
+                  {isCart && cartCount > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className={badgePop ? 'nav-badge-anim' : ''}
+                      style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-8px',
+                        minWidth: '20px',
+                        height: '20px',
+                        padding: '0 5px',
+                        borderRadius: '999px',
+                        background: 'linear-gradient(135deg, #2563EB, #1d4ed8)',
+                        color: '#fff',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.5), 0 0 0 2px rgba(255,255,255,0.9)',
+                        zIndex: 2,
+                      }}
+                    >
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </div>
+
+                {/* Label */}
+                <span
+                  aria-hidden="true"
+                  style={{
+                    fontSize: 'clamp(9px, 1vw + 7px, 11px)',
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? ACTIVE_COLOR : '#94a3b8',
+                    transition: 'all 320ms ease',
+                    whiteSpace: 'nowrap',
+                    textShadow: isActive ? '0 0 12px rgba(37, 99, 235, 0.3)' : 'none',
+                  }}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 }

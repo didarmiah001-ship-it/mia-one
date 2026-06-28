@@ -403,8 +403,8 @@ export function MiaAgentFloatingButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="fixed z-[55] w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group"
       style={{
-        bottom: '90px',
-        right: '20px',
+        bottom: 'calc(128px + env(safe-area-inset-bottom, 0px))',
+        right: '24px',
         background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)',
         boxShadow: '0 0 30px rgba(255,138,0,0.4), 0 0 60px rgba(255,46,201,0.25), 0 8px 24px rgba(0,0,0,0.4)',
       }}
