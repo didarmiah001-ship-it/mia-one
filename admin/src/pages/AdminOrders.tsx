@@ -298,6 +298,118 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
   );
 }
 
+// ── WhatsApp Status Notification Messages ───────────────────────────────────────
+
+function buildStatusWhatsAppMessage(status: string, customerName: string, orderId: string): string {
+  const orderIdDisplay = orderId || 'N/A';
+
+  switch (status) {
+    case 'placed':
+      return `🟡 Received
+
+Assalamu Alaikum ${customerName},
+
+Your order has been received successfully.
+Order ID: ${orderIdDisplay}
+
+Thank you for shopping with MIA ONE.`;
+
+    case 'confirmed':
+      return `🟢 Confirmed
+
+Good news!
+Your order has been confirmed.
+Order ID:
+${orderIdDisplay}
+
+We are preparing your package.`;
+
+    case 'processing':
+      return `📦 Processing
+
+Your order is now being processed.
+Order ID:
+${orderIdDisplay}
+
+We will notify you again when it is shipped.`;
+
+    case 'packed':
+      return `📦 Packed
+
+Your order has been packed successfully.
+Order ID:
+${orderIdDisplay}
+
+Ready for dispatch.`;
+
+    case 'ready_for_delivery':
+      return `🚚 Ready for Delivery
+
+Your parcel is ready for delivery.
+Please keep your phone available.`;
+
+    case 'shipped':
+      return `🚛 Shipped
+
+Your order has been shipped.
+Order ID:
+${orderIdDisplay}
+
+It is now on the way.`;
+
+    case 'out_for_delivery':
+      return `📍 Out for Delivery
+
+Our delivery rider is coming today.
+Please keep your phone available.`;
+
+    case 'delivered':
+      return `✅ Delivered
+
+Your order has been delivered successfully.
+Thank you for shopping with MIA ONE ❤️`;
+
+    case 'cancelled':
+      return `❌ Cancelled
+
+We are sorry.
+Your order has been cancelled.
+For assistance contact MIA ONE Support.`;
+
+    default:
+      return `📦 Order Update
+
+Your order status has been updated.
+Order ID: ${orderIdDisplay}
+
+Thank you for shopping with MIA ONE.`;
+  }
+}
+
+function sendStatusWhatsAppNotification(order: any, newStatus: string) {
+  const addr = order.address || {};
+  const customerPhone = addr.phone;
+  const customerName = addr.full_name || 'Customer';
+  const orderId = order.order_number || '#' + String(order.id).slice(-8).toUpperCase();
+
+  if (!customerPhone) {
+    return false;
+  }
+
+  const normalizedPhone = normalizeBangladeshPhone(customerPhone);
+
+  if (!normalizedPhone) {
+    return false;
+  }
+
+  const message = buildStatusWhatsAppMessage(newStatus, customerName, orderId);
+  const encodedMessage = encodeURIComponent(message);
+  const waUrl = `https://wa.me/${normalizedPhone}?text=${encodedMessage}`;
+
+  window.open(waUrl, '_blank', 'noopener,noreferrer');
+  return true;
+}
+
 function normalizeBangladeshPhone(phone: string): string | null {
   if (!phone) return null;
 
@@ -509,6 +621,12 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
       const tl = await fetchOrderTimeline(order.id);
       setTimeline(tl);
       setStatusNote('');
+
+      // Send WhatsApp notification
+      const sent = sendStatusWhatsAppNotification(order, newStatus);
+      if (!sent) {
+        toast.error('Customer WhatsApp number not found.');
+      }
     }
     setUpdating(false);
   };
@@ -522,6 +640,12 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
       onStatusChange(order.id, nextStatus);
       const tl = await fetchOrderTimeline(order.id);
       setTimeline(tl);
+
+      // Send WhatsApp notification
+      const sent = sendStatusWhatsAppNotification(order, nextStatus);
+      if (!sent) {
+        toast.error('Customer WhatsApp number not found.');
+      }
     }
     setUpdating(false);
   };
@@ -570,12 +694,13 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
           {/* Quick Actions */}
           {actions.length > 0 && (
             <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Quick Actions</p>
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Quick Actions (WhatsApp)</p>
               <div className="flex flex-wrap gap-2">
                 {actions.map(action => (
                   <button key={action.nextStatus} onClick={() => handleQuickStatus(action.nextStatus, action.label)} disabled={updating}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50"
                     style={{ background: `${action.color}15`, color: action.color, border: `1px solid ${action.color}30` }}>
+                    <MessageCircle size={12} />
                     {action.label}
                   </button>
                 ))}
@@ -607,9 +732,10 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
             />
             <button onClick={handleUpdate} disabled={updating || newStatus === order.status}
-              className="w-full py-2.5 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-40"
+              className="w-full py-2.5 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               style={{ background: newStatus !== order.status ? `linear-gradient(135deg, ${statusMeta(newStatus).color}, ${statusMeta(newStatus).color}99)` : 'rgba(255,255,255,0.05)' }}>
-              {updating ? 'Updating...' : `Set to "${statusMeta(newStatus).label}"`}
+              <MessageCircle size={14} />
+              {updating ? 'Updating...' : `Update Status & Send WhatsApp`}
             </button>
           </div>
 
