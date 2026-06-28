@@ -243,30 +243,71 @@ export async function createOrder(order: {
   return { data, error: error?.message ?? null };
 }
 
-export async function validateCoupon(code: string, subtotal: number): Promise<{ discount: number; type: string; value: number; error: string | null }> {
+export async function validateCoupon(code: string, subtotal: number, cartItems?: any[], userId?: string): Promise<{ discount: number; type: string; value: number; free_delivery: boolean; error: string | null }> {
   const { data, error } = await supabase
     .from('coupons')
     .select('*')
     .eq('code', code.toUpperCase())
-    .eq('is_active', true)
     .maybeSingle();
 
-  if (error || !data) return { discount: 0, type: '', value: 0, error: 'Invalid coupon code' };
+  if (error || !data) return { discount: 0, type: '', value: 0, free_delivery: false, error: 'কুপন কোডটি সঠিক নয়' };
+
+  if (!data.is_active) return { discount: 0, type: '', value: 0, free_delivery: false, error: 'এই কুপনটি বর্তমানে নিষ্ক্রিয় আছে' };
 
   const now = new Date();
-  if (data.expires_at && new Date(data.expires_at) < now) return { discount: 0, type: '', value: 0, error: 'Coupon has expired' };
-  if (data.max_uses && data.used_count >= data.max_uses) return { discount: 0, type: '', value: 0, error: 'Coupon usage limit reached' };
-  if (data.min_order && subtotal < data.min_order) return { discount: 0, type: '', value: 0, error: `Minimum order ৳${data.min_order} required` };
+  if (data.starts_at && new Date(data.starts_at) > now) return { discount: 0, type: '', value: 0, free_delivery: false, error: 'এই কুপনটি এখনও শুরু হয়নি' };
+  if (data.expires_at && new Date(data.expires_at) < now) return { discount: 0, type: '', value: 0, free_delivery: false, error: 'এই কুপনের মেয়াদ শেষ' };
+  if (data.max_uses && data.used_count >= data.max_uses) return { discount: 0, type: '', value: 0, free_delivery: false, error: 'এই কুপনের ব্যবহারের সীমা শেষ হয়ে গেছে' };
+  if (data.min_order && subtotal < data.min_order) return { discount: 0, type: '', value: 0, free_delivery: false, error: `মিনিমাম অর্ডার ৳${data.min_order} পূরণ হয়নি` };
 
-  const discount = data.type === 'percentage'
-    ? Math.round((subtotal * data.value) / 100)
-    : Math.min(data.value, subtotal);
+  // Per-customer usage limit
+  if (data.usage_limit_per_customer && data.usage_limit_per_customer > 0 && userId) {
+    const { count } = await supabase
+      .from('coupon_usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('coupon_id', data.id)
+      .eq('user_id', userId);
+    if (count && count >= data.usage_limit_per_customer) {
+      return { discount: 0, type: '', value: 0, free_delivery: false, error: 'এই কুপনটি আপনি ইতিমধ্যে ব্যবহার করেছেন' };
+    }
+  }
 
-  return { discount, type: data.type, value: data.value, error: null };
+  // Product/category scope check
+  if (data.applicable_scope && cartItems && cartItems.length > 0) {
+    if (data.applicable_scope === 'products' && data.applicable_product_ids?.length > 0) {
+      const hasMatch = cartItems.some(item => data.applicable_product_ids.includes(item?.product?.id));
+      if (!hasMatch) return { discount: 0, type: '', value: 0, free_delivery: false, error: 'এই কুপনটি আপনার কার্টের পণ্যে প্রযোজ্য নয়' };
+    }
+    if (data.applicable_scope === 'categories' && data.applicable_category_ids?.length > 0) {
+      const hasMatch = cartItems.some(item => data.applicable_category_ids.includes(item?.product?.category_id));
+      if (!hasMatch) return { discount: 0, type: '', value: 0, free_delivery: false, error: 'এই কুপনটি আপনার কার্টের ক্যাটাগরিতে প্রযোজ্য নয়' };
+    }
+  }
+
+  // Calculate discount
+  let discount = 0;
+  if (data.type === 'percentage') {
+    discount = Math.round((subtotal * data.value) / 100);
+    if (data.max_discount && data.max_discount > 0) discount = Math.min(discount, data.max_discount);
+  } else {
+    discount = Math.min(data.value, subtotal);
+  }
+
+  return { discount, type: data.type, value: data.value, free_delivery: data.free_delivery || false, error: null };
 }
 
-export async function incrementCouponUsage(code: string) {
+export async function incrementCouponUsage(code: string, userId?: string, orderId?: string) {
   await supabase.rpc('increment_coupon_usage', { coupon_code: code });
+  // Record per-customer usage
+  const { data: coupon } = await supabase.from('coupons').select('id').eq('code', code).maybeSingle();
+  if (coupon) {
+    await supabase.from('coupon_usage').insert({
+      coupon_id: coupon.id,
+      coupon_code: code,
+      user_id: userId || null,
+      order_id: orderId || null,
+    });
+  }
 }
 
 export async function fetchAddresses(userId: string) {

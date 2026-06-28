@@ -693,6 +693,39 @@ export async function adminDeleteFlashSale(id: string) {
   return { error: error?.message ?? null };
 }
 
+// ── Campaigns ───────────────────────────────────────────────────────────────────
+
+export async function adminFetchMarketingCampaigns() {
+  const { data } = await supabase.from('campaigns').select('*').order('sort_order').order('created_at', { ascending: false });
+  return data || [];
+}
+
+export async function adminCreateMarketingCampaign(campaign: any) {
+  const { data, error } = await supabase.from('campaigns').insert(campaign).select().single();
+  return { data, error: error?.message ?? null };
+}
+
+export async function adminUpdateMarketingCampaign(id: string, updates: any) {
+  const { error } = await supabase.from('campaigns').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+export async function adminDeleteMarketingCampaign(id: string) {
+  const { error } = await supabase.from('campaigns').delete().eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+export async function adminUploadCampaignBanner(file: File): Promise<{ url: string | null; error: string | null }> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const path = `campaigns/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from('banner-images').upload(path, file, {
+    cacheControl: '3600', upsert: false, contentType: file.type,
+  });
+  if (error) return { url: null, error: error.message };
+  const { data } = supabase.storage.from('banner-images').getPublicUrl(path);
+  return { url: data.publicUrl, error: null };
+}
+
 // ── Settings ───────────────────────────────────────────────────────────────────
 
 export async function adminFetchSettings(key: string) {

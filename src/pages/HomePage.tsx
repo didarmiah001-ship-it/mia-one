@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, ChevronRight, ChevronLeft, Bell, Zap, TrendingUp, Sparkles } from 'lucide-react';
+import { Search, ChevronRight, ChevronLeft, Bell, Zap, TrendingUp, Sparkles, Megaphone } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../components/ProductCard';
@@ -8,6 +8,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
+import { supabase } from '../lib/supabase';
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -17,6 +18,15 @@ export function HomePage() {
   const navigate = useNavigate();
   const { state } = useStore();
   const { products, categories, banners } = useData();
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+
+  useEffect(() => {
+    const now = new Date().toISOString();
+    supabase.from('campaigns').select('*').eq('is_active', true)
+      .or(`end_date.is.null,end_date.gte.${now}`)
+      .order('sort_order').limit(5)
+      .then(({ data }) => { if (data) setCampaigns(data); });
+  }, []);
 
   const goTo = useCallback((idx: number) => {
     setFadingOut(true);
@@ -323,6 +333,48 @@ export function HomePage() {
               </button>
             </div>
           </section>
+
+          {/* Active Campaigns */}
+          {campaigns.length > 0 && (
+            <section className="px-4 mt-9">
+              <div className="flex items-center gap-2 mb-4">
+                <Megaphone size={16} className="text-mia-orange" />
+                <h3 className="text-base font-bold text-white">Special Campaigns</h3>
+              </div>
+              <div className="space-y-3">
+                {campaigns.map(c => (
+                  <div key={c.id} className="rounded-2xl overflow-hidden relative group cursor-pointer"
+                    onClick={() => navigate('/')}
+                    style={{ border: '1px solid rgba(255,138,0,0.15)' }}>
+                    {c.banner_url ? (
+                      <img src={c.banner_url} alt={c.name} className="w-full h-32 sm:h-40 object-cover" />
+                    ) : (
+                      <div className="w-full h-32 flex items-center justify-center p-4"
+                        style={{ background: 'linear-gradient(135deg, rgba(255,138,0,0.08), rgba(255,46,201,0.08))' }}>
+                        <div className="text-center">
+                          <h4 className="text-lg font-bold text-white">{c.name}</h4>
+                          {c.discount_value > 0 && (
+                            <p className="text-2xl font-bold text-mia-orange mt-1">
+                              {c.discount_type === 'percentage' ? `${c.discount_value}% OFF` : `৳${c.discount_value} OFF`}
+                            </p>
+                          )}
+                          {c.coupon_code && (
+                            <p className="text-xs text-white/50 mt-2 font-mono">Code: {c.coupon_code}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {c.banner_url && c.discount_value > 0 && (
+                      <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
+                        style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
+                        {c.discount_type === 'percentage' ? `${c.discount_value}% OFF` : `৳${c.discount_value} OFF`}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Trending */}
           <section className="px-4 mt-9">

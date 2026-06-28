@@ -4,7 +4,7 @@ import { useNavigate, useParams, useLocation } from '../lib/router';
 import {
   LayoutDashboard, Package, Tag, Image, ShoppingCart, Users, LogOut, Shield,
   Ticket, Bell, Zap, BarChart2, Settings, Star, Menu, X, ChevronLeft,
-  ChevronRight as ChevronRightIcon, Store, Truck,
+  ChevronRight as ChevronRightIcon, Store, Truck, Megaphone,
 } from 'lucide-react';
 import { AdminDashboard } from './AdminDashboard';
 import { AdminProducts } from './AdminProducts';
@@ -16,6 +16,7 @@ import { AdminBrands } from './AdminBrands';
 import { AdminFlashSale } from './AdminFlashSale';
 import { AdminReviews } from './AdminReviews';
 import { AdminCoupons } from './AdminCoupons';
+import { AdminCampaigns } from './AdminCampaigns';
 import { AdminNotifications } from './AdminNotifications';
 import { AdminReports } from './AdminReports';
 import { AdminSettings } from './AdminSettings';
@@ -40,6 +41,7 @@ const NAV_GROUPS = [
       { id: 'banners',       label: 'Banners',       icon: Image           },
       { id: 'flash-sale',    label: 'Flash Sale',    icon: Zap             },
       { id: 'coupons',       label: 'Coupons',       icon: Ticket          },
+      { id: 'campaigns',     label: 'Campaigns',     icon: Megaphone       },
       { id: 'notifications', label: 'Notifications', icon: Bell            },
     ],
   },
@@ -203,6 +205,7 @@ function SectionContent({ section }: { section: string }) {
     case 'customers':          return <AdminCustomers />;
     case 'reviews':            return <AdminReviews />;
     case 'coupons':            return <AdminCoupons />;
+    case 'campaigns':          return <AdminCampaigns />;
     case 'notifications':      return <AdminNotifications />;
     case 'reports':            return <AdminReports />;
     case 'settings':           return <AdminSettings />;
