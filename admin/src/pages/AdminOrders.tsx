@@ -84,44 +84,35 @@ function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; 
   const sm = statusMeta(order.status);
 
   const handlePrint = () => {
-    window.print();
+    const logoUrl = window.location.origin + '/mia-one-logo.png';
+    const html = buildInvoiceHTML(order, payment, logoUrl);
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:0';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open(); doc.write(html); doc.close();
+    iframe.onload = () => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    };
   };
 
   const handleDownloadPDF = () => {
-    const invoiceContent = document.getElementById('invoice-content');
-    if (!invoiceContent) return;
-
-    const printStyles = `
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #111; padding: 32px; max-width: 800px; margin: 0 auto; }
-        .logo { font-size: 28px; font-weight: 800; color: #FF8A00; margin-bottom: 4px; }
-        .logo-sub { color: #666; font-size: 11px; margin-bottom: 16px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #FF8A00; padding-bottom: 16px; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-        .badge-success { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
-        .badge-warning { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
-        .badge-default { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
-        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        th { background: #f8f9fa; padding: 10px 12px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #666; border-bottom: 2px solid #e5e7eb; }
-        td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
-        .total-row td { font-weight: 700; border-top: 2px solid #111; }
-        .section { margin-bottom: 20px; }
-        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #888; margin-bottom: 8px; font-weight: 600; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #666; text-align: center; }
-      </style>
-    `;
-
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Invoice ${order.order_number || order.id}</title>${printStyles}</head><body>${invoiceContent.innerHTML}</body></html>`;
-
+    const logoUrl = window.location.origin + '/mia-one-logo.png';
+    const html = buildInvoiceHTML(order, payment, logoUrl);
+    const orderNum = order.order_number || order.id.slice(-8).toUpperCase();
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `invoice-${order.order_number || order.id.slice(-8)}.html`;
+    a.download = `invoice-${orderNum}.html`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
   const handleWhatsAppShare = () => {
@@ -577,12 +568,16 @@ function exportPDF(orders: any[]) {
   <table><thead><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Phone</th><th>Items</th><th>Payment</th><th>Total</th><th>Status</th></tr></thead>
   <tbody>${rows}</tbody></table></body></html>`;
 
-  const w = window.open('', '_blank', 'width=1100,height=700');
-  if (!w) return;
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  setTimeout(() => { w.print(); }, 400);
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `mia-one-orders-report-${new Date().toISOString().slice(0, 10)}.html`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 // ── Order Detail Drawer ────────────────────────────────────────────────────────
