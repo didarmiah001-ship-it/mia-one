@@ -72,117 +72,218 @@ function statusMeta(key: string) {
 
 // ── Invoice Printer ────────────────────────────────────────────────────────────
 
-function buildInvoiceHTML(order: any, payment?: any) {
+// ── Invoice Modal Component ─────────────────────────────────────────────────────
+
+function InvoiceModal({ order, payment, onClose }: { order: any; payment?: any; onClose: () => void }) {
   const addr = order.address || {};
   const items = order.items || [];
   const date = new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const paymentMethod = (order.payment_method || payment?.method || '').replace(/_/g, ' ');
   const transactionId = payment?.transaction_id || order.transaction_id || '';
   const paymentStatus = payment?.status || order.payment_status || 'pending';
+  const sm = statusMeta(order.status);
 
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-  <title>Invoice ${order.order_number || order.id}</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Arial,sans-serif;font-size:12px;color:#111;padding:32px;max-width:800px;margin:0 auto}
-    h1{font-size:24px;font-weight:800;color:#FF8A00;margin-bottom:4px}
-    .logo-sub{color:#666;font-size:11px;margin-bottom:16px}
-    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:2px solid #FF8A00;padding-bottom:16px}
-    .badge{display:inline-block;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600}
-    .badge-success{background:#dcfce7;color:#16a34a;border:1px solid #86efac}
-    .badge-warning{background:#fef3c7;color:#d97706;border:1px solid #fcd34d}
-    .badge-default{background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db}
-    table{width:100%;border-collapse:collapse;margin:16px 0}
-    th{background:#f8f9fa;padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#666;border-bottom:2px solid #e5e7eb}
-    td{padding:10px 12px;border-bottom:1px solid #f3f4f6}
-    .total-row td{font-weight:700;border-top:2px solid #111}
-    .section{margin-bottom:20px}
-    .section-title{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:8px;font-weight:600}
-    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-    .footer{margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#666;text-align:center}
-    @media print{body{padding:20px}.no-print{display:none}}
-  </style></head><body>
-  <div class="header">
-    <div>
-      <h1>MIA ONE</h1>
-      <p class="logo-sub">E-Commerce Platform</p>
-      <p style="color:#888;font-size:11px;margin-top:8px">Tax Invoice / Receipt</p>
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    const invoiceContent = document.getElementById('invoice-content');
+    if (!invoiceContent) return;
+
+    const printStyles = `
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #111; padding: 32px; max-width: 800px; margin: 0 auto; }
+        .logo { font-size: 28px; font-weight: 800; color: #FF8A00; margin-bottom: 4px; }
+        .logo-sub { color: #666; font-size: 11px; margin-bottom: 16px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #FF8A00; padding-bottom: 16px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+        .badge-warning { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
+        .badge-default { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        th { background: #f8f9fa; padding: 10px 12px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #666; border-bottom: 2px solid #e5e7eb; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
+        .total-row td { font-weight: 700; border-top: 2px solid #111; }
+        .section { margin-bottom: 20px; }
+        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #888; margin-bottom: 8px; font-weight: 600; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #666; text-align: center; }
+      </style>
+    `;
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Invoice ${order.order_number || order.id}</title>${printStyles}</head><body>${invoiceContent.innerHTML}</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice-${order.order_number || order.id.slice(-8)}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleWhatsAppShare = () => {
+    const message = buildWhatsAppMessage(order, payment);
+    const encodedMessage = encodeURIComponent(message);
+    const phoneNumber = addr.phone ? addr.phone.replace(/\D/g, '') : '';
+    const url = phoneNumber
+      ? `https://wa.me/${phoneNumber}?text=${encodedMessage}`
+      : `https://wa.me/?text=${encodedMessage}`;
+    window.open(url, '_blank');
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 print:p-0" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/80 print:bg-white" />
+
+      <div className="relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto print:max-h-none print:rounded-none print:shadow-none shadow-2xl" onClick={e => e.stopPropagation()}>
+        {/* Action Buttons - Hidden on Print */}
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4 flex items-center justify-between no-print">
+          <h2 className="text-lg font-bold text-gray-900">Invoice / Receipt</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={handlePrint} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500 text-white text-xs font-semibold hover:bg-blue-600 transition-colors">
+              <Printer size={14} /> Print
+            </button>
+            <button onClick={handleDownloadPDF} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500 text-white text-xs font-semibold hover:bg-purple-600 transition-colors">
+              <Download size={14} /> Download
+            </button>
+            <button onClick={handleWhatsAppShare} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-500 text-white text-xs font-semibold hover:bg-green-600 transition-colors">
+              <MessageCircle size={14} /> WhatsApp
+            </button>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+              <X size={16} className="text-gray-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Invoice Content */}
+        <div id="invoice-content" className="p-8 print:p-6">
+          {/* Header with Logo */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', borderBottom: '2px solid #FF8A00', paddingBottom: '16px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <img src="/mia-one-logo.png" alt="MIA ONE" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                <div>
+                  <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#FF8A00', margin: 0 }}>MIA ONE</h1>
+                  <p style={{ color: '#666', fontSize: '11px', margin: 0 }}>E-Commerce Platform</p>
+                </div>
+              </div>
+              <p style={{ color: '#888', fontSize: '11px', marginTop: '12px' }}>Tax Invoice / Receipt</p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontWeight: 700, fontSize: '16px', color: '#111', margin: 0 }}>{order.order_number || '#' + String(order.id).slice(-8).toUpperCase()}</p>
+              <p style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>{date}</p>
+              <p style={{ marginTop: '8px' }}>
+                <span className={`badge ${order.status === 'delivered' ? 'badge-success' : order.status === 'cancelled' ? 'badge-default' : 'badge-warning'}`} style={{
+                  display: 'inline-block',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  background: order.status === 'delivered' ? '#dcfce7' : order.status === 'cancelled' ? '#f3f4f6' : '#fef3c7',
+                  color: order.status === 'delivered' ? '#16a34a' : order.status === 'cancelled' ? '#6b7280' : '#d97706',
+                  border: `1px solid ${order.status === 'delivered' ? '#86efac' : order.status === 'cancelled' ? '#d1d5db' : '#fcd34d'}`
+                }}>{sm.label}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Customer & Payment Info */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+            <div>
+              <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888', marginBottom: '8px', fontWeight: 600 }}>Bill To</p>
+              <p style={{ fontWeight: 600, fontSize: '14px', color: '#111', margin: 0 }}>{addr.full_name || 'Customer'}</p>
+              <p style={{ color: '#555', fontSize: '12px', marginTop: '4px' }}>{addr.phone || 'N/A'}</p>
+              {addr.address && <p style={{ color: '#555', fontSize: '12px', marginTop: '6px' }}>{addr.address}</p>}
+              <p style={{ color: '#555', fontSize: '12px' }}>{[addr.area, addr.city].filter(Boolean).join(', ')}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888', marginBottom: '8px', fontWeight: 600 }}>Payment Details</p>
+              <p style={{ fontWeight: 600, fontSize: '12px', textTransform: 'capitalize', color: '#111', margin: 0 }}>{paymentMethod || 'N/A'}</p>
+              {transactionId && <p style={{ color: '#555', fontSize: '12px', marginTop: '4px' }}><span style={{ color: '#888' }}>Transaction ID:</span> {transactionId}</p>}
+              <p style={{ color: '#555', fontSize: '12px', marginTop: '4px' }}>
+                <span style={{ color: '#888' }}>Status:</span>{' '}
+                <span style={{ textTransform: 'capitalize', color: paymentStatus === 'submitted' || paymentStatus === 'confirmed' ? '#16a34a' : '#d97706' }}>{paymentStatus}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Items Table */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', margin: '16px 0' }}>
+            <thead>
+              <tr>
+                <th style={{ background: '#f8f9fa', padding: '10px 12px', textAlign: 'left', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', borderBottom: '2px solid #e5e7eb' }}>#</th>
+                <th style={{ background: '#f8f9fa', padding: '10px 12px', textAlign: 'left', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', borderBottom: '2px solid #e5e7eb' }}>Product</th>
+                <th style={{ background: '#f8f9fa', padding: '10px 12px', textAlign: 'center', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', borderBottom: '2px solid #e5e7eb' }}>Qty</th>
+                <th style={{ background: '#f8f9fa', padding: '10px 12px', textAlign: 'right', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', borderBottom: '2px solid #e5e7eb' }}>Unit Price</th>
+                <th style={{ background: '#f8f9fa', padding: '10px 12px', textAlign: 'right', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666', borderBottom: '2px solid #e5e7eb' }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length > 0 ? items.map((item: any, i: number) => (
+                <tr key={i}>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6' }}>{i + 1}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6' }}>{item.name || 'Product'}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>{item.quantity || 1}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>৳{Number(item.price || 0).toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', fontWeight: 500 }}>৳{((Number(item.price) || 0) * (item.quantity || 1)).toLocaleString()}</td>
+                </tr>
+              )) : (
+                <tr><td colSpan={5} style={{ padding: '10px 12px', textAlign: 'center', color: '#888' }}>No items</td></tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'right', padding: '12px 12px 8px', fontWeight: 500 }}>Subtotal</td>
+                <td style={{ textAlign: 'right', padding: '12px 12px 8px', fontWeight: 500 }}>৳{Number(order.subtotal || 0).toLocaleString()}</td>
+              </tr>
+              {Number(order.discount || 0) > 0 && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: 'right', padding: '4px 12px', color: '#16a34a' }}>Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</td>
+                  <td style={{ textAlign: 'right', padding: '4px 12px', color: '#16a34a' }}>-৳{Number(order.discount).toLocaleString()}</td>
+                </tr>
+              )}
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'right', padding: '4px 12px' }}>Delivery Charge</td>
+                <td style={{ textAlign: 'right', padding: '4px 12px' }}>
+                  {Number(order.delivery_charge || 0) === 0 ? <span style={{ color: '#16a34a' }}>Free</span> : '৳' + Number(order.delivery_charge).toLocaleString()}
+                </td>
+              </tr>
+              <tr style={{ fontWeight: 700 }}>
+                <td colSpan={4} style={{ textAlign: 'right', padding: '12px 12px', fontSize: '14px', borderTop: '2px solid #111' }}>Grand Total</td>
+                <td style={{ textAlign: 'right', padding: '12px 12px', fontSize: '18px', color: '#FF8A00', borderTop: '2px solid #111' }}>৳{Number(order.total || 0).toLocaleString()}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* Customer Note */}
+          {addr.notes && (
+            <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+              <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888', marginBottom: '4px', fontWeight: 600 }}>Customer Note</p>
+              <p style={{ color: '#555', fontStyle: 'italic', fontSize: '12px' }}>{addr.notes}</p>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
+            <p style={{ fontWeight: 600, marginBottom: '4px', color: '#111' }}>Thank you for shopping with MIA ONE!</p>
+            <p style={{ color: '#666', fontSize: '11px' }}>For support: support@mia-one.com</p>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #invoice-content, #invoice-content * { visibility: visible; }
+          #invoice-content { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
     </div>
-    <div style="text-align:right">
-      <p style="font-weight:700;font-size:16px;color:#111">${order.order_number || '#' + String(order.id).slice(-8).toUpperCase()}</p>
-      <p style="color:#666;margin-top:4px">${date}</p>
-      <p style="margin-top:8px"><span class="badge ${order.status === 'delivered' ? 'badge-success' : order.status === 'cancelled' ? 'badge-default' : 'badge-warning'}">${statusMeta(order.status).label}</span></p>
-    </div>
-  </div>
-  <div class="section grid-2">
-    <div>
-      <p class="section-title">Bill To</p>
-      <p style="font-weight:600;font-size:14px">${addr.full_name || 'Customer'}</p>
-      <p style="color:#555;margin-top:4px">${addr.phone || 'N/A'}</p>
-      <p style="color:#555;margin-top:6px">${addr.address || ''}</p>
-      <p style="color:#555">${[addr.area, addr.city].filter(Boolean).join(', ') || ''}</p>
-    </div>
-    <div>
-      <p class="section-title">Payment Details</p>
-      <p style="font-weight:600;text-transform:capitalize">${paymentMethod || 'N/A'}</p>
-      ${transactionId ? `<p style="color:#555;margin-top:4px"><span style="color:#888">Transaction ID:</span> ${transactionId}</p>` : ''}
-      <p style="margin-top:4px"><span style="color:#888">Status:</span> <span style="text-transform:capitalize;color:${paymentStatus === 'submitted' || paymentStatus === 'confirmed' ? '#16a34a' : '#d97706'}">${paymentStatus}</span></p>
-    </div>
-  </div>
-  <table>
-    <thead><tr><th>#</th><th>Product</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Total</th></tr></thead>
-    <tbody>
-      ${items.length > 0 ? items.map((item: any, i: number) => `
-        <tr><td>${i + 1}</td><td>${item.name || 'Product'}</td><td style="text-align:center">${item.quantity || 1}</td>
-        <td style="text-align:right">৳${Number(item.price || 0).toLocaleString()}</td>
-        <td style="text-align:right;font-weight:500">৳${((Number(item.price) || 0) * (item.quantity || 1)).toLocaleString()}</td></tr>
-      `).join('') : '<tr><td colspan="5" style="text-align:center;color:#888">No items</td></tr>'}
-    </tbody>
-    <tfoot>
-      <tr><td colspan="4" style="text-align:right;padding-top:12px">Subtotal</td><td style="text-align:right;padding-top:12px">৳${Number(order.subtotal || 0).toLocaleString()}</td></tr>
-      ${Number(order.discount || 0) > 0 ? `<tr><td colspan="4" style="text-align:right;color:#16a34a">Discount${order.coupon_code ? ` (${order.coupon_code})` : ''}</td><td style="text-align:right;color:#16a34a">-৳${Number(order.discount).toLocaleString()}</td></tr>` : ''}
-      <tr><td colspan="4" style="text-align:right">Delivery Charge</td><td style="text-align:right">${Number(order.delivery_charge || 0) === 0 ? '<span style="color:#16a34a">Free</span>' : '৳' + Number(order.delivery_charge).toLocaleString()}</td></tr>
-      <tr class="total-row"><td colspan="4" style="text-align:right;font-size:14px">Grand Total</td><td style="text-align:right;font-size:16px;color:#FF8A00">৳${Number(order.total || 0).toLocaleString()}</td></tr>
-    </tfoot>
-  </table>
-  ${addr.notes ? `<div class="section"><p class="section-title">Customer Note</p><p style="color:#555;font-style:italic">${addr.notes}</p></div>` : ''}
-  <div class="footer">
-    <p style="font-weight:600;margin-bottom:4px">Thank you for shopping with MIA ONE!</p>
-    <p>For support: support@mia-one.com</p>
-  </div>
-  </body></html>`;
-}
-
-function printInvoice(order: any, payment?: any) {
-  const invoiceHtml = buildInvoiceHTML(order, payment);
-  const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
-
-  if (!printWindow || printWindow.closed) {
-    alert('Popup blocked. Please allow popups to print the invoice, or try downloading.');
-    return;
-  }
-
-  try {
-    printWindow.document.open();
-    printWindow.document.write(invoiceHtml);
-    printWindow.document.close();
-    printWindow.focus();
-
-    printWindow.onload = () => {
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
-    };
-
-    setTimeout(() => {
-      if (!printWindow.closed) {
-        printWindow.print();
-      }
-    }, 500);
-  } catch (e) {
-    console.error('Print error:', e);
-    alert('Unable to print. Please try again.');
-  }
+  );
 }
 
 function buildWhatsAppMessage(order: any, payment?: any): string {
@@ -327,6 +428,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
   const [statusNote, setStatusNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState(order.status);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   useEffect(() => {
     fetchOrderTimeline(order.id).then(setTimeline);
@@ -390,7 +492,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
             <button onClick={() => shareOnWhatsApp(order, undefined, payment)} className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="Share on WhatsApp">
               <MessageCircle size={13} className="text-green-500" />
             </button>
-            <button onClick={() => printInvoice(order, payment)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
+            <button onClick={() => setShowInvoice(true)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
               <Printer size={13} className="text-white/50" />
             </button>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
@@ -595,6 +697,15 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
           )}
         </div>
       </div>
+
+      {/* Invoice Modal */}
+      {showInvoice && (
+        <InvoiceModal
+          order={order}
+          payment={payment}
+          onClose={() => setShowInvoice(false)}
+        />
+      )}
     </div>
   );
 }
@@ -792,7 +903,7 @@ export function AdminOrders() {
                               {action.label}
                             </button>
                           ))}
-                          <button onClick={() => printInvoice(order)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print">
+                          <button onClick={() => setSelectedOrder(order)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Print Invoice">
                             <Printer size={11} className="text-white/40" />
                           </button>
                           <button onClick={() => shareOnWhatsApp(order)} className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors" title="WhatsApp">
