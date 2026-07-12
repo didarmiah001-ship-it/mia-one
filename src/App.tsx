@@ -12,6 +12,7 @@ import { PageSkeleton, ListPageSkeleton } from './components/Skeleton';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './lib/theme';
 import { MiaAgent, MiaAgentFloatingButton } from './components/MiaAgent';
+import { ImageKit } from './lib/imagekit';
 
 // Route-based code splitting — each page is a separate chunk
 const HomePage               = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -98,22 +99,24 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <DataProvider>
-            <StoreProvider>
-              <RouterProvider>
-                <ToastProvider>
-                  <RippleEffect />
-                  <CustomerShell />
-                </ToastProvider>
-              </RouterProvider>
-            </StoreProvider>
-          </DataProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <ImageKit>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <AuthProvider>
+            <DataProvider>
+              <StoreProvider>
+                <RouterProvider>
+                  <ToastProvider>
+                    <RippleEffect />
+                    <CustomerShell />
+                  </ToastProvider>
+                </RouterProvider>
+              </StoreProvider>
+            </DataProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </ImageKit>
   );
 }
 

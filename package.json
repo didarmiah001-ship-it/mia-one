@@ -14,6 +14,7 @@
     "electron:dist:win": "npm run build && cd electron && npm run dist:win:all"
   },
   "dependencies": {
+    "@imagekit/react": "^5.0.2",
     "@supabase/supabase-js": "^2.57.4",
     "html2pdf.js": "^0.14.0",
     "i18next": "^26.3.3",
