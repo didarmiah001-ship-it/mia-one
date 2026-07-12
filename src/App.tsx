@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, useCallback } from 'react';
 import { AuthProvider } from './lib/auth';
 import { DataProvider } from './lib/data';
 import { StoreProvider } from './store/StoreContext';
-import { RouterProvider, Routes, Route } from './lib/router';
+import { RouterProvider, Routes, Route, useLocation } from './lib/router';
 import { ToastProvider } from './components/Toast';
 import { SplashScreen } from './components/SplashScreen';
 import { BottomNav } from './components/BottomNav';
@@ -44,6 +44,11 @@ const NotFoundPage           = lazy(() => import('./pages/NotFoundPage').then(m 
 
 function CustomerShell() {
   const [showMiaAgent, setShowMiaAgent] = useState(false);
+  const { path } = useLocation();
+
+  // The admin panel is a separate app served at /admin/* — never let the
+  // customer app's catch-all route intercept those paths.
+  if (path.startsWith('/admin')) return null;
 
   return (
     <div className="min-h-screen bg-mia-black">
