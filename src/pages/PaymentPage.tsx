@@ -4,9 +4,8 @@ import {
   Loader2, Copy, AlertCircle, Lock, RefreshCw, Clock, Check, Upload, Image as ImageIcon, X,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from '../lib/router';
-import { submitManualPayment, initiateStripePayment, createPayment } from '../lib/api';
+import { submitManualPayment, initiateStripePayment, createPayment, fetchActivePaymentMethods, updatePaymentGatewayRef } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 
 // ── Payment method metadata ───────────────────────────────────────────────────
@@ -152,12 +151,8 @@ function ManualPaymentForm({
 
   useEffect(() => {
     const fetchPaymentDetails = async () => {
-      const { data } = await supabase
-        .from('payment_methods')
-        .select('*')
-        .eq('payment_type', method)
-        .eq('is_active', true)
-        .maybeSingle();
+      const methods = await fetchActivePaymentMethods(method);
+      const data = methods[0];
       if (data) {
         setPaymentMethodDetails({
           account_number: data.account_number || '',
@@ -221,22 +216,23 @@ function ManualPaymentForm({
     setUploadingScreenshot(true);
     try {
       const fileExt = screenshotFile.name.split('.').pop();
-      const fileName = `payment-proofs/${orderNumber}-${Date.now()}.${fileExt}`;
+      const fileName = `payment-proof-${orderNumber}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(fileName, screenshotFile);
+      const formData = new FormData();
+      formData.append('file', screenshotFile);
+      formData.append('fileName', fileName);
+      formData.append('publicKey', 'public_i67rlxsde');
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        return null;
-      }
+      const authRes = await fetch('https://ik.imagekit.io/i67rlxsde/auth');
+      const { token, expire, signature } = await authRes.json();
+      formData.append('signature', signature);
+      formData.append('expire', String(expire));
+      formData.append('token', token);
 
-      const { data: urlData } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(fileName);
-
-      return urlData?.publicUrl || null;
+      const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', { method: 'POST', body: formData });
+      if (!uploadRes.ok) return null;
+      const uploadData = await uploadRes.json();
+      return uploadData.url || null;
     } catch (err) {
       console.error('Upload failed:', err);
       return null;
@@ -504,7 +500,7 @@ export function PaymentPage() {
           setStripeClientSecret(res.client_secret);
           // Update payment record with gateway ref
           if (paymentId && res.payment_intent_id) {
-            supabase.from('payments').update({ gateway_ref: res.payment_intent_id }).eq('id', paymentId);
+            updatePaymentGatewayRef(paymentId, res.payment_intent_id);
           }
         }
       });

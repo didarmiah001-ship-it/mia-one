@@ -1,8 +1,24 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  ReactNode,
+} from 'react';
+import {
+  User as FbUser,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as fbSignOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  updateProfile as fbUpdateProfile,
+} from 'firebase/auth';
+import { auth, db } from './firebase';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
-interface Profile {
+export interface Profile {
   id: string;
   full_name: string;
   phone: string;
@@ -13,8 +29,8 @@ interface Profile {
 }
 
 interface AuthContextValue {
-  user: User | null;
-  session: Session | null;
+  user: FbUser | null;
+  session: null;
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
@@ -29,93 +45,95 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<FbUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-    setProfile(data);
+    const snap = await getDoc(doc(db, 'profiles', userId));
+    if (snap.exists()) {
+      setProfile({ id: snap.id, ...snap.data() } as Profile);
+    } else {
+      setProfile(null);
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) await fetchProfile(user.id);
+    if (user) await fetchProfile(user.uid);
   }, [user, fetchProfile]);
 
   useEffect(() => {
-    let mounted = true;
-
-    const init = async () => {
-      const { data: { session: s } } = await supabase.auth.getSession();
-      if (!mounted) return;
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) await fetchProfile(s.user.id);
-      if (mounted) setLoading(false);
-    };
-
-    init();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
-      if (!mounted) return;
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        await fetchProfile(s.user.id);
+    const unsub = onAuthStateChanged(auth, async (fbUser) => {
+      setUser(fbUser);
+      if (fbUser) {
+        await fetchProfile(fbUser.uid);
       } else {
         setProfile(null);
       }
+      setLoading(false);
     });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => unsub();
   }, [fetchProfile]);
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    return { error: error?.message ?? null };
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await fbUpdateProfile(cred.user, { displayName: fullName });
+      await setDoc(doc(db, 'profiles', cred.user.uid), {
+        full_name: fullName,
+        phone: '',
+        avatar_url: '',
+        role: 'customer',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      return { error: null };
+    } catch (e: any) {
+      return { error: e.message };
+    }
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return { error: null };
+    } catch (e: any) {
+      return { error: e.message };
+    }
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await fbSignOut(auth);
     setProfile(null);
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    return { error: error?.message ?? null };
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { error: null };
+    } catch (e: any) {
+      return { error: e.message };
+    }
   }, []);
 
   const updateProfile = useCallback(async (data: Partial<Pick<Profile, 'full_name' | 'phone' | 'avatar_url'>>) => {
     if (!user) return { error: 'Not authenticated' };
-    const { error } = await supabase
-      .from('profiles')
-      .update({ ...data, updated_at: new Date().toISOString() })
-      .eq('id', user.id);
-    if (!error) await fetchProfile(user.id);
-    return { error: error?.message ?? null };
+    try {
+      await updateDoc(doc(db, 'profiles', user.uid), {
+        ...data,
+        updated_at: new Date().toISOString(),
+      });
+      await fetchProfile(user.uid);
+      return { error: null };
+    } catch (e: any) {
+      return { error: e.message };
+    }
   }, [user, fetchProfile]);
 
   return (
     <AuthContext.Provider value={{
       user,
-      session,
+      session: null,
       profile,
       loading,
       isAdmin: profile?.role === 'admin',

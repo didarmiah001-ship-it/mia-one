@@ -11,9 +11,8 @@ import { useAuth } from '../lib/auth';
 import { appConfig } from '../lib/config';
 import {
   createOrder, validateCoupon, incrementCouponUsage, fetchAddresses,
-  createPayment, initiateSSLCommerzPayment,
+  createPayment, initiateSSLCommerzPayment, fetchDeliverySettings, fetchActivePaymentMethods,
 } from '../lib/api';
-import { supabase } from '../lib/supabase';
 
 // Bangladesh Districts and Thanas
 const BANGLADESH_DISTRICTS = [
@@ -242,10 +241,9 @@ export function CheckoutPage() {
 
   // Fetch delivery charge settings from admin-configured DB values
   useEffect(() => {
-    supabase.from('settings').select('value').eq('key', 'delivery_charges').maybeSingle()
-      .then(({ data }) => {
-        if (data?.value) setDeliverySettings({ ...DEFAULT_DELIVERY_SETTINGS, ...data.value });
-      });
+    fetchDeliverySettings().then(value => {
+      if (value) setDeliverySettings({ ...DEFAULT_DELIVERY_SETTINGS, ...value });
+    });
   }, []);
 
   // Get thanas for selected district - with safe fallback
@@ -292,13 +290,9 @@ export function CheckoutPage() {
     const fetchPaymentMethods = async () => {
       setLoadingPaymentMethods(true);
       try {
-        const { data, error } = await supabase
-          .from('payment_methods')
-          .select('*')
-          .eq('is_active', true)
-          .order('sort_order', { ascending: true });
+        const data = await fetchActivePaymentMethods();
 
-        if (!error && data && data.length > 0) {
+        if (data && data.length > 0) {
           setPaymentMethodsDB(data as PaymentMethodDB[]);
           // Set the first active method as default
           if (data[0]) {

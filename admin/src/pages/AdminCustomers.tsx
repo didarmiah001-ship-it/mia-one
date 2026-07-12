@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, User, Phone, MapPin, Calendar, ShoppingCart, DollarSign, Package, ChevronRight, X, Eye, CreditCard, Image as ImageIcon, FileText } from 'lucide-react';
-import { adminFetchAllCustomers } from '../lib/api';
-import { supabase } from '../lib/supabase';
+import { Search, User, Phone, MapPin, Calendar, Package, ChevronRight, X, Eye, CreditCard, FileText } from 'lucide-react';
+import { adminFetchCustomersWithStats, adminFetchCustomerOrders } from '../lib/api';
 
 interface CustomerWithStats {
   id: string;
@@ -39,14 +38,8 @@ function CustomerDrawer({
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
-      // Fetch orders by user_id or by matching phone number in address
-      const { data } = await supabase
-        .from('orders')
-        .select('*, payments(*)')
-        .or(`user_id.eq.${customer.id}`)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      setOrders(data || []);
+      const data = await adminFetchCustomerOrders(customer.id);
+      setOrders(data);
       setLoading(false);
     };
     fetchOrders();
@@ -237,56 +230,8 @@ export function AdminCustomers() {
   useEffect(() => {
     const fetchCustomers = async () => {
       setLoading(true);
-
-      // Fetch all customers (profiles with role='customer')
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'customer')
-        .order('created_at', { ascending: false });
-
-      if (!profiles) {
-        setLoading(false);
-        return;
-      }
-
-      // Fetch all orders to calculate stats
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('user_id, total, created_at, address');
-
-      // Calculate stats per customer
-      const customersWithStats: CustomerWithStats[] = profiles.map(p => {
-        // Find orders for this customer by user_id or by matching phone in address
-        const customerOrders = (orders || []).filter(o => {
-          if (o.user_id === p.id) return true;
-          const phone = (o.address as any)?.phone;
-          if (phone && p.phone && phone === p.phone) return true;
-          return false;
-        });
-
-        const totalOrders = customerOrders.length;
-        const totalSpent = customerOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
-        const lastOrderDate = customerOrders.length > 0
-          ? customerOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
-          : undefined;
-
-        return {
-          id: p.id,
-          full_name: p.full_name || 'Unknown',
-          phone: p.phone || '',
-          avatar_url: p.avatar_url || '',
-          role: p.role,
-          created_at: p.created_at,
-          totalOrders,
-          totalSpent,
-          lastOrderDate,
-        };
-      });
-
-      // Sort by total spent
-      customersWithStats.sort((a, b) => b.totalSpent - a.totalSpent);
-      setCustomers(customersWithStats);
+      const customersWithStats = await adminFetchCustomersWithStats();
+      setCustomers(customersWithStats as any);
       setLoading(false);
     };
     fetchCustomers();

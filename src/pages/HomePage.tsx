@@ -8,7 +8,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
-import { supabase } from '../lib/supabase';
+import { fetchActiveCampaigns } from '../lib/api';
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -21,11 +21,7 @@ export function HomePage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
   useEffect(() => {
-    const now = new Date().toISOString();
-    supabase.from('campaigns').select('*').eq('is_active', true)
-      .or(`end_date.is.null,end_date.gte.${now}`)
-      .order('sort_order').limit(5)
-      .then(({ data }) => { if (data) setCampaigns(data); });
+    fetchActiveCampaigns().then(data => { if (data) setCampaigns(data); });
   }, []);
 
   const goTo = useCallback((idx: number) => {

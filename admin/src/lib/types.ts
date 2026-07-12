@@ -3,17 +3,33 @@ export interface Product {
   name: string;
   price: number;
   discount_price: number | null;
+  wholesale_price: number | null;
   image: string;
   images: string[];
   category: string;
+  category_id: string;
+  brand: string;
+  brand_id: string;
+  subcategory: string;
   description: string;
+  short_description: string;
+  long_description: string;
   specifications: Record<string, string>;
+  sku: string;
+  barcode: string;
+  weight: number | null;
+  colors: string[];
+  sizes: string[];
+  tags: string[];
+  primary_image_index: number;
   rating: number;
   reviews_count: number;
   stock: number;
   is_featured: boolean;
   is_trending: boolean;
   is_new: boolean;
+  is_best_selling: boolean;
+  is_active: boolean;
   created_at: string;
 }
 

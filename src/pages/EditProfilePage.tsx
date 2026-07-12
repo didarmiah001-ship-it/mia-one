@@ -2,8 +2,10 @@ import { useState, useRef } from 'react';
 import { ArrowLeft, Save, User, Phone, Camera, KeyRound, Eye, EyeOff, CheckCircle2, Loader2 } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useAuth } from '../lib/auth';
-import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../lib/firebase';
+import { updatePassword as fbUpdatePassword } from 'firebase/auth';
 
 type Tab = 'profile' | 'password';
 
@@ -55,11 +57,23 @@ export function EditProfilePage() {
   const uploadAvatar = async (): Promise<string | null> => {
     if (!avatarFile) return avatarPreview || null;
     const ext = avatarFile.name.split('.').pop();
-    const path = `avatars/${user.id}.${ext}`;
-    const { error } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true });
-    if (error) return avatarPreview;
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-    return data.publicUrl + `?t=${Date.now()}`;
+    const fileName = `avatar-${user!.uid}-${Date.now()}.${ext}`;
+
+    const authRes = await fetch('https://ik.imagekit.io/i67rlxsde/auth');
+    const { token, expire, signature } = await authRes.json();
+
+    const formData = new FormData();
+    formData.append('file', avatarFile);
+    formData.append('fileName', fileName);
+    formData.append('publicKey', 'public_i67rlxsde');
+    formData.append('signature', signature);
+    formData.append('expire', String(expire));
+    formData.append('token', token);
+
+    const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', { method: 'POST', body: formData });
+    if (!uploadRes.ok) return avatarPreview;
+    const uploadData = await uploadRes.json();
+    return uploadData.url || avatarPreview;
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -97,25 +111,25 @@ export function EditProfilePage() {
     }
 
     setPasswordLoading(true);
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password: currentPassword,
-    });
-    if (signInErr) {
+    try {
+      await signInWithEmailAndPassword(auth, user!.email!, currentPassword);
+    } catch {
       setPasswordLoading(false);
       setPasswordError(t('editProfile.currentPasswordWrong'));
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setPasswordLoading(false);
-    if (error) setPasswordError(error.message);
-    else {
+    try {
+      await fbUpdatePassword(auth.currentUser!, newPassword);
+      setPasswordLoading(false);
       setPasswordSuccess(true);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (e: any) {
+      setPasswordLoading(false);
+      setPasswordError(e.message);
     }
   };
 

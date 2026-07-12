@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, RefreshCw, CheckCircle2, XCircle, Clock, CreditCard, Filter, ChevronDown, Eye, X, Image as ImageIcon, FileText, User, Phone, MapPin } from 'lucide-react';
-import { adminFetchAllPayments, adminUpdatePaymentStatus } from '../lib/api';
+import { adminFetchAllPayments, adminUpdatePaymentStatus, adminFetchOrderWithProfile } from '../lib/api';
 import { useToast } from '../components/Toast';
-import { supabase } from '../lib/supabase';
 
 const STATUS_OPTIONS = [
   { key: 'all',       label: 'All',       color: 'rgba(255,255,255,0.4)' },
@@ -53,11 +52,7 @@ function PaymentDetailDrawer({
     // Fetch full order details with customer info
     const fetchOrderDetails = async () => {
       if (payment.order_id) {
-        const { data } = await supabase
-          .from('orders')
-          .select('*, profiles(full_name, phone, id)')
-          .eq('id', payment.order_id)
-          .maybeSingle();
+        const data = await adminFetchOrderWithProfile(payment.order_id);
         setOrderDetails(data);
       }
     };

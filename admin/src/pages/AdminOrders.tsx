@@ -8,8 +8,7 @@ import {
   Filter, RefreshCw, FileText, MapPin, Phone, User, Calendar,
   ArrowUpDown, Eye, CreditCard, Image as ImageIcon, MessageCircle, Pencil
 } from 'lucide-react';
-import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline, fetchPayment } from '../lib/api';
-import { supabase } from '../lib/supabase';
+import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline, fetchPayment, adminUpdateOrderDeliveryCharge } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { appConfig } from '../lib/config';
 
@@ -810,10 +809,7 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
     const newCharge = Number(overrideCharge) || 0;
     setSavingDelivery(true);
     const newTotal = Math.max(0, Number(displayOrder.subtotal || 0) + newCharge - Number(displayOrder.discount || 0));
-    const { error } = await supabase
-      .from('orders')
-      .update({ delivery_charge: newCharge, total: newTotal, updated_at: new Date().toISOString() })
-      .eq('id', displayOrder.id);
+    const { error } = await adminUpdateOrderDeliveryCharge(displayOrder.id, newCharge, newTotal);
     if (error) {
       toast.error(error.message);
     } else {

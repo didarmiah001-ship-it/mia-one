@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import {
+  adminFetchPaymentMethods,
+  adminCreatePaymentMethod,
+  adminUpdatePaymentMethod,
+  adminDeletePaymentMethod,
+} from '../lib/api';
 import { CreditCard, Plus, Edit2, Trash2, Save, X, Check, AlertCircle, Smartphone, Building, DollarSign, CheckCircle2, XCircle } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
@@ -67,14 +72,8 @@ export function AdminPaymentSettings() {
 
   const fetchMethods = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('payment_methods')
-      .select('*')
-      .order('sort_order', { ascending: true });
-
-    if (!error && data) {
-      setMethods(data as PaymentMethod[]);
-    }
+    const data = await adminFetchPaymentMethods();
+    setMethods(data as PaymentMethod[]);
     setLoading(false);
   }, []);
 
@@ -108,13 +107,7 @@ export function AdminPaymentSettings() {
     setSaving(true);
 
     if (editingId) {
-      const { error } = await supabase
-        .from('payment_methods')
-        .update({
-          ...form,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingId);
+      const { error } = await adminUpdatePaymentMethod(editingId, form);
 
       if (error) {
         toast.error('Failed to update payment method');
@@ -124,9 +117,7 @@ export function AdminPaymentSettings() {
         fetchMethods();
       }
     } else {
-      const { error } = await supabase
-        .from('payment_methods')
-        .insert([form]);
+      const { error } = await adminCreatePaymentMethod(form);
 
       if (error) {
         toast.error('Failed to create payment method');
@@ -144,10 +135,7 @@ export function AdminPaymentSettings() {
   const handleDelete = async () => {
     if (!deleteId) return;
 
-    const { error } = await supabase
-      .from('payment_methods')
-      .delete()
-      .eq('id', deleteId);
+    const { error } = await adminDeletePaymentMethod(deleteId);
 
     if (error) {
       toast.error('Failed to delete payment method');
@@ -159,10 +147,7 @@ export function AdminPaymentSettings() {
   };
 
   const handleToggleActive = async (method: PaymentMethod) => {
-    const { error } = await supabase
-      .from('payment_methods')
-      .update({ is_active: !method.is_active, updated_at: new Date().toISOString() })
-      .eq('id', method.id);
+    const { error } = await adminUpdatePaymentMethod(method.id, { is_active: !method.is_active });
 
     if (error) {
       toast.error('Failed to toggle status');
