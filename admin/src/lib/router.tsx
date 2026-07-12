@@ -65,7 +65,6 @@ export function Routes({ children }: RoutesProps) {
         if (match) return element;
       }
     }
-    if (path === '*' ) return element;
   }
   const starMatch = childArray.find(c => c?.props?.path === '*');
   if (starMatch) return starMatch.props.element;

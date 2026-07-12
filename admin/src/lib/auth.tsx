@@ -35,8 +35,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
+    const collectionName = 'admins';
+    const docPath = `admins/${userId}`;
+
+    console.log('[AdminAuth] Firestore lookup:', {
+      collection: collectionName,
+      documentPath: docPath,
+      authenticatedUid: userId,
+      requestedUid: userId,
+    });
+
     try {
-      const snap = await getDoc(doc(db, 'admins', userId));
+      const snap = await getDoc(doc(db, collectionName, userId));
+
+      console.log('[AdminAuth] Firestore result:', {
+        exists: snap.exists(),
+        id: snap.id,
+        data: snap.exists() ? snap.data() : null,
+      });
+
       if (snap.exists()) {
         const data = snap.data();
         if (data.active === true && data.role === 'admin') {
@@ -44,15 +61,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAuthError(null);
         } else {
           setProfile(null);
-          setAuthError('Your admin account is inactive or does not have the admin role.');
+          setAuthError(`Admin check failed: active=${data.active}, role=${data.role}. Required: active=true, role=admin.`);
         }
       } else {
         setProfile(null);
-        setAuthError('No admin record found for this user.');
+        setAuthError(`No admin document found at path: ${docPath}`);
       }
     } catch (err: any) {
+      console.error('[AdminAuth] Firestore error:', {
+        collection: collectionName,
+        documentPath: docPath,
+        authenticatedUid: userId,
+        requestedUid: userId,
+        errorCode: err?.code,
+        errorMessage: err?.message,
+        fullError: err,
+      });
       setProfile(null);
-      setAuthError(err?.message || 'Failed to verify admin status. Check Firestore security rules.');
+      setAuthError(err?.message || 'Failed to verify admin status.');
     } finally {
       setLoading(false);
     }
@@ -64,6 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
+      console.log('[AdminAuth] onAuthStateChanged:', {
+        user: fbUser ? { uid: fbUser.uid, email: fbUser.email } : null,
+      });
       setUser(fbUser);
       if (fbUser) {
         await fetchProfile(fbUser.uid);

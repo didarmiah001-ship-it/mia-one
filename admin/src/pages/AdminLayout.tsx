@@ -31,7 +31,6 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] flex">
-      {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r border-white/5 flex flex-col" style={{ background: 'rgba(13,17,23,0.6)' }}>
         <div className="px-5 py-5 border-b border-white/5">
           <div className="flex items-center gap-2.5">
@@ -85,7 +84,6 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-lg font-bold text-white mb-4">
