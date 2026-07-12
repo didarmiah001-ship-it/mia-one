@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Product, Category } from './types';
 import { db } from './firebase';
+import { seedFirestoreIfEmpty } from './seed';
 import {
   collection,
   getDocs,
   query,
   where,
-  orderBy,
 } from 'firebase/firestore';
 
 export interface Banner {
@@ -93,6 +93,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      await seedFirestoreIfEmpty();
+
       const [productsSnap, categoriesSnap, bannersSnap, settingsSnap] = await Promise.all([
         getDocs(collection(db, 'products')),
         getDocs(collection(db, 'categories')),
