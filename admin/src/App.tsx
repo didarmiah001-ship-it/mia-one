@@ -50,31 +50,38 @@ function AppShell() {
 
   useEffect(() => {
     if (loading) return;
+    if (user && !profile) return;
 
     if (!user) {
       if (pathname !== '/login') navigate('/login');
       return;
     }
 
-    if (user && !isAdmin) {
+    if (!isAdmin) {
       if (pathname !== '/unauthorized') navigate('/unauthorized');
       return;
     }
 
-    // Admin is verified — redirect away from login/unauthorized to dashboard
-    if (pathname === '/login' || pathname === '/unauthorized') {
-      navigate('/');
-    }
+    if (pathname === '/login') navigate('/');
   }, [user, profile, loading, isAdmin, pathname, navigate]);
 
   if (loading) return <LoadingScreen error={null} />;
 
   if (!user) return <LoginPage />;
 
-  if (!isAdmin) return <LoadingScreen error={authError} />;
+  if (user && !profile) return <LoadingScreen error={authError} />;
 
-  // Admin verified — render the dashboard for any route
-  return <AdminLayout />;
+  if (!isAdmin) return <UnauthorizedPage />;
+
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/" element={<AdminLayout />} />
+      <Route path="/:section" element={<AdminLayout />} />
+      <Route path="*" element={<AdminLayout />} />
+    </Routes>
+  );
 }
 
 function App() {
