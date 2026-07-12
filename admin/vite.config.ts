@@ -4,11 +4,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: '/',
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
   build: {
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -19,9 +16,5 @@ export default defineConfig({
       },
     },
   },
-  server: {
-    hmr: {
-      overlay: false,
-    },
-  },
+  server: { hmr: { overlay: false } },
 });

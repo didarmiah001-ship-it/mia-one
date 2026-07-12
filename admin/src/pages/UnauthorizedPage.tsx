@@ -1,49 +1,39 @@
-import { Shield, XCircle } from 'lucide-react';
-import { useNavigate } from '../lib/router';
 import { useAuth } from '../lib/auth';
+import { useNavigate } from '../lib/router';
 
 export function UnauthorizedPage() {
-  const { signOut } = useAuth();
+  const { user, signOut, authError } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-mia-black flex items-center justify-center px-4">
-      <div className="flex flex-col items-center gap-6 text-center max-w-sm">
-        <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
-          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
-          <XCircle size={36} className="text-red-400" />
+    <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-4">
+      <div className="max-w-md w-full text-center">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-          <p className="text-sm text-white/40 leading-relaxed">
-            You do not have administrator privileges. This panel is restricted to authorized admin accounts only.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleSignOut}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-all"
-            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.2)' }}
-          >
-            Sign Out
-          </button>
-          <button
-            onClick={() => navigate('/login')}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:text-white transition-all"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            Back to Login
-          </button>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-white/20">
-          <Shield size={12} />
-          <span>MIA ONE Admin Panel</span>
-        </div>
+        <h1 className="text-xl font-bold text-white mb-2">Access Denied</h1>
+        <p className="text-sm text-white/40 mb-1">
+          Your account does not have admin privileges.
+        </p>
+        {authError && (
+          <p className="text-xs text-red-300/70 mb-6">{authError}</p>
+        )}
+        {user && (
+          <p className="text-xs text-white/25 mb-6">Signed in as {user.email}</p>
+        )}
+        <button
+          onClick={async () => { await signOut(); navigate('/login'); }}
+          className="px-6 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/8 hover:bg-white/5 transition-colors"
+        >
+          Sign Out
+        </button>
       </div>
     </div>
   );

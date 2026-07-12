@@ -17,10 +17,10 @@ export interface AdminProfile {
 
 interface AuthContextValue {
   user: FbUser | null;
-  session: null;
   profile: AdminProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  authError: string | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -32,20 +32,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FbUser | null>(null);
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const snap = await getDoc(doc(db, 'admins', userId));
-    if (snap.exists()) {
-      const data = snap.data();
-      if (data.active === true && data.role === 'admin') {
-        setProfile({ id: snap.id, email: data.email || '', role: data.role, active: data.active });
+    try {
+      const snap = await getDoc(doc(db, 'admins', userId));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.active === true && data.role === 'admin') {
+          setProfile({ id: snap.id, email: data.email || '', role: data.role, active: data.active });
+          setAuthError(null);
+        } else {
+          setProfile(null);
+          setAuthError('Your admin account is inactive or does not have the admin role.');
+        }
       } else {
         setProfile(null);
+        setAuthError('No admin record found for this user.');
       }
-    } else {
+    } catch (err: any) {
       setProfile(null);
+      setAuthError(err?.message || 'Failed to verify admin status. Check Firestore security rules.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -59,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetchProfile(fbUser.uid);
       } else {
         setProfile(null);
+        setAuthError(null);
         setLoading(false);
       }
     });
@@ -77,15 +88,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await fbSignOut(auth);
     setProfile(null);
+    setAuthError(null);
   }, []);
 
   return (
     <AuthContext.Provider value={{
       user,
-      session: null,
       profile,
       loading,
       isAdmin: profile?.active === true && profile?.role === 'admin',
+      authError,
       signIn,
       signOut,
       refreshProfile,

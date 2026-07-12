@@ -1,67 +1,28 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 
 interface RouterContextValue {
-  path: string;
-  query: Record<string, string>;
-  navigate: (to: string | number) => void;
+  pathname: string;
+  navigate: (path: string) => void;
 }
 
 const RouterContext = createContext<RouterContextValue | null>(null);
-const ParamsContext = createContext<Record<string, string>>({});
-
-function parsePath(fullPath: string) {
-  const [pathPart, queryString] = fullPath.split('?');
-  const query: Record<string, string> = {};
-  if (queryString) {
-    queryString.split('&').forEach(pair => {
-      const [key, value] = pair.split('=');
-      if (key) query[decodeURIComponent(key)] = decodeURIComponent(value || '');
-    });
-  }
-  return { path: pathPart, query };
-}
 
 export function RouterProvider({ children }: { children: ReactNode }) {
-  const [history, setHistory] = useState<string[]>(() => [
-    window.location.pathname + window.location.search,
-  ]);
+  const [pathname, setPathname] = useState(window.location.pathname || '/');
 
-  const current = history[history.length - 1];
-  const { path, query } = parsePath(current);
-
-  const navigate = useCallback((to: string | number) => {
-    if (typeof to === 'number') {
-      setHistory(prev => {
-        if (prev.length <= 1) return prev;
-        const next = prev.slice(0, -1);
-        window.history.replaceState(null, '', next[next.length - 1]);
-        return next;
-      });
-    } else {
-      window.history.pushState(null, '', to);
-      setHistory(prev => [...prev, to]);
-    }
-  }, []);
-
-  // Handle browser back/forward buttons
   useEffect(() => {
-    const onPopState = () => {
-      const loc = window.location.pathname + window.location.search;
-      setHistory(prev => {
-        if (prev.length > 1 && prev[prev.length - 2] === loc) {
-          return prev.slice(0, -1);
-        }
-        return [loc];
-      });
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    const onPop = () => setPathname(window.location.pathname || '/');
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const value = useMemo(() => ({ path, query, navigate }), [path, query, navigate]);
+  const navigate = useCallback((path: string) => {
+    window.history.pushState({}, '', path);
+    setPathname(path);
+  }, []);
 
   return (
-    <RouterContext.Provider value={value}>
+    <RouterContext.Provider value={{ pathname, navigate }}>
       {children}
     </RouterContext.Provider>
   );
@@ -69,80 +30,48 @@ export function RouterProvider({ children }: { children: ReactNode }) {
 
 export function useNavigate() {
   const ctx = useContext(RouterContext);
-  if (!ctx) throw new Error('useNavigate must be inside RouterProvider');
+  if (!ctx) throw new Error('useNavigate must be used within RouterProvider');
   return ctx.navigate;
 }
 
 export function useLocation() {
   const ctx = useContext(RouterContext);
-  if (!ctx) throw new Error('useLocation must be inside RouterProvider');
-  return { pathname: ctx.path, query: ctx.query };
+  if (!ctx) throw new Error('useLocation must be used within RouterProvider');
+  return { pathname: ctx.pathname };
 }
 
-export function useParams(): Record<string, string> {
-  return useContext(ParamsContext);
+interface RoutesProps {
+  children: ReactNode;
 }
 
-interface RouteMatch {
-  path: string;
-  element: ReactNode;
-}
-
-export function Routes({ children }: { children: ReactNode }) {
+export function Routes({ children }: RoutesProps) {
   const ctx = useContext(RouterContext);
-  if (!ctx) return null;
+  if (!ctx) throw new Error('Routes must be used within RouterProvider');
 
-  const routes: RouteMatch[] = [];
+  const { pathname } = ctx;
+  const segments = pathname.split('/').filter(Boolean);
+  const routePath = '/' + segments.join('/');
+
   const childArray = Array.isArray(children) ? children : [children];
-  childArray.forEach((child: any) => {
-    if (child?.props) routes.push({ path: child.props.path, element: child.props.element });
-  });
-
-  for (const route of routes) {
-    const match = matchRoute(route.path, ctx.path);
-    if (match) {
-      return (
-        <ParamsContext.Provider value={match.params}>
-          {route.element}
-        </ParamsContext.Provider>
-      );
-    }
-  }
-
-  const fallback = routes.find(r => r.path === '*');
-  if (fallback) return <>{fallback.element}</>;
-  return null;
-}
-
-export function Route(_props: { path: string; element: ReactNode }) {
-  return null;
-}
-
-function matchRoute(pattern: string, path: string): { params: Record<string, string> } | null {
-  if (pattern === '*') return { params: {} };
-
-  const patternParts = pattern.split('/').filter(Boolean);
-  const pathParts = path.split('/').filter(Boolean);
-  const lastPP = patternParts[patternParts.length - 1];
-  const hasOptional = lastPP?.startsWith(':');
-
-  if (patternParts.length !== pathParts.length) {
-    if (hasOptional && pathParts.length === patternParts.length - 1) {
-      const params: Record<string, string> = {};
-      for (let i = 0; i < patternParts.length - 1; i++) {
-        if (patternParts[i].startsWith(':')) params[patternParts[i].slice(1)] = pathParts[i];
-        else if (patternParts[i] !== pathParts[i]) return null;
+  for (const child of childArray) {
+    if (!child?.props) continue;
+    const { path, element } = child.props;
+    if (!path) continue;
+    if (path === routePath || (path === '/' && pathname === '/')) return element;
+    if (path.includes(':')) {
+      const pattern = path.split('/').filter(Boolean);
+      if (pattern.length === segments.length) {
+        const match = pattern.every((p: string, i: number) => p.startsWith(':') || p === segments[i]);
+        if (match) return element;
       }
-      params[lastPP.slice(1)] = '';
-      return { params };
     }
-    return null;
+    if (path === '*' ) return element;
   }
+  const starMatch = childArray.find(c => c?.props?.path === '*');
+  if (starMatch) return starMatch.props.element;
+  return null;
+}
 
-  const params: Record<string, string> = {};
-  for (let i = 0; i < patternParts.length; i++) {
-    if (patternParts[i].startsWith(':')) params[patternParts[i].slice(1)] = pathParts[i];
-    else if (patternParts[i] !== pathParts[i]) return null;
-  }
-  return { params };
+export function Route({ path, element }: { path: string; element: ReactNode }) {
+  return { props: { path, element } } as any;
 }

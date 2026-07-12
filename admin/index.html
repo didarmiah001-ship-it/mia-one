@@ -1,79 +1,31 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MIA Admin</title>
-
-    <!-- SEO / Robots -->
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="description" content="MIA ONE Admin Panel — Manage products, orders, banners, and customers." />
-
-    <!-- PWA Manifest (v2 — forces Windows icon cache refresh) -->
-    <link rel="manifest" href="/admin-manifest.json?v=2" />
-
-    <!-- Theme / tile colors -->
-    <meta name="theme-color" content="#FF8A00" />
-    <meta name="msapplication-TileColor" content="#000000" />
-    <meta name="msapplication-TileImage" content="/mia-admin-logo.png" />
-    <meta name="msapplication-config" content="none" />
-
-    <!-- Browser favicon — PNG only, all sizes -->
-    <link rel="icon" type="image/png" sizes="48x48"  href="/mia-admin-logo.png" />
-    <link rel="icon" type="image/png" sizes="96x96"  href="/mia-admin-logo.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/mia-admin-logo.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/mia-admin-logo.png" />
-
-    <!-- iOS / macOS Safari PWA meta -->
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="MIA Admin" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/mia-admin-logo.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/mia-admin-logo.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/mia-admin-logo.png" />
-
-    <!-- Fonts -->
+    <title>MIA Admin Panel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
-      * { box-sizing: border-box; }
-      body { margin: 0; background: #000000; font-family: 'Inter', sans-serif; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Inter', system-ui, sans-serif; background: #0A0A0F; -webkit-font-smoothing: antialiased; }
       #root { min-height: 100vh; }
+      .glow-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 20px;
+      }
+      @keyframes loading-bar {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      .animate-loading-bar { animation: loading-bar 1.4s ease-in-out infinite; }
+      .text-mia-orange { color: #FF8A00; }
     </style>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
-
-    <!-- PWA Service Worker Registration (v2) -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          // Unregister any old SW first to force icon/cache refresh on next visit
-          navigator.serviceWorker.getRegistrations().then(function (regs) {
-            var oldRegs = regs.filter(function (r) {
-              return r.scope && r.scope.includes('/admin') &&
-                     r.active && r.active.scriptURL &&
-                     !r.active.scriptURL.includes('admin-sw.js');
-            });
-            oldRegs.forEach(function (r) { r.unregister(); });
-          });
-
-          navigator.serviceWorker
-            .register('/admin-sw.js?v=2', { scope: '/admin/' })
-            .then(function (reg) {
-              // Force update check on every page load so new icon is picked up
-              reg.update();
-              console.log('[MIA Admin SW] v2 registered, scope:', reg.scope);
-            })
-            .catch(function (err) {
-              console.warn('[MIA Admin SW] Registration failed:', err);
-            });
-        });
-      }
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

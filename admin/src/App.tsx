@@ -6,19 +6,17 @@ import { LoginPage } from './pages/LoginPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { AdminLayout } from './pages/AdminLayout';
 
-function LoadingScreen() {
+function LoadingScreen({ error }: { error?: string | null }) {
   return (
     <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
       <div className="flex flex-col items-center gap-5">
-        {/* Logo */}
         <div className="relative">
-          <img
-            src="/mia-admin-logo.png"
-            alt="MIA Admin"
-            className="w-20 h-20 object-contain drop-shadow-2xl"
-            style={{ filter: 'drop-shadow(0 0 24px rgba(255,138,0,0.35))' }}
-          />
-          {/* Pulse ring */}
+          <div
+            className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 0 24px rgba(255,138,0,0.35)' }}
+          >
+            M
+          </div>
           <div
             className="absolute inset-0 rounded-2xl animate-ping"
             style={{ background: 'rgba(255,138,0,0.12)', animationDuration: '2s' }}
@@ -26,9 +24,14 @@ function LoadingScreen() {
         </div>
         <div className="flex flex-col items-center gap-1.5">
           <span className="text-white font-bold text-base tracking-tight">MIA Admin</span>
-          <span className="text-white/25 text-sm">Verifying access…</span>
+          <span className="text-white/25 text-sm">{error ? 'Access denied' : 'Verifying access…'}</span>
         </div>
-        {/* Loading bar */}
+        {error && (
+          <div className="max-w-md px-4 py-3 rounded-xl text-xs text-red-300 text-center"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+            {error}
+          </div>
+        )}
         <div className="w-32 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
           <div
             className="h-full rounded-full animate-loading-bar"
@@ -41,14 +44,13 @@ function LoadingScreen() {
 }
 
 function AppShell() {
-  const { user, profile, loading, isAdmin } = useAuth();
+  const { user, profile, loading, isAdmin, authError } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // Redirect logic — only runs once auth state is fully resolved
   useEffect(() => {
     if (loading) return;
-    if (user && !profile) return; // wait for profile to load
+    if (user && !profile) return;
 
     if (!user) {
       if (pathname !== '/login') navigate('/login');
@@ -60,22 +62,17 @@ function AppShell() {
       return;
     }
 
-    // Signed-in admin on the login page → go to dashboard
     if (pathname === '/login') navigate('/');
   }, [user, profile, loading, isAdmin, pathname, navigate]);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingScreen error={null} />;
 
-  // Not authenticated
   if (!user) return <LoginPage />;
 
-  // Profile still loading (user exists but profile not yet fetched)
-  if (user && !profile) return <LoadingScreen />;
+  if (user && !profile) return <LoadingScreen error={authError} />;
 
-  // Authenticated but not admin
   if (!isAdmin) return <UnauthorizedPage />;
 
-  // Authenticated admin
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
