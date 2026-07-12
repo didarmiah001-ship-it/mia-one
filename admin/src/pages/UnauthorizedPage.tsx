@@ -1,5 +1,5 @@
 import { useAuth } from '../lib/auth';
-import { useNavigate } from '../lib/router';
+import { useNavigate } from 'react-router-dom';
 
 export function UnauthorizedPage() {
   const { user, signOut, authError } = useAuth();
@@ -19,17 +19,11 @@ export function UnauthorizedPage() {
           </svg>
         </div>
         <h1 className="text-xl font-bold text-white mb-2">Access Denied</h1>
-        <p className="text-sm text-white/40 mb-1">
-          Your account does not have admin privileges.
-        </p>
-        {authError && (
-          <p className="text-xs text-red-300/70 mb-6">{authError}</p>
-        )}
-        {user && (
-          <p className="text-xs text-white/25 mb-6">Signed in as {user.email}</p>
-        )}
+        <p className="text-sm text-white/40 mb-1">Your account does not have admin privileges.</p>
+        {authError && <p className="text-xs text-red-300/70 mb-6">{authError}</p>}
+        {user && <p className="text-xs text-white/25 mb-6">Signed in as {user.email}</p>}
         <button
-          onClick={async () => { await signOut(); navigate('/login'); }}
+          onClick={async () => { await signOut(); navigate('/admin/login'); }}
           className="px-6 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/8 hover:bg-white/5 transition-colors"
         >
           Sign Out

@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
+import { Navigate, BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
-import { RouterProvider, Routes, Route, useNavigate, useLocation } from './lib/router';
 import { ToastProvider } from './components/Toast';
 import { LoginPage } from './pages/LoginPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
@@ -33,53 +32,48 @@ function LoadingScreen({ error }: { error?: string | null }) {
           </div>
         )}
         <div className="w-32 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <div
-            className="h-full rounded-full animate-loading-bar"
-            style={{ background: 'linear-gradient(90deg, #FF8A00, #FF2EC9)' }}
-          />
+          <div className="h-full rounded-full animate-loading-bar" style={{ background: 'linear-gradient(90deg, #FF8A00, #FF2EC9)' }} />
         </div>
       </div>
     </div>
   );
 }
 
-function AppShell() {
-  const { user, profile, loading, isAdmin, authError } = useAuth();
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, isAdmin } = useAuth();
 
-  useEffect(() => {
-    if (loading) return;
-    if (user && !profile) return;
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/admin/login" replace />;
+  if (!isAdmin) return <Navigate to="/admin/unauthorized" replace />;
 
-    if (!user) {
-      if (pathname !== '/login') navigate('/login');
-      return;
-    }
+  return <>{children}</>;
+}
 
-    if (!isAdmin) {
-      if (pathname !== '/unauthorized') navigate('/unauthorized');
-      return;
-    }
+function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, isAdmin } = useAuth();
 
-    if (pathname === '/login') navigate('/');
-  }, [user, profile, loading, isAdmin, pathname, navigate]);
+  if (loading) return <LoadingScreen />;
+  if (user && isAdmin) return <Navigate to="/admin/dashboard" replace />;
 
-  if (loading) return <LoadingScreen error={null} />;
+  return <>{children}</>;
+}
 
-  if (!user) return <LoginPage />;
-
-  if (user && !profile) return <LoadingScreen error={authError} />;
-
-  if (!isAdmin) return <UnauthorizedPage />;
-
+function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
-      <Route path="/" element={<AdminLayout />} />
-      <Route path="/:section" element={<AdminLayout />} />
-      <Route path="*" element={<AdminLayout />} />
+      {/* Public routes */}
+      <Route path="/admin/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+      <Route path="/admin/unauthorized" element={<UnauthorizedPage />} />
+
+      {/* Protected admin routes — all /admin/:section paths go through ProtectedRoute + AdminLayout */}
+      <Route path="/admin/:section" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>} />
+      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+
+      {/* Root redirect */}
+      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+
+      {/* Catch-all: redirect any unknown path to dashboard (auth guard handles redirect) */}
+      <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
     </Routes>
   );
 }
@@ -87,11 +81,11 @@ function AppShell() {
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider>
+      <BrowserRouter>
         <ToastProvider>
-          <AppShell />
+          <AppRoutes />
         </ToastProvider>
-      </RouterProvider>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

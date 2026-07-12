@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { useNavigate } from '../lib/router';
 
 export function LoginPage() {
   const { signIn } = useAuth();
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +21,6 @@ export function LoginPage() {
     if (signInError) {
       setSubmitting(false);
       setError(signInError);
-      return;
     }
   };
 

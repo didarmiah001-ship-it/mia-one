@@ -44,15 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAuthError(null);
         } else {
           setProfile(null);
-          setAuthError('Your admin account is inactive or does not have the admin role.');
+          setAuthError(`Admin check failed: active=${data.active}, role=${data.role}.`);
         }
       } else {
         setProfile(null);
-        setAuthError('No admin record found for this user.');
+        setAuthError(`No admin document found at: admins/${userId}`);
       }
     } catch (err: any) {
       setProfile(null);
-      setAuthError(err?.message || 'Failed to verify admin status. Check Firestore security rules.');
+      setAuthError(err?.message || 'Failed to verify admin status.');
     } finally {
       setLoading(false);
     }
