@@ -1,0 +1,76 @@
+src/components/MiaAgent.tsx(117,23): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/CheckoutPage.tsx(7,41): error TS6133: 'Plus' is declared but its value is never read.
+src/pages/CheckoutPage.tsx(11,1): error TS6133: 'appConfig' is declared but its value is never read.
+src/pages/CheckoutPage.tsx(96,7): error TS6133: 'DELIVERY_ZONES' is declared but its value is never read.
+src/pages/CheckoutPage.tsx(257,28): error TS2552: Cannot find name 'REMOTE_DISTRICTS'. Did you mean 'isRemoteDistrict'?
+src/pages/CheckoutPage.tsx(258,25): error TS2339: Property 'isRemoteArea' does not exist on type '{ full_name: string; phone: string; address: string; district: string; thana: string; notes: string; }'.
+src/pages/CheckoutPage.tsx(260,9): error TS6133: 'deliveryZone' is declared but its value is never read.
+src/pages/CheckoutPage.tsx(271,29): error TS2339: Property 'isExpress' does not exist on type '{ full_name: string; phone: string; address: string; district: string; thana: string; notes: string; }'.
+src/pages/CheckoutPage.tsx(278,48): error TS2339: Property 'free_delivery' does not exist on type '{ code: string; discount: number; }'.
+src/pages/CheckoutPage.tsx(385,96): error TS2353: Object literal may only specify known properties, and 'free_delivery' does not exist in type '{ code: string; discount: number; } | ((prevState: { code: string; discount: number; } | null) => { code: string; discount: number; } | null)'.
+src/pages/CheckoutPage.tsx(460,262): error TS2353: Object literal may only specify known properties, and 'district' does not exist in type 'OrderAddress'.
+src/pages/CheckoutPage.tsx(483,262): error TS2353: Object literal may only specify known properties, and 'district' does not exist in type 'OrderAddress'.
+src/pages/CheckoutPage.tsx(492,260): error TS2353: Object literal may only specify known properties, and 'district' does not exist in type 'OrderAddress'.
+src/pages/CheckoutPage.tsx(507,9): error TS6133: 'inputClass' is declared but its value is never read.
+src/pages/CheckoutPage.tsx(510,40): error TS2367: This comparison appears to be unintentional because the types '"payment" | "info"' and '"confirmation"' have no overlap.
+src/pages/CheckoutPage.tsx(773,63): error TS2304: Cannot find name 'deliveryInfo'.
+src/pages/CheckoutPage.tsx(868,23): error TS6133: 'config' is declared but its value is never read.
+src/pages/CheckoutPage.tsx(904,42): error TS2339: Property 'free_delivery' does not exist on type '{ code: string; discount: number; }'.
+src/pages/ContactPage.tsx(1,42): error TS6133: 'Phone' is declared but its value is never read.
+src/pages/CouponsPage.tsx(138,9): error TS6133: 'user' is declared but its value is never read.
+src/pages/HelpSupportPage.tsx(3,42): error TS6133: 'Headphones' is declared but its value is never read.
+src/pages/HelpSupportPage.tsx(73,7): error TS2322: Type 'LucideIcon' is not assignable to type 'ComponentType<{ size: number; style?: CSSProperties | undefined; }> | undefined'.
+  Type 'ForwardRefExoticComponent<LucideProps>' is not assignable to type 'FunctionComponent<{ size: number; style?: CSSProperties | undefined; }>'.
+    Types of property 'propTypes' are incompatible.
+      Type 'WeakValidationMap<LucideProps> | undefined' is not assignable to type 'WeakValidationMap<{ size: number; style?: CSSProperties | undefined; }> | undefined'.
+        Type 'WeakValidationMap<LucideProps>' is not assignable to type 'WeakValidationMap<{ size: number; style?: CSSProperties | undefined; }>'.
+          Types of property 'size' are incompatible.
+            Type 'Validator<string | number | null | undefined> | undefined' is not assignable to type 'Validator<number> | undefined'.
+              Type 'Validator<string | number | null | undefined>' is not assignable to type 'Validator<number>'.
+                Type 'string | number | null | undefined' is not assignable to type 'number'.
+                  Type 'undefined' is not assignable to type 'number'.
+src/pages/HelpSupportPage.tsx(82,7): error TS2322: Type 'LucideIcon' is not assignable to type 'ComponentType<{ size: number; style?: CSSProperties | undefined; }> | undefined'.
+  Type 'ForwardRefExoticComponent<LucideProps>' is not assignable to type 'FunctionComponent<{ size: number; style?: CSSProperties | undefined; }>'.
+    Types of property 'propTypes' are incompatible.
+      Type 'WeakValidationMap<LucideProps> | undefined' is not assignable to type 'WeakValidationMap<{ size: number; style?: CSSProperties | undefined; }> | undefined'.
+        Type 'WeakValidationMap<LucideProps>' is not assignable to type 'WeakValidationMap<{ size: number; style?: CSSProperties | undefined; }>'.
+          Types of property 'size' are incompatible.
+            Type 'Validator<string | number | null | undefined> | undefined' is not assignable to type 'Validator<number> | undefined'.
+              Type 'Validator<string | number | null | undefined>' is not assignable to type 'Validator<number>'.
+                Type 'string | number | null | undefined' is not assignable to type 'number'.
+                  Type 'undefined' is not assignable to type 'number'.
+src/pages/HelpSupportPage.tsx(91,7): error TS2322: Type 'LucideIcon' is not assignable to type 'ComponentType<{ size: number; style?: CSSProperties | undefined; }> | undefined'.
+  Type 'ForwardRefExoticComponent<LucideProps>' is not assignable to type 'FunctionComponent<{ size: number; style?: CSSProperties | undefined; }>'.
+    Types of property 'propTypes' are incompatible.
+      Type 'WeakValidationMap<LucideProps> | undefined' is not assignable to type 'WeakValidationMap<{ size: number; style?: CSSProperties | undefined; }> | undefined'.
+        Type 'WeakValidationMap<LucideProps>' is not assignable to type 'WeakValidationMap<{ size: number; style?: CSSProperties | undefined; }>'.
+          Types of property 'size' are incompatible.
+            Type 'Validator<string | number | null | undefined> | undefined' is not assignable to type 'Validator<number> | undefined'.
+              Type 'Validator<string | number | null | undefined>' is not assignable to type 'Validator<number>'.
+                Type 'string | number | null | undefined' is not assignable to type 'number'.
+                  Type 'undefined' is not assignable to type 'number'.
+src/pages/HomePage.tsx(39,9): error TS6133: 'goNext' is declared but its value is never read.
+src/pages/OrderSuccessPage.tsx(42,9): error TS6133: 'viaPP' is declared but its value is never read.
+src/pages/OrdersPage.tsx(4,25): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/PaymentPage.tsx(4,79): error TS6133: 'ImageIcon' is declared but its value is never read.
+src/pages/PaymentPage.tsx(7,54): error TS6133: 'createPayment' is declared but its value is never read.
+src/pages/PaymentPage.tsx(37,10): error TS6133: 'cardNumber' is declared but its value is never read.
+src/pages/PaymentPage.tsx(37,22): error TS6133: 'setCardNumber' is declared but its value is never read.
+src/pages/PaymentPage.tsx(38,10): error TS6133: 'expiry' is declared but its value is never read.
+src/pages/PaymentPage.tsx(38,18): error TS6133: 'setExpiry' is declared but its value is never read.
+src/pages/PaymentPage.tsx(39,10): error TS6133: 'cvc' is declared but its value is never read.
+src/pages/PaymentPage.tsx(39,15): error TS6133: 'setCvc' is declared but its value is never read.
+src/pages/PaymentPage.tsx(40,10): error TS6133: 'name' is declared but its value is never read.
+src/pages/PaymentPage.tsx(40,16): error TS6133: 'setName' is declared but its value is never read.
+src/pages/PaymentPage.tsx(129,9): error TS6133: 'Icon' is declared but its value is never read.
+src/pages/PaymentPage.tsx(136,10): error TS6133: 'screenshotUrl' is declared but its value is never read.
+src/pages/PaymentPage.tsx(390,97): error TS2353: Object literal may only specify known properties, and 'focus' does not exist in type 'Properties<string | number, string & {}>'.
+src/pages/PaymentPage.tsx(476,9): error TS6133: 'user' is declared but its value is never read.
+src/pages/ProductDetailPage.tsx(17,11): error TS2339: Property 'showToast' does not exist on type 'ToastContextValue'.
+src/pages/ProfilePage.tsx(4,23): error TS6133: 'User' is declared but its value is never read.
+src/pages/SearchPage.tsx(5,24): error TS6133: 'Filter' is declared but its value is never read.
+src/pages/SearchPage.tsx(185,9): error TS6133: 'dispatch' is declared but its value is never read.
+src/pages/SettingsPage.tsx(4,44): error TS6133: 'MessageCircle' is declared but its value is never read.
+src/pages/admin/AdminOrders.tsx(104,10): error TS6133: 'buildInvoiceHTML' is declared but its value is never read.
+src/pages/admin/AdminOrders.tsx(385,5): error TS2353: Object literal may only specify known properties, and 'content' does not exist in type 'UseReactToPrintOptions'.

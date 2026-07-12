@@ -14,6 +14,7 @@ interface ToastContextValue {
   error: (msg: string) => void;
   warning: (msg: string) => void;
   info: (msg: string) => void;
+  showToast: (msg: string, type: ToastType) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -40,6 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     error: (msg: string) => add(msg, 'error'),
     warning: (msg: string) => add(msg, 'warning'),
     info: (msg: string) => add(msg, 'info'),
+    showToast: (msg: string, type: ToastType) => add(msg, type),
   };
 
   return (

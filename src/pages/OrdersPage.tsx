@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/router';
 import {
-  Package, CheckCircle, Clock, Truck, PackageCheck, ShieldCheck,
+  Package, CheckCircle, Truck, PackageCheck, ShieldCheck,
   XCircle, ChevronRight, Loader2, X, ArrowLeft, MapPin, Phone,
   CreditCard, Copy, Tag, RefreshCw, AlertTriangle
 } from 'lucide-react';

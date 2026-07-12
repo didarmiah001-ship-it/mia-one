@@ -1,4 +1,4 @@
-import { ArrowLeft, MessageCircle, Mail, Phone, MapPin, Clock, ChevronRight, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Mail, MapPin, Clock, ChevronRight, ExternalLink } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';

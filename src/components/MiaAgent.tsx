@@ -114,7 +114,7 @@ export function MiaAgent({ isOpen, onClose }: MiaAgentProps) {
     }
 
     const query = isBangla ? action.queryBn : action.queryEn;
-    handleSendMessage(query);
+    handleSendMessage(query || '');
   }, [handleSendMessage, isBangla]);
 
   const handleSubmit = (e: React.FormEvent) => {

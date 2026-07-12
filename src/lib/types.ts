@@ -60,6 +60,10 @@ export interface OrderAddress {
   address: string;
   area: string;
   notes: string;
+  district?: string;
+  thana?: string;
+  isRemoteArea?: boolean;
+  isExpress?: boolean;
 }
 
 export interface Category {
