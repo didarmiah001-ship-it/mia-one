@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Megaphone, Calendar, Percent, DollarSign, Image as ImageIcon, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Megaphone, Upload } from 'lucide-react';
 import { adminFetchMarketingCampaigns, adminCreateMarketingCampaign, adminUpdateMarketingCampaign, adminDeleteMarketingCampaign, adminUploadCampaignBanner, adminFetchAllProducts, fetchCategories } from '../lib/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
@@ -176,7 +176,7 @@ export function AdminCampaigns() {
             <form onSubmit={handleSubmit} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               <div>
                 <label className="text-[10px] text-white/40 block mb-1">Campaign Name</label>
-                <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Eid Sale 2026" className="admin-input" />
+                <input required value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} placeholder="Eid Sale 2026" className="admin-input" />
               </div>
 
               {/* Banner Upload */}
@@ -185,7 +185,7 @@ export function AdminCampaigns() {
                 {form.banner_url ? (
                   <div className="relative group">
                     <img src={form.banner_url} alt="banner" className="w-full h-32 rounded-xl object-cover" />
-                    <button type="button" onClick={() => setForm(f => ({ ...f, banner_url: '' }))} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center"><X size={12} className="text-white" /></button>
+                    <button type="button" onClick={() => setForm((f: any) => ({ ...f, banner_url: '' }))} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center"><X size={12} className="text-white" /></button>
                   </div>
                 ) : (
                   <label className="flex flex-col items-center justify-center h-32 rounded-xl cursor-pointer hover:bg-white/5 transition-colors" style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}>
@@ -199,14 +199,14 @@ export function AdminCampaigns() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Discount Type</label>
-                  <select value={form.discount_type} onChange={e => setForm(f => ({ ...f, discount_type: e.target.value }))} className="admin-input">
+                  <select value={form.discount_type} onChange={e => setForm((f: any) => ({ ...f, discount_type: e.target.value }))} className="admin-input">
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed (৳)</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Discount Value</label>
-                  <input type="number" value={form.discount_value} onChange={e => setForm(f => ({ ...f, discount_value: e.target.value }))} placeholder="20" className="admin-input" />
+                  <input type="number" value={form.discount_value} onChange={e => setForm((f: any) => ({ ...f, discount_value: e.target.value }))} placeholder="20" className="admin-input" />
                 </div>
               </div>
 
@@ -214,18 +214,18 @@ export function AdminCampaigns() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Start Date</label>
-                  <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="admin-input" />
+                  <input type="date" value={form.start_date} onChange={e => setForm((f: any) => ({ ...f, start_date: e.target.value }))} className="admin-input" />
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">End Date</label>
-                  <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="admin-input" />
+                  <input type="date" value={form.end_date} onChange={e => setForm((f: any) => ({ ...f, end_date: e.target.value }))} className="admin-input" />
                 </div>
               </div>
 
               {/* Applicable Scope */}
               <div>
                 <label className="text-[10px] text-white/40 block mb-1">Applicable Products</label>
-                <select value={form.applicable_scope} onChange={e => setForm(f => ({ ...f, applicable_scope: e.target.value }))} className="admin-input">
+                <select value={form.applicable_scope} onChange={e => setForm((f: any) => ({ ...f, applicable_scope: e.target.value }))} className="admin-input">
                   <option value="all">All Products</option>
                   <option value="products">Selected Products</option>
                   <option value="categories">Selected Categories</option>
@@ -256,12 +256,12 @@ export function AdminCampaigns() {
               {/* Coupon Code */}
               <div>
                 <label className="text-[10px] text-white/40 block mb-1">Linked Coupon Code (Optional)</label>
-                <input value={form.coupon_code} onChange={e => setForm(f => ({ ...f, coupon_code: e.target.value.toUpperCase() }))} placeholder="EID20" className="admin-input font-mono tracking-wider" />
+                <input value={form.coupon_code} onChange={e => setForm((f: any) => ({ ...f, coupon_code: e.target.value.toUpperCase() }))} placeholder="EID20" className="admin-input font-mono tracking-wider" />
               </div>
 
               {/* Active */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="admin-checkbox" />
+                <input type="checkbox" checked={form.is_active} onChange={e => setForm((f: any) => ({ ...f, is_active: e.target.checked }))} className="admin-checkbox" />
                 <span className="text-xs text-white/60">Active</span>
               </label>
 

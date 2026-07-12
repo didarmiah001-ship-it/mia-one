@@ -7,7 +7,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   getDoc,
   setDoc,
 } from 'firebase/firestore';
@@ -733,7 +732,7 @@ export async function adminSendCampaign(_campaignId: string, _payload: {
   channel: string;
   target: string;
   link?: string;
-}) {
+}): Promise<{ error: string | null; data: { total: number } | null }> {
   return { error: 'Push notifications require a server function. Campaign saved to Firestore.', data: null };
 }
 
@@ -1224,10 +1223,10 @@ export async function adminGetAnalytics(period: AnalyticsPeriod) {
     const d = new Date(o.created_at);
     return d >= prevStart && d < start;
   });
-  const customers: AnyRecord[] = customersSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(c => new Date(c.created_at) >= start);
-  const prevCusts: AnyRecord[] = customersSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(c => {
+  const customers: AnyRecord[] = customersSnap.docs.map(d => ({ id: d.id, ...d.data() } as AnyRecord))
+    .filter((c: AnyRecord) => new Date(c.created_at) >= start);
+  const prevCusts: AnyRecord[] = customersSnap.docs.map(d => ({ id: d.id, ...d.data() } as AnyRecord))
+    .filter((c: AnyRecord) => {
       const d = new Date(c.created_at);
       return d >= prevStart && d < start;
     });

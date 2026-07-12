@@ -5,7 +5,7 @@ import {
   adminUpdatePaymentMethod,
   adminDeletePaymentMethod,
 } from '../lib/api';
-import { CreditCard, Plus, Edit2, Trash2, Save, X, Check, AlertCircle, Smartphone, Building, DollarSign, CheckCircle2, XCircle } from 'lucide-react';
+import { CreditCard, Plus, Edit2, Trash2, Save, X, Check, Smartphone, Building, DollarSign } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 
@@ -176,11 +176,11 @@ export function AdminPaymentSettings() {
         <ConfirmDialog
           title="Delete Payment Method"
           message="Are you sure you want to delete this payment method? This action cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
-          variant="danger"
+          danger
         />
       )}
 

@@ -3,7 +3,7 @@ import { useReactToPrint } from 'react-to-print';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
-  Search, X, Printer, Download, ChevronRight,
+  Search, X, Printer, Download,
   Package, Clock, CheckCircle, Truck, PackageCheck, XCircle,
   Filter, RefreshCw, FileText, MapPin, Phone, User, Calendar,
   ArrowUpDown, Eye, CreditCard, Image as ImageIcon, MessageCircle, Pencil

@@ -22,7 +22,7 @@ export function LoginPage() {
 
     if (signInError) {
       setSubmitting(false);
-      setError('Invalid credentials. Access denied.');
+      setError(signInError);
       return;
     }
 

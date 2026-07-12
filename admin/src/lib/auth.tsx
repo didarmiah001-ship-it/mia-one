@@ -8,20 +8,17 @@ import {
 import { auth, db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-export interface Profile {
+export interface AdminProfile {
   id: string;
-  full_name: string;
-  phone: string;
-  avatar_url: string;
-  role: 'customer' | 'admin';
-  created_at: string;
-  updated_at: string;
+  email: string;
+  role: string;
+  active: boolean;
 }
 
 interface AuthContextValue {
   user: FbUser | null;
   session: null;
-  profile: Profile | null;
+  profile: AdminProfile | null;
   loading: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -33,13 +30,18 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FbUser | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const snap = await getDoc(doc(db, 'profiles', userId));
+    const snap = await getDoc(doc(db, 'admins', userId));
     if (snap.exists()) {
-      setProfile({ id: snap.id, ...snap.data() } as Profile);
+      const data = snap.data();
+      if (data.active === true && data.role === 'admin') {
+        setProfile({ id: snap.id, email: data.email || '', role: data.role, active: data.active });
+      } else {
+        setProfile(null);
+      }
     } else {
       setProfile(null);
     }
@@ -83,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session: null,
       profile,
       loading,
-      isAdmin: profile?.role === 'admin',
+      isAdmin: profile?.active === true && profile?.role === 'admin',
       signIn,
       signOut,
       refreshProfile,

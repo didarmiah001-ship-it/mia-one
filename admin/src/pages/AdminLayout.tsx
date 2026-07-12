@@ -371,8 +371,8 @@ export function AdminLayout() {
         >
           <h1 className="text-base font-bold text-white">{activeLabel}</h1>
           <div className="flex items-center gap-3">
-            {profile?.full_name && (
-              <span className="text-xs text-white/40 font-medium">{profile.full_name}</span>
+            {profile?.email && (
+              <span className="text-xs text-white/40 font-medium">{profile.email}</span>
             )}
             <button
               onClick={() => navigate('/')}

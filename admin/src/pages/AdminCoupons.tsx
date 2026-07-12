@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Ticket, Truck, Calendar, Percent, DollarSign } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Ticket, Truck } from 'lucide-react';
 import { adminFetchCoupons, adminCreateCoupon, adminUpdateCoupon, adminDeleteCoupon, adminFetchAllProducts, fetchCategories } from '../lib/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
@@ -192,11 +192,11 @@ export function AdminCoupons() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Coupon Name</label>
-                  <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Summer Sale" className="admin-input" />
+                  <input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} placeholder="Summer Sale" className="admin-input" />
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Coupon Code</label>
-                  <input required value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="SUMMER20" className="admin-input font-mono tracking-wider" />
+                  <input required value={form.code} onChange={e => setForm((f: any) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="SUMMER20" className="admin-input font-mono tracking-wider" />
                 </div>
               </div>
 
@@ -204,14 +204,14 @@ export function AdminCoupons() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Discount Type</label>
-                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="admin-input">
+                  <select value={form.type} onChange={e => setForm((f: any) => ({ ...f, type: e.target.value }))} className="admin-input">
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed (৳)</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Discount Value</label>
-                  <input required type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} placeholder={form.type === 'percentage' ? '20' : '100'} className="admin-input" />
+                  <input required type="number" value={form.value} onChange={e => setForm((f: any) => ({ ...f, value: e.target.value }))} placeholder={form.type === 'percentage' ? '20' : '100'} className="admin-input" />
                 </div>
               </div>
 
@@ -219,11 +219,11 @@ export function AdminCoupons() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Min Order (৳)</label>
-                  <input type="number" value={form.min_order} onChange={e => setForm(f => ({ ...f, min_order: e.target.value }))} placeholder="500" className="admin-input" />
+                  <input type="number" value={form.min_order} onChange={e => setForm((f: any) => ({ ...f, min_order: e.target.value }))} placeholder="500" className="admin-input" />
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Max Discount (৳)</label>
-                  <input type="number" value={form.max_discount} onChange={e => setForm(f => ({ ...f, max_discount: e.target.value }))} placeholder="200" className="admin-input" />
+                  <input type="number" value={form.max_discount} onChange={e => setForm((f: any) => ({ ...f, max_discount: e.target.value }))} placeholder="200" className="admin-input" />
                 </div>
               </div>
 
@@ -231,11 +231,11 @@ export function AdminCoupons() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Total Usage Limit</label>
-                  <input type="number" value={form.max_uses} onChange={e => setForm(f => ({ ...f, max_uses: e.target.value }))} placeholder="Unlimited" className="admin-input" />
+                  <input type="number" value={form.max_uses} onChange={e => setForm((f: any) => ({ ...f, max_uses: e.target.value }))} placeholder="Unlimited" className="admin-input" />
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Per Customer Limit</label>
-                  <input type="number" value={form.usage_limit_per_customer} onChange={e => setForm(f => ({ ...f, usage_limit_per_customer: e.target.value }))} placeholder="Unlimited" className="admin-input" />
+                  <input type="number" value={form.usage_limit_per_customer} onChange={e => setForm((f: any) => ({ ...f, usage_limit_per_customer: e.target.value }))} placeholder="Unlimited" className="admin-input" />
                 </div>
               </div>
 
@@ -243,18 +243,18 @@ export function AdminCoupons() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">Start Date</label>
-                  <input type="date" value={form.starts_at} onChange={e => setForm(f => ({ ...f, starts_at: e.target.value }))} className="admin-input" />
+                  <input type="date" value={form.starts_at} onChange={e => setForm((f: any) => ({ ...f, starts_at: e.target.value }))} className="admin-input" />
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 block mb-1">End Date</label>
-                  <input type="date" value={form.expires_at} onChange={e => setForm(f => ({ ...f, expires_at: e.target.value }))} className="admin-input" />
+                  <input type="date" value={form.expires_at} onChange={e => setForm((f: any) => ({ ...f, expires_at: e.target.value }))} className="admin-input" />
                 </div>
               </div>
 
               {/* Applicable Scope */}
               <div>
                 <label className="text-[10px] text-white/40 block mb-1">Applicable Products</label>
-                <select value={form.applicable_scope} onChange={e => setForm(f => ({ ...f, applicable_scope: e.target.value }))} className="admin-input">
+                <select value={form.applicable_scope} onChange={e => setForm((f: any) => ({ ...f, applicable_scope: e.target.value }))} className="admin-input">
                   <option value="all">All Products</option>
                   <option value="products">Selected Products</option>
                   <option value="categories">Selected Categories</option>
@@ -287,14 +287,14 @@ export function AdminCoupons() {
 
               {/* Free Delivery */}
               <label className="flex items-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl" style={{ background: form.free_delivery ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.02)', border: form.free_delivery ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.06)' }}>
-                <input type="checkbox" checked={form.free_delivery} onChange={e => setForm(f => ({ ...f, free_delivery: e.target.checked }))} className="admin-checkbox" />
+                <input type="checkbox" checked={form.free_delivery} onChange={e => setForm((f: any) => ({ ...f, free_delivery: e.target.checked }))} className="admin-checkbox" />
                 <Truck size={14} className={form.free_delivery ? 'text-green-400' : 'text-white/40'} />
                 <span className="text-xs text-white/70">Free Delivery Coupon</span>
               </label>
 
               {/* Active */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="admin-checkbox" />
+                <input type="checkbox" checked={form.is_active} onChange={e => setForm((f: any) => ({ ...f, is_active: e.target.checked }))} className="admin-checkbox" />
                 <span className="text-xs text-white/60">Active</span>
               </label>
 

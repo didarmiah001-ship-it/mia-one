@@ -251,15 +251,6 @@ export function AdminPayments() {
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); load(); };
 
-  const updateStatus = async (id: string, status: string) => {
-    setUpdatingId(id);
-    const { error } = await adminUpdatePaymentStatus(id, status);
-    setUpdatingId(null);
-    if (error) { toast.error(error); return; }
-    toast.success(`Payment marked as ${status}`);
-    if (selected?.id === id) setSelected((p: any) => ({ ...p, status }));
-    load();
-  };
 
   const filtered = search.trim()
     ? payments.filter(p =>
