@@ -44,11 +44,11 @@ const NotFoundPage           = lazy(() => import('./pages/NotFoundPage').then(m 
 
 function CustomerShell() {
   const [showMiaAgent, setShowMiaAgent] = useState(false);
-  const { path } = useLocation();
+  const { pathname } = useLocation();
 
   // The admin panel is a separate app served at /admin/* — never let the
   // customer app's catch-all route intercept those paths.
-  if (path.startsWith('/admin')) return null;
+  if (pathname?.startsWith('/admin')) return null;
 
   return (
     <div className="min-h-screen bg-mia-black">
