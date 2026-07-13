@@ -11,8 +11,14 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
           const url = req.url ?? '';
+          // Redirect /admin → /admin/ so relative paths in admin/index.html
+          // resolve under /admin/ instead of / (which would load the customer app).
+          if (url === '/admin' || url === '/admin?') {
+            res.statusCode = 301;
+            res.setHeader('Location', '/admin/');
+            return res.end();
+          }
           const isAdminPath =
-            url === '/admin' ||
             url === '/admin/' ||
             (url.startsWith('/admin/') && !/\.[a-zA-Z0-9]+$/.test(url.split('?')[0]));
           if (!isAdminPath) return next();
