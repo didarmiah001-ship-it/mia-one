@@ -1,20 +1,32 @@
 import { useAuth } from '../lib/auth';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Package, ShoppingCart, Users, LayoutDashboard, Tag, Bell, Settings, LogOut, Ticket, Truck, CreditCard, Megaphone, BarChart3 } from 'lucide-react';
+import { AdminDashboard } from './AdminDashboard';
+import { AdminOrders } from './AdminOrders';
+import { AdminProducts } from './AdminProducts';
+import { AdminCategories } from './AdminCategories';
+import { AdminCustomers } from './AdminCustomers';
+import { AdminBanners } from './AdminBanners';
+import { AdminCoupons } from './AdminCoupons';
+import { AdminPayments } from './AdminPayments';
+import { AdminPaymentSettings } from './AdminPaymentSettings';
+import { AdminNotifications } from './AdminNotifications';
+import { AdminReports } from './AdminReports';
+import { AdminSettings } from './AdminSettings';
 
 const NAV_ITEMS = [
-  { section: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { section: 'orders', label: 'Orders', icon: ShoppingCart },
-  { section: 'products', label: 'Products', icon: Package },
-  { section: 'categories', label: 'Categories', icon: Tag },
-  { section: 'customers', label: 'Customers', icon: Users },
-  { section: 'banners', label: 'Banners', icon: Megaphone },
-  { section: 'coupons', label: 'Coupons', icon: Ticket },
-  { section: 'payments', label: 'Payments', icon: CreditCard },
-  { section: 'payment-settings', label: 'Payment Settings', icon: Truck },
-  { section: 'notifications', label: 'Notifications', icon: Bell },
-  { section: 'reports', label: 'Reports', icon: BarChart3 },
-  { section: 'settings', label: 'Settings', icon: Settings },
+  { section: 'dashboard',         label: 'Dashboard',         icon: LayoutDashboard, Page: AdminDashboard },
+  { section: 'orders',            label: 'Orders',            icon: ShoppingCart,    Page: AdminOrders },
+  { section: 'products',          label: 'Products',          icon: Package,         Page: AdminProducts },
+  { section: 'categories',        label: 'Categories',        icon: Tag,             Page: AdminCategories },
+  { section: 'customers',         label: 'Customers',         icon: Users,           Page: AdminCustomers },
+  { section: 'banners',           label: 'Banners',           icon: Megaphone,       Page: AdminBanners },
+  { section: 'coupons',           label: 'Coupons',           icon: Ticket,          Page: AdminCoupons },
+  { section: 'payments',          label: 'Payments',          icon: CreditCard,      Page: AdminPayments },
+  { section: 'payment-settings',  label: 'Payment Settings',  icon: Truck,           Page: AdminPaymentSettings },
+  { section: 'notifications',     label: 'Notifications',     icon: Bell,            Page: AdminNotifications },
+  { section: 'reports',           label: 'Reports',           icon: BarChart3,       Page: AdminReports },
+  { section: 'settings',          label: 'Settings',          icon: Settings,       Page: AdminSettings },
 ];
 
 export function AdminLayout() {
@@ -26,6 +38,9 @@ export function AdminLayout() {
     await signOut();
     navigate('/admin/login');
   };
+
+  const activeItem = NAV_ITEMS.find(n => n.section === section) ?? NAV_ITEMS[0];
+  const Page = activeItem.Page;
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] flex">
@@ -84,13 +99,7 @@ export function AdminLayout() {
 
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-lg font-bold text-white mb-4">
-            {NAV_ITEMS.find(n => n.section === section)?.label || 'Dashboard'}
-          </h1>
-          <div className="glow-card p-8 text-center">
-            <p className="text-sm text-white/30">Admin content loads here.</p>
-            <p className="text-xs text-white/20 mt-2">Section: {section}</p>
-          </div>
+          <Page />
         </div>
       </main>
     </div>
