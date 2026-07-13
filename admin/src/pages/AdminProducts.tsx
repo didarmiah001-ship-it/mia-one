@@ -20,6 +20,7 @@ export function AdminProducts() {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -31,11 +32,17 @@ export function AdminProducts() {
 
   const load = async () => {
     setLoading(true);
-    const [p, c, b] = await Promise.all([adminFetchAllProducts(), fetchCategories(), adminFetchBrands()]);
-    setProducts(p);
-    setCategories(c);
-    setBrands(b);
-    setLoading(false);
+    setError(null);
+    try {
+      const [p, c, b] = await Promise.all([adminFetchAllProducts(), fetchCategories(), adminFetchBrands()]);
+      setProducts(p);
+      setCategories(c);
+      setBrands(b);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load products');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -125,6 +132,11 @@ export function AdminProducts() {
       {/* Table — desktop */}
       {loading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="glow-card h-16 shimmer" />)}</div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <p className="text-red-400 text-sm font-medium">{error}</p>
+          <button onClick={() => load()} className="px-4 py-2 rounded-xl text-xs font-semibold text-white glow-btn" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>Retry</button>
+        </div>
       ) : (
         <>
           {/* Mobile card list */}

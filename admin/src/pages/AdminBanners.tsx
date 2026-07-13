@@ -212,6 +212,7 @@ export function AdminBanners() {
   const toast = useToast();
   const [banners, setBanners]       = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
   const [showForm, setShowForm]     = useState(false);
   const [editing, setEditing]       = useState<any>(null);
   const [form, setForm]             = useState<FormState>(EMPTY);
@@ -225,9 +226,10 @@ export function AdminBanners() {
   }, []);
 
   const load = useCallback(async () => {
-    const b = await adminFetchBanners();
-    setBanners(b);
-    setLoading(false);
+    setLoading(true); setError(null);
+    try { const b = await adminFetchBanners(); setBanners(b); }
+    catch (e: any) { setError(e.message || 'Failed to load banners'); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -349,6 +351,11 @@ export function AdminBanners() {
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => <div key={i} className="glow-card h-28 shimmer" />)}
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <p className="text-red-400 text-sm font-medium">{error}</p>
+          <button onClick={() => load()} className="px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>Retry</button>
         </div>
       ) : (
         <div className="space-y-3">

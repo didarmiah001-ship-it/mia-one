@@ -39,9 +39,11 @@ export function AdminDashboard() {
   const [deliveryStats, setDeliveryStats] = useState<DeliveryStats | null>(null);
   const [couponStats, setCouponStats] = useState<CouponStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    adminGetStats().then(s => { setStats(s as Stats); setLoading(false); });
+    adminGetStats().then(s => { setStats(s as Stats); setLoading(false); })
+      .catch(e => { setError(e.message || 'Failed to load dashboard'); setLoading(false); });
     adminFetchDeliveryStats().then(delivery => {
       const avgCharge = delivery.paidCount > 0 ? Math.round(delivery.totalIncome / delivery.paidCount) : 0;
       setDeliveryStats({
@@ -104,6 +106,14 @@ export function AdminDashboard() {
   }, []);
 
   if (loading || !stats) {
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <p className="text-red-400 text-sm font-medium">{error}</p>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-xl text-xs font-semibold text-white glow-btn" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>Retry</button>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="animate-spin text-mia-orange" size={24} />

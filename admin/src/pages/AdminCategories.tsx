@@ -13,13 +13,19 @@ export function AdminCategories() {
   const toast = useToast();
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<any>(null);
 
-  const load = async () => { const c = await fetchCategories(); setCategories(c); setLoading(false); };
+  const load = async () => {
+    setLoading(true); setError(null);
+    try { const c = await fetchCategories(); setCategories(c); }
+    catch (e: any) { setError(e.message || 'Failed to load categories'); }
+    finally { setLoading(false); }
+  };
   useEffect(() => { load(); }, []);
 
   const openCreate = () => { setEditing(null); setForm(EMPTY); setShowForm(true); };
@@ -55,6 +61,11 @@ export function AdminCategories() {
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="glow-card h-28 shimmer" />)}</div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <p className="text-red-400 text-sm font-medium">{error}</p>
+          <button onClick={() => load()} className="px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>Retry</button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {categories.map(cat => (
