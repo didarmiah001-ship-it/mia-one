@@ -4,12 +4,27 @@ import { useAuth } from '../lib/auth';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
-import { doc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import emailjs from '@emailjs/browser';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 const ADMIN_OTP_EMAIL = 'miaonebd@gmail.com'; // ওটিপি রিসিভার জিমেইল
+
+// গ্লোবাল রিডাইরেক্ট এড়াতে ব্যাকগ্রাউন্ডে কাজ করার জন্য সাময়িক ফায়ারবেস অ্যাপ কনফিগ
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
+
+// সেকেন্ডারি অ্যাপ তৈরি করা হচ্ছে যাতে মেইন অ্যাপের রিডাইরেক্ট লজিক ট্রিগার না হয়
+const tempApp = getApps().find(app => app.name === 'temp-otp-app') || initializeApp(firebaseConfig, 'temp-otp-app');
+const tempAuth = getAuth(tempApp);
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -64,23 +79,25 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      // ১. প্রথমে ফায়ারবেস অথ দিয়ে সাইন-ইন ট্রাই করব যাতে আমরা ইউজারের UID পাই
-      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      // ১. মেইন অথেনটিকেশন সেশন স্পর্শ না করে সাময়িক অ্যাপের মাধ্যমে পাসওয়ার্ড চেক করছি
+      const userCredential = await signInWithEmailAndPassword(tempAuth, email.trim(), password);
       const user = userCredential.user;
 
       if (user) {
-        // ২. ইউজারের UID দিয়ে সরাসরি অ্যাডমিন ডকুমেন্ট রিড করা হচ্ছে (কোয়েরি ছাড়া)
-        const adminDocRef = doc(db, 'admins', user.uid);
-        const adminSnap = await getDoc(adminDocRef);
+        // ২. ইউজারের ইমেইলটি আমাদের Firestore 'admins' কালেকশনে আছে কি না চেক করছি
+        const adminQuery = query(
+          collection(db, 'admins'),
+          where('email', '==', email.trim().toLowerCase()),
+          where('role', '==', 'admin')
+        );
+        const adminSnap = await getDocs(adminQuery);
 
-        if (adminSnap.exists() && adminSnap.data().role === 'admin') {
-          const adminData = adminSnap.data();
+        if (!adminSnap.empty) {
+          const adminData = adminSnap.docs[0].data();
 
-          // ডাবল লক চেক: লগইন সুইচ অ্যাক্টিভ থাকতে হবে
+          // ৩. ডাবল লক চেক: লগইন করার পারমিশন আছে কি না
           if (adminData.is_allowed_to_login === true) {
-            // ৩. অ্যাডমিন ও সুইচ ঠিক থাকলে, রাউটার যাতে তাকে সরাসরি ড্যাশবোর্ডে না পাঠায় সেজন্য লগআউট করিয়ে ওটিপি পাঠাবো
-            await signOut(auth);
-
+            // ৪. সব ঠিক আছে! এবার ওটিপি জেনারেট করে মেইলে পাঠানো হবে
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             setGeneratedOtp(otp);
 
@@ -93,18 +110,22 @@ export function LoginPage() {
               setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে। অনুগ্রহ করে Vercel Settings চেক করুন।");
             }
           } else {
-            await signOut(auth);
             setError("আপনার অ্যাকাউন্ট থেকে লগইন করার অনুমতি নেই। প্রধান অ্যাডমিনের সাথে যোগাযোগ করুন।");
             setLoading(false);
           }
         } else {
-          // অ্যাডমিন না হলে সাধারণ ইউজার হিসেবে সেশন চালু থাকবে এবং হোমপেজে যাবে
+          // অ্যাডমিন না হলে সাধারণ কাস্টমার হিসেবে মেইন অ্যাপে সাইন-ইন করে হোমপেজে পাঠিয়ে দেবো
+          const { error: signInErr } = await signIn(email, password);
           setLoading(false);
-          navigate('/');
+          if (signInErr) {
+            setError('ভুল ইমেইল অথবা পাসওয়ার্ড!');
+          } else {
+            navigate('/');
+          }
         }
       }
     } catch (err: any) {
-      console.error("Login Error:", err);
+      console.error("Temp Auth Login Error:", err);
       if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         setError('ভুল ইমেইল অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।');
       } else {
@@ -114,7 +135,7 @@ export function LoginPage() {
     }
   };
 
-  // ওটিপি ভেরিফাই হওয়ার পর ফাইনাল সাইন ইন করার ফাংশন
+  // ওটিপি ভেরিফাই হওয়ার পর মেইন অ্যাপে সাইন ইন করার ফাংশন
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
@@ -122,7 +143,7 @@ export function LoginPage() {
 
     if (userOtpInput === generatedOtp) {
       try {
-        // ওটিপি মিললেই কেবল ফাইনাল লগইন করিয়ে ড্যাশবোর্ডে পাঠাবো
+        // ওটিপি ম্যাচ করার পর এইবার মেইন সেশন সচল করে ড্যাশবোর্ডে রিডাইরেক্ট করব
         const { error: signInErr } = await signIn(email, password);
         setLoading(false);
 
