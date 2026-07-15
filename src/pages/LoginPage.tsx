@@ -4,11 +4,11 @@ import { useAuth } from '../lib/auth';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import emailjs from '@emailjs/browser';
 
-const ADMIN_OTP_EMAIL = 'miaonebd@gmail.com'; // ওটিপি রিসিভার ইমেইল
+const ADMIN_OTP_EMAIL = 'miaonebd@gmail.com'; // ওটিপি রিসিভার জিমেইল
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -56,35 +56,32 @@ export function LoginPage() {
     }
   };
 
-  // ফর্ম সাবমিট ও লগইন প্রসেস
+  // ফর্ম সাবমিট ও ওটিপি প্রসেস
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const { data, error: err } = await signIn(email, password);
-    setLoading(false);
+    try {
+      // ১. সেশন ছাড়া ডাটাবেজে চেক করা হচ্ছে ইমেইলটি আসলেই কোনো সক্রিয় অ্যাডমিনের কি না
+      const adminQuery = query(
+        collection(db, 'admins'),
+        where('email', '==', email.trim().toLowerCase()),
+        where('role', '==', 'admin')
+      );
+      
+      const adminSnap = await getDocs(adminQuery);
 
-    if (err) {
-      setError(err);
-      return;
-    }
+      if (!adminSnap.empty) {
+        const adminData = adminSnap.docs[0].data();
 
-    if (data?.user) {
-      const user = data.user;
-
-      try {
-        // ফায়ারবেসে এই ইউজারটি অ্যাডমিন কি না চেক করা হচ্ছে
-        const adminDocRef = doc(db, 'admins', user.uid);
-        const adminSnap = await getDoc(adminDocRef);
-
-        if (adminSnap.exists() && adminSnap.data().role === 'admin') {
-          // অ্যাডমিন হলে ওটিপি কোড জেনারেট করে পাঠানো হবে
+        // ডাবল লক চেক: লগইন সুইচ অ্যাক্টিভ থাকতে হবে
+        if (adminData.is_allowed_to_login === true) {
+          // ২. অ্যাডমিন ও সুইচ ভেরিফাইড! এবার ওটিপি তৈরি করে জিমেইলে পাঠানো হচ্ছে
           const otp = Math.floor(100000 + Math.random() * 900000).toString();
           setGeneratedOtp(otp);
 
-          setLoading(true);
-          const emailSent = await sendOtpEmail(otp, user.email || '');
+          const emailSent = await sendOtpEmail(otp, email);
           setLoading(false);
 
           if (emailSent) {
@@ -93,25 +90,50 @@ export function LoginPage() {
             setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে। অনুগ্রহ করে Vercel Settings চেক করুন।");
           }
         } else {
-          // সাধারণ কাস্টমার হলে সরাসরি হোম পেজে যাবে
+          setError("আপনার অ্যাকাউন্ট থেকে লগইন করার অনুমতি নেই। প্রধান অ্যাডমিনের সাথে যোগাযোগ করুন।");
+          setLoading(false);
+        }
+      } else {
+        // যদি ডাটাবেজে অ্যাডমিন না পাওয়া যায়, তবে সাধারণ সাইন ইন ট্রাই করবে (কাস্টমারদের জন্য)
+        const { error: err } = await signIn(email, password);
+        setLoading(false);
+        if (err) {
+          setError('ভুল ইমেইল অথবা পাসওয়ার্ড!');
+        } else {
           navigate('/');
         }
-      } catch (firestoreErr) {
-        console.error("Security Check Failed:", firestoreErr);
-        setError("Security verification failed. Connection lost.");
       }
+    } catch (firestoreErr) {
+      console.error("Firestore Error:", firestoreErr);
+      setError("নিরাপত্তা ভেরিফিকেশন ব্যর্থ হয়েছে। নেটওয়ার্ক চেক করুন।");
+      setLoading(false);
     }
   };
 
-  // ওটিপি কোড ভেরিফাই করার ফাংশন
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  // ওটিপি ভেরিফাই হওয়ার পর সাইন ইন করার ফাংশন
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
+    setLoading(true);
 
     if (userOtpInput === generatedOtp) {
-      navigate('/');
+      try {
+        // ওটিপি মিললেই কেবল সাইন ইন মেথডটি ট্রিগার হবে
+        const { error: signInErr } = await signIn(email, password);
+        setLoading(false);
+
+        if (signInErr) {
+          setOtpError('অথেনটিকেশন ফেইল হয়েছে! ভুল পাসওয়ার্ড বা ইমেইল হতে পারে।');
+        } else {
+          navigate('/admin/dashboard');
+        }
+      } catch (err) {
+        setOtpError('লগইন প্রসেস সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন।');
+        setLoading(false);
+      }
     } else {
       setOtpError('ভুল ওটিপি কোড! অনুগ্রহ করে পুনরায় চেক করুন।');
+      setLoading(false);
     }
   };
 
@@ -144,15 +166,17 @@ export function LoginPage() {
               onChange={e => setUserOtpInput(e.target.value.replace(/\D/g, ''))}
               placeholder="৬ ডিজিটের ওটিপি কোড লিখুন"
               required
+              disabled={loading}
               className="w-full text-center tracking-[1em] pl-[1em] py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-lg font-bold text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40 transition-all"
             />
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
             >
-              ভেরিফাই করুন <ArrowRight size={16} />
+              {loading ? 'ভেরিফাই হচ্ছে...' : <>ভেরিফাই করুন <ArrowRight size={16} /></>}
             </button>
           </form>
         </div>
@@ -231,7 +255,7 @@ export function LoginPage() {
             className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
           >
-            {loading ? t('auth.signingIn') : <>{t('auth.signIn')} <ArrowRight size={16} /></>}
+            {loading ? 'Processing...' : <>{t('auth.signIn')} <ArrowRight size={16} /></>}
           </button>
         </form>
 
