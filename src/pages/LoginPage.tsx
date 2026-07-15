@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldAlert, RefreshCw } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import { navigate, useNavigate } from '../lib/router';
+import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
@@ -115,7 +115,7 @@ export function LoginPage() {
     }
   };
 
-  // ৫. ওটিপি স্ক্রিন ভিউ (যদি ওটিপি পাঠানো হয়ে থাকে)
+  // ওটিপি স্ক্রিন ভিউ (যদি ওটিপি পাঠানো হয়ে থাকে)
   if (showOtpScreen) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "var(--bg-base)" }}>
@@ -160,7 +160,7 @@ export function LoginPage() {
     );
   }
 
-  // ৬. নরমাল লগইন স্ক্রিন ভিউ
+  // নরমাল লগইন স্ক্রিন ভিউ
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 page-transition" style={{ background: "var(--bg-base)" }}>
       {/* Background orbs */}
