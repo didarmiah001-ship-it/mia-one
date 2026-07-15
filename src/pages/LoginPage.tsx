@@ -3,6 +3,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import emailjs from '@emailjs/browser';
@@ -10,6 +11,7 @@ import emailjs from '@emailjs/browser';
 const ADMIN_OTP_EMAIL = 'miaonebd@gmail.com'; // ওটিপি রিসিভার ইমেইল
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -175,8 +177,8 @@ export function LoginPage() {
           <div className="relative inline-block w-16 h-16 mb-4">
             <img src={appConfig.logo} alt="MIA ONE" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-2xl font-extrabold neon-text">Welcome Back</h1>
-          <p className="text-sm text-white/40 mt-2">Sign in to your account</p>
+          <h1 className="text-2xl font-extrabold neon-text">{t('auth.welcomeBack')}</h1>
+          <p className="text-sm text-white/40 mt-2">{t('auth.signInToAccount')}</p>
         </div>
 
         {/* Form */}
@@ -194,7 +196,7 @@ export function LoginPage() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="Email Address"
+              placeholder={t('auth.emailAddress')}
               required
               className="w-full pl-11 pr-4 py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40 transition-all"
             />
@@ -206,7 +208,7 @@ export function LoginPage() {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t('auth.password')}
               required
               className="w-full pl-11 pr-12 py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40 transition-all"
             />
@@ -219,7 +221,7 @@ export function LoginPage() {
           <div className="flex justify-end">
             <button type="button" onClick={() => navigate('/forgot-password')}
               className="text-xs text-mia-orange hover:underline">
-              Forgot Password?
+              {t('auth.forgotPassword')}
             </button>
           </div>
 
@@ -229,14 +231,14 @@ export function LoginPage() {
             className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
           >
-            {loading ? 'Signing in...' : <>Sign In <ArrowRight size={16} /></>}
+            {loading ? t('auth.signingIn') : <>{t('auth.signIn')} <ArrowRight size={16} /></>}
           </button>
         </form>
 
         <p className="text-center text-sm text-white/40 mt-6">
-          Don't have an account?{' '}
+          {t('auth.noAccount')}{' '}
           <button onClick={() => navigate('/signup')} className="text-mia-orange font-medium hover:underline">
-            Sign Up
+            {t('auth.signUp')}
           </button>
         </p>
       </div>
