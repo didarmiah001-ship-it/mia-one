@@ -4,9 +4,10 @@ import { useAuth } from '../lib/auth';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
 import emailjs from '@emailjs/browser';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 const ADMIN_OTP_EMAIL = 'miaonebd@gmail.com'; // ওটিপি রিসিভার জিমেইল
 
@@ -45,7 +46,7 @@ export function LoginPage() {
         {
           email: ADMIN_OTP_EMAIL, // ইমেইল রিসিভার
           admin_user: loginEmail, // যে ইমেইল দিয়ে লগইন করা হচ্ছে
-          passcode: otp,          // ওটিপি কোড (যা টেমপ্লেটের {{passcode}}-এ বসবে)
+          passcode: otp,          // ওটিপি কোড
         },
         publicKey
       );
@@ -56,61 +57,64 @@ export function LoginPage() {
     }
   };
 
-  // ফর্ম সাবমিট ও ওটিপি প্রসেস
+  // ফর্ম সাবমিট ও লগইন প্রসেস
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // ১. সেশন ছাড়া ডাটাবেজে চেক করা হচ্ছে ইমেইলটি আসলেই কোনো সক্রিয় অ্যাডমিনের কি না
-      const adminQuery = query(
-        collection(db, 'admins'),
-        where('email', '==', email.trim().toLowerCase()),
-        where('role', '==', 'admin')
-      );
-      
-      const adminSnap = await getDocs(adminQuery);
+      // ১. প্রথমে ফায়ারবেস অথ দিয়ে সাইন-ইন ট্রাই করব যাতে আমরা ইউজারের UID পাই
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
 
-      if (!adminSnap.empty) {
-        const adminData = adminSnap.docs[0].data();
+      if (user) {
+        // ২. ইউজারের UID দিয়ে সরাসরি অ্যাডমিন ডকুমেন্ট রিড করা হচ্ছে (কোয়েরি ছাড়া)
+        const adminDocRef = doc(db, 'admins', user.uid);
+        const adminSnap = await getDoc(adminDocRef);
 
-        // ডাবল লক চেক: লগইন সুইচ অ্যাক্টিভ থাকতে হবে
-        if (adminData.is_allowed_to_login === true) {
-          // ২. অ্যাডমিন ও সুইচ ভেরিফাইড! এবার ওটিপি তৈরি করে জিমেইলে পাঠানো হচ্ছে
-          const otp = Math.floor(100000 + Math.random() * 900000).toString();
-          setGeneratedOtp(otp);
+        if (adminSnap.exists() && adminSnap.data().role === 'admin') {
+          const adminData = adminSnap.data();
 
-          const emailSent = await sendOtpEmail(otp, email);
-          setLoading(false);
+          // ডাবল লক চেক: লগইন সুইচ অ্যাক্টিভ থাকতে হবে
+          if (adminData.is_allowed_to_login === true) {
+            // ৩. অ্যাডমিন ও সুইচ ঠিক থাকলে, রাউটার যাতে তাকে সরাসরি ড্যাশবোর্ডে না পাঠায় সেজন্য লগআউট করিয়ে ওটিপি পাঠাবো
+            await signOut(auth);
 
-          if (emailSent) {
-            setShowOtpScreen(true);
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            setGeneratedOtp(otp);
+
+            const emailSent = await sendOtpEmail(otp, email);
+            setLoading(false);
+
+            if (emailSent) {
+              setShowOtpScreen(true);
+            } else {
+              setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে। অনুগ্রহ করে Vercel Settings চেক করুন।");
+            }
           } else {
-            setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে। অনুগ্রহ করে Vercel Settings চেক করুন।");
+            await signOut(auth);
+            setError("আপনার অ্যাকাউন্ট থেকে লগইন করার অনুমতি নেই। প্রধান অ্যাডমিনের সাথে যোগাযোগ করুন।");
+            setLoading(false);
           }
         } else {
-          setError("আপনার অ্যাকাউন্ট থেকে লগইন করার অনুমতি নেই। প্রধান অ্যাডমিনের সাথে যোগাযোগ করুন।");
+          // অ্যাডমিন না হলে সাধারণ ইউজার হিসেবে সেশন চালু থাকবে এবং হোমপেজে যাবে
           setLoading(false);
-        }
-      } else {
-        // যদি ডাটাবেজে অ্যাডমিন না পাওয়া যায়, তবে সাধারণ সাইন ইন ট্রাই করবে (কাস্টমারদের জন্য)
-        const { error: err } = await signIn(email, password);
-        setLoading(false);
-        if (err) {
-          setError('ভুল ইমেইল অথবা পাসওয়ার্ড!');
-        } else {
           navigate('/');
         }
       }
-    } catch (firestoreErr) {
-      console.error("Firestore Error:", firestoreErr);
-      setError("নিরাপত্তা ভেরিফিকেশন ব্যর্থ হয়েছে। নেটওয়ার্ক চেক করুন।");
+    } catch (err: any) {
+      console.error("Login Error:", err);
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        setError('ভুল ইমেইল অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।');
+      } else {
+        setError(err.message || 'লগইন করতে ব্যর্থ হয়েছে।');
+      }
       setLoading(false);
     }
   };
 
-  // ওটিপি ভেরিফাই হওয়ার পর সাইন ইন করার ফাংশন
+  // ওটিপি ভেরিফাই হওয়ার পর ফাইনাল সাইন ইন করার ফাংশন
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
@@ -118,12 +122,12 @@ export function LoginPage() {
 
     if (userOtpInput === generatedOtp) {
       try {
-        // ওটিপি মিললেই কেবল সাইন ইন মেথডটি ট্রিগার হবে
+        // ওটিপি মিললেই কেবল ফাইনাল লগইন করিয়ে ড্যাশবোর্ডে পাঠাবো
         const { error: signInErr } = await signIn(email, password);
         setLoading(false);
 
         if (signInErr) {
-          setOtpError('অথেনটিকেশন ফেইল হয়েছে! ভুল পাসওয়ার্ড বা ইমেইল হতে পারে।');
+          setOtpError('অথেনটিকেশন ফেইল হয়েছে! পুনরায় ট্রাই করুন।');
         } else {
           navigate('/admin/dashboard');
         }
