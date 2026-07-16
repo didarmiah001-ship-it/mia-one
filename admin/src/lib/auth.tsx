@@ -7,7 +7,7 @@ import {
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { query, where, limit, getDocs, collection } from 'firebase/firestore';
-import { isOtpVerified, clearOtpState } from './otp';
+import { clearOtpState } from './otp';
 
 export interface AdminProfile {
   id: string;
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await fetchProfile(cred.user.email!);
       manualSignInRef.current = false;
       if (!result.ok) {
-        return { error: result.error || 'Admin verification failed after OTP.' };
+        return { error: result.error || 'Admin verification failed.' };
       }
       return { error: null };
     } catch (e: any) {
@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       profile,
       loading,
-      isAdmin: profile?.active === true && profile?.is_allowed_to_login === true && profile?.role === 'admin' && isOtpVerified(),
+      isAdmin: profile?.active === true && profile?.is_allowed_to_login === true && profile?.role === 'admin',
       authError,
       verifyCredentials,
       finalizeSignIn,

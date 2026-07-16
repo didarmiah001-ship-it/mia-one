@@ -1,7 +1,7 @@
 import { Navigate, BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import { ToastProvider } from './components/Toast';
-import { isOtpVerified } from './lib/otp';
+
 import { LoginPage } from './pages/LoginPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { AdminLayout } from './pages/AdminLayout';
@@ -45,7 +45,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/admin/login" replace />;
-  if (!isOtpVerified()) return <Navigate to="/admin/login" replace />;
   if (!isAdmin) return <Navigate to="/admin/unauthorized" replace />;
 
   return <>{children}</>;
@@ -55,7 +54,7 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isAdmin } = useAuth();
 
   if (loading) return <LoadingScreen />;
-  if (user && isAdmin && isOtpVerified()) return <Navigate to="/admin/dashboard" replace />;
+  if (user && isAdmin) return <Navigate to="/admin/dashboard" replace />;
 
   return <>{children}</>;
 }
