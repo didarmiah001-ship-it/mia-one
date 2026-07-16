@@ -14,7 +14,7 @@ export function generateOtp(): string {
 
 export async function sendOtpEmail(otp: string): Promise<void> {
   if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
-    throw new Error('EmailJS is not configured. Set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, and VITE_EMAILJS_PUBLIC_KEY in the admin .env file.');
+    throw new Error('EmailJS is not configured.');
   }
 
   await emailjs.send(

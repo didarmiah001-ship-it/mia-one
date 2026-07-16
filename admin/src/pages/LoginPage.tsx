@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { useToast } from '../components/Toast';
 import { generateOtp, sendOtpEmail, setOtpVerified, setOtpPending, clearOtpState } from '../lib/otp';
 import { ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
@@ -10,7 +9,6 @@ type Stage = 'credentials' | 'otp' | 'finalizing';
 export function LoginPage() {
   const { verifyCredentials, finalizeSignIn } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
 
   const [stage, setStage] = useState<Stage>('credentials');
   const [email, setEmail] = useState('');
@@ -57,13 +55,8 @@ export function LoginPage() {
       setOtpPending();
       setStage('otp');
       setResendCooldown(30);
-    } catch (err: any) {
-      setOtpPending();
-      setStage('otp');
-      setResendCooldown(30);
-      const alertMsg = `Email delivery failed: ${err?.message || 'unknown error'}. Your verification code is: ${newOtp}`;
-      setError(alertMsg);
-      toast.show(alertMsg, 'error');
+    } catch {
+      setError('Could not send verification code. Please contact support.');
     }
     setSubmitting(false);
   };
@@ -76,10 +69,8 @@ export function LoginPage() {
     try {
       await sendOtpEmail(newOtp);
       setResendCooldown(30);
-    } catch (err: any) {
-      const alertMsg = `Email delivery failed: ${err?.message || 'unknown error'}. Your verification code is: ${newOtp}`;
-      setError(alertMsg);
-      toast.show(alertMsg, 'error');
+    } catch {
+      setError('Could not send verification code. Please contact support.');
     }
   }, [resendCooldown]);
 
