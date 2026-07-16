@@ -22,7 +22,11 @@ export async function sendOtpEmail(otp: string): Promise<void> {
     EMAILJS_TEMPLATE_ID,
     {
       to_email: ADMIN_EMAIL,
+      email: ADMIN_EMAIL,
+      to_name: 'MIA Admin',
       otp_code: otp,
+      code: otp,
+      otp: otp,
       subject: 'MIA Admin - OTP Verification Code',
       message: `Your MIA Admin verification code is: ${otp}. This code expires in 10 minutes.`,
     },
