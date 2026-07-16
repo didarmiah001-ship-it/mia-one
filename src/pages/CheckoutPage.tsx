@@ -771,7 +771,7 @@ export function CheckoutPage() {
                     <p className="text-xs text-white/70">
                       {t('checkout.deliveringTo')} <span className="text-white font-medium">{form.thana ? `${form.thana}, ` : ''}{form.district}</span>
                     </p>
-                    <p className="text-[10px] text-white/40">{deliveryInfo.zone}</p>
+                    <p className="text-[10px] text-white/40">{DELIVERY_ZONES[form.district]?.zone || deliveryZone.replace('_', ' ')}</p>
                   </div>
                 </div>
                 <span className={`text-base font-bold ${deliveryCharge === 0 ? 'text-green-400' : 'text-mia-orange'}`}>
