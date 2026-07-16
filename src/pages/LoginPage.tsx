@@ -7,24 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import emailjs from '@emailjs/browser';
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 const ADMIN_OTP_EMAIL = 'miaonebd@gmail.com'; // ওটিপি রিসিভার জিমেইল
-
-// গ্লোবাল রিডাইরেক্ট এড়াতে ব্যাকগ্রাউন্ডে কাজ করার জন্য সাময়িক ফায়ারবেস অ্যাপ কনফিগ
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-// সেকেন্ডারি অ্যাপ তৈরি করা হচ্ছে যাতে মেইন অ্যাপের রিডাইরেক্ট লজিক ট্রিগার না হয়
-const tempApp = getApps().find(app => app.name === 'temp-otp-app') || initializeApp(firebaseConfig, 'temp-otp-app');
-const tempAuth = getAuth(tempApp);
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -79,12 +63,17 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      // ১. মেইন অথেনটিকেশন সেশন স্পর্শ না করে সাময়িক অ্যাপের মাধ্যমে পাসওয়ার্ড চেক করছি
-      const userCredential = await signInWithEmailAndPassword(tempAuth, email.trim(), password);
-      const user = userCredential.user;
+      // ১. প্রথমে ফায়ারবেসের মেইন সাইন ইন ট্রাই করব
+      const { data, error: signInErr } = await signIn(email, password);
 
-      if (user) {
-        // ২. ইউজারের ইমেইলটি আমাদের Firestore 'admins' কালেকশনে আছে কি না চেক করছি
+      if (signInErr) {
+        setError('ভুল ইমেইল অথবা পাসওয়ার্ড!');
+        setLoading(false);
+        return;
+      }
+
+      if (data?.user) {
+        // ২. ইউজার সফলভাবে মিললে ফায়ারবেস থেকে চেক করব সে অ্যাডমিন কি না
         const adminQuery = query(
           collection(db, 'admins'),
           where('email', '==', email.trim().toLowerCase()),
@@ -95,9 +84,8 @@ export function LoginPage() {
         if (!adminSnap.empty) {
           const adminData = adminSnap.docs[0].data();
 
-          // ৩. ডাবল লক চেক: লগইন করার পারমিশন আছে কি না
           if (adminData.is_allowed_to_login === true) {
-            // ৪. সব ঠিক আছে! এবার ওটিপি জেনারেট করে মেইলে পাঠানো হবে
+            // ৩. অ্যাডমিন ভেরিফাইড হলে ওটিপি কোড তৈরি করে পাঠানো হবে
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             setGeneratedOtp(otp);
 
@@ -107,62 +95,39 @@ export function LoginPage() {
             if (emailSent) {
               setShowOtpScreen(true);
             } else {
-              setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে। অনুগ্রহ করে Vercel Settings চেক করুন।");
+              setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে।");
             }
           } else {
-            setError("আপনার অ্যাকাউন্ট থেকে লগইন করার অনুমতি নেই। প্রধান অ্যাডমিনের সাথে যোগাযোগ করুন।");
+            setError("লগইন করার অনুমতি নেই।");
             setLoading(false);
           }
         } else {
-          // অ্যাডমিন না হলে সাধারণ কাস্টমার হিসেবে মেইন অ্যাপে সাইন-ইন করে হোমপেজে পাঠিয়ে দেবো
-          const { error: signInErr } = await signIn(email, password);
+          // সাধারণ কাস্টমার হলে মেইন পেজে রিডাইরেক্ট
           setLoading(false);
-          if (signInErr) {
-            setError('ভুল ইমেইল অথবা পাসওয়ার্ড!');
-          } else {
-            navigate('/');
-          }
+          navigate('/');
         }
       }
-    } catch (err: any) {
-      console.error("Temp Auth Login Error:", err);
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        setError('ভুল ইমেইল অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।');
-      } else {
-        setError(err.message || 'লগইন করতে ব্যর্থ হয়েছে।');
-      }
+    } catch (err) {
+      setError('লগইন প্রসেসে সমস্যা হয়েছে।');
       setLoading(false);
     }
   };
 
-  // ওটিপি ভেরিফাই হওয়ার পর মেইন অ্যাপে সাইন ইন করার ফাংশন
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  // ওটিপি ভেরিফাই হওয়ার ফাংশন
+  const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
-    setLoading(true);
 
     if (userOtpInput === generatedOtp) {
-      try {
-        // ওটিপি ম্যাচ করার পর এইবার মেইন সেশন সচল করে ড্যাশবোর্ডে রিডাইরেক্ট করব
-        const { error: signInErr } = await signIn(email, password);
-        setLoading(false);
-
-        if (signInErr) {
-          setOtpError('অথেনটিকেশন ফেইল হয়েছে! পুনরায় ট্রাই করুন।');
-        } else {
-          navigate('/admin/dashboard');
-        }
-      } catch (err) {
-        setOtpError('লগইন প্রসেস সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন।');
-        setLoading(false);
-      }
+      // ওটিপি মিললে ব্রাউজারের সেশন স্টোরেজে ভেরিফাইড স্ট্যাটাস ট্রু করে দেওয়া হচ্ছে
+      sessionStorage.setItem('admin_otp_verified', 'true');
+      navigate('/admin/dashboard');
     } else {
       setOtpError('ভুল ওটিপি কোড! অনুগ্রহ করে পুনরায় চেক করুন।');
-      setLoading(false);
     }
   };
 
-  // ওটিপি স্ক্রিন ভিউ (যদি ওটিপি পাঠানো হয়ে থাকে)
+  // ওটিপি স্ক্রিন ভিউ
   if (showOtpScreen) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "var(--bg-base)" }}>
@@ -178,8 +143,7 @@ export function LoginPage() {
 
           <form onSubmit={handleVerifyOtp} className="space-y-4">
             {otpError && (
-              <div className="p-3 rounded-xl text-sm text-red-300 border border-red-500/20"
-                style={{ background: 'rgba(239,68,68,0.05)' }}>
+              <div className="p-3 rounded-xl text-sm text-red-300 border border-red-500/20" style={{ background: 'rgba(239,68,68,0.05)' }}>
                 {otpError}
               </div>
             )}
@@ -191,17 +155,11 @@ export function LoginPage() {
               onChange={e => setUserOtpInput(e.target.value.replace(/\D/g, ''))}
               placeholder="৬ ডিজিটের ওটিপি কোড লিখুন"
               required
-              disabled={loading}
-              className="w-full text-center tracking-[1em] pl-[1em] py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-lg font-bold text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40 transition-all"
+              className="w-full text-center tracking-[1em] pl-[1em] py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-lg font-bold text-white focus:outline-none focus:border-mia-orange/40 transition-all"
             />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
-            >
-              {loading ? 'ভেরিফাই হচ্ছে...' : <>ভেরিফাই করুন <ArrowRight size={16} /></>}
+            <button type="submit" className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
+              ভেরিফাই করুন <ArrowRight size={16} />
             </button>
           </form>
         </div>
@@ -212,16 +170,7 @@ export function LoginPage() {
   // নরমাল লগইন স্ক্রিন ভিউ
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 page-transition" style={{ background: "var(--bg-base)" }}>
-      {/* Background orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full opacity-[0.04] blur-3xl"
-          style={{ background: 'radial-gradient(circle, #FF8A00, transparent)' }} />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full opacity-[0.04] blur-3xl"
-          style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
-      </div>
-
       <div className="relative w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="relative inline-block w-16 h-16 mb-4">
             <img src={appConfig.logo} alt="MIA ONE" className="w-full h-full object-contain" />
@@ -230,11 +179,9 @@ export function LoginPage() {
           <p className="text-sm text-white/40 mt-2">{t('auth.signInToAccount')}</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 rounded-xl text-sm text-red-300 border border-red-500/20"
-              style={{ background: 'rgba(239,68,68,0.05)' }}>
+            <div className="p-3 rounded-xl text-sm text-red-300 border border-red-500/20" style={{ background: 'rgba(239,68,68,0.05)' }}>
               {error}
             </div>
           )}
@@ -247,7 +194,7 @@ export function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder={t('auth.emailAddress')}
               required
-              className="w-full pl-11 pr-4 py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40 transition-all"
+              className="w-full pl-11 pr-4 py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-sm text-white focus:outline-none focus:border-mia-orange/40 transition-all"
             />
           </div>
 
@@ -259,37 +206,23 @@ export function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               placeholder={t('auth.password')}
               required
-              className="w-full pl-11 pr-12 py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40 transition-all"
+              className="w-full pl-11 pr-12 py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-sm text-white focus:outline-none focus:border-mia-orange/40 transition-all"
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
 
           <div className="flex justify-end">
-            <button type="button" onClick={() => navigate('/forgot-password')}
-              className="text-xs text-mia-orange hover:underline">
+            <button type="button" onClick={() => navigate('/forgot-password')} className="text-xs text-mia-orange hover:underline">
               {t('auth.forgotPassword')}
             </button>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
-          >
+          <button type="submit" disabled={loading} className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
             {loading ? 'Processing...' : <>{t('auth.signIn')} <ArrowRight size={16} /></>}
           </button>
         </form>
-
-        <p className="text-center text-sm text-white/40 mt-6">
-          {t('auth.noAccount')}{' '}
-          <button onClick={() => navigate('/signup')} className="text-mia-orange font-medium hover:underline">
-            {t('auth.signUp')}
-          </button>
-        </p>
       </div>
     </div>
   );
