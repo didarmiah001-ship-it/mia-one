@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { generateOtp, sendOtpEmail, setOtpVerified, setOtpPending, clearOtpState } from '../lib/otp';
-import { ShieldCheck, ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 type Stage = 'credentials' | 'otp' | 'finalizing';
 

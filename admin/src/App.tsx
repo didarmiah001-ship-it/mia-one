@@ -41,7 +41,7 @@ function LoadingScreen({ error }: { error?: string | null }) {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isAdmin, authError } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/admin/login" replace />;
