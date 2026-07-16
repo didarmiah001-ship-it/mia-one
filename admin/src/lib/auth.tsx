@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { isOtpVerified, clearOtpState } from './otp';
 
 export interface AdminProfile {
   id: string;
@@ -21,7 +22,8 @@ interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   authError: string | null;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  verifyCredentials: (email: string, password: string) => Promise<{ error: string | null }>;
+  finalizeSignIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -42,17 +44,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.active === true && data.role === 'admin') {
           setProfile({ id: snap.id, email: data.email || '', role: data.role, active: data.active });
           setAuthError(null);
+          return true;
         } else {
           setProfile(null);
           setAuthError(`Admin check failed: active=${data.active}, role=${data.role}.`);
+          return false;
         }
       } else {
         setProfile(null);
         setAuthError(`No admin document found at: admins/${userId}`);
+        return false;
       }
     } catch (err: any) {
       setProfile(null);
       setAuthError(err?.message || 'Failed to verify admin status.');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -76,7 +82,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsub();
   }, [fetchProfile]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const verifyCredentials = useCallback(async (email: string, password: string) => {
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const isAdmin = await fetchProfile(cred.user.uid);
+      if (!isAdmin) {
+        await fbSignOut(auth);
+        return { error: authError || 'This account does not have admin privileges.' };
+      }
+      return { error: null };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  }, [fetchProfile, authError]);
+
+  const finalizeSignIn = useCallback(async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { error: null };
@@ -86,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    clearOtpState();
     await fbSignOut(auth);
     setProfile(null);
     setAuthError(null);
@@ -96,9 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       profile,
       loading,
-      isAdmin: profile?.active === true && profile?.role === 'admin',
+      isAdmin: profile?.active === true && profile?.role === 'admin' && isOtpVerified(),
       authError,
-      signIn,
+      verifyCredentials,
+      finalizeSignIn,
       signOut,
       refreshProfile,
     }}>
