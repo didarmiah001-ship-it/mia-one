@@ -2,7 +2,7 @@ import { urlEndpoint } from './imagekit';
 
 const SUPABASE_URL = 'https://ljtwvmgxrhwrwaaovlbi.supabase.co';
 const AUTH_ENDPOINT = `${SUPABASE_URL}/functions/v1/imagekit-auth`;
-const PUBLIC_KEY = 'public_i67rlxsde';
+const PUBLIC_KEY = 'public_yEPy2DHHPu/KY2jJ3R5GIjfbkZc=';
 const UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
 
 interface UploadResponse {
@@ -15,6 +15,7 @@ interface AuthParams {
   token: string;
   expire: number;
   signature: string;
+  publicKey: string;
 }
 
 async function fetchAuthParams(): Promise<AuthParams> {
@@ -28,23 +29,28 @@ async function fetchAuthParams(): Promise<AuthParams> {
   }
 
   const data = await res.json();
-  console.log('[ImageKit] Auth response:', { token: data.token, expire: data.expire, signature: data.signature ? '(present)' : '(missing)' });
+  console.log('[ImageKit] Auth response:', {
+    token: data.token,
+    expire: data.expire,
+    signature: data.signature ? '(present)' : '(missing)',
+    publicKey: data.publicKey,
+  });
 
-  if (!data.token || !data.expire || !data.signature) {
+  if (!data.token || !data.expire || !data.signature || !data.publicKey) {
     throw new Error('ImageKit auth endpoint returned incomplete data');
   }
 
-  return { token: data.token, expire: data.expire, signature: data.signature };
+  return { token: data.token, expire: data.expire, signature: data.signature, publicKey: data.publicKey };
 }
 
 export async function uploadToImageKit(file: File | Blob, fileName?: string): Promise<UploadResponse> {
-  const { token, expire, signature } = await fetchAuthParams();
+  const { token, expire, signature, publicKey } = await fetchAuthParams();
 
   const name = fileName || `mia-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const formData = new FormData();
   formData.append('file', file);
   formData.append('fileName', name);
-  formData.append('publicKey', PUBLIC_KEY);
+  formData.append('publicKey', publicKey);
   formData.append('signature', signature);
   formData.append('expire', String(expire));
   formData.append('token', token);

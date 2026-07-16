@@ -230,12 +230,12 @@ function ManualPaymentForm({
         console.error(`[ImageKit] Auth failed: ${authRes.status} ${authRes.statusText}`);
         return null;
       }
-      const { token, expire, signature } = await authRes.json();
+      const { token, expire, signature, publicKey } = await authRes.json();
 
       const formData = new FormData();
       formData.append('file', screenshotFile);
       formData.append('fileName', fileName);
-      formData.append('publicKey', 'public_i67rlxsde');
+      formData.append('publicKey', publicKey);
       formData.append('signature', signature);
       formData.append('expire', String(expire));
       formData.append('token', token);
