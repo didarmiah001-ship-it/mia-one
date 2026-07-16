@@ -446,20 +446,54 @@ export async function fetchUserCoupons() {
 
 export async function createPayment(payment: {
   order_id: string; user_id: string | null; method: string; amount: number;
-  currency?: string; gateway_ref?: string; gateway_session?: string;
+  currency?: string; gateway_ref?: string; gateway_session?: string; order_number?: string;
 }) {
   try {
-    const docRef = await addDoc(collection(db, 'payments'), { ...payment, currency: payment.currency || 'BDT', status: 'pending', created_at: new Date().toISOString() });
+    const docRef = await addDoc(collection(db, 'payments'), {
+      ...payment,
+      currency: payment.currency || 'BDT',
+      status: 'pending',
+      transaction_id: null,
+      created_at: new Date().toISOString(),
+    });
     return { data: { id: docRef.id }, error: null };
   } catch (e: any) { return { data: null, error: e.message }; }
 }
 
 export async function submitManualPayment(paymentId: string, txId: string, senderNumber: string, customerNote?: string, screenshotUrl?: string) {
-  const updates: any = { transaction_id: txId, sender_number: senderNumber, status: 'submitted', submitted_at: new Date().toISOString() };
+  const updates: any = {
+    transaction_id: txId,
+    sender_number: senderNumber,
+    status: 'submitted',
+    submitted_at: new Date().toISOString(),
+  };
   if (customerNote) updates.customer_note = customerNote;
   if (screenshotUrl) updates.screenshot_url = screenshotUrl;
   try { await updateDoc(doc(db, 'payments', paymentId), updates); return { error: null }; }
   catch (e: any) { return { error: e.message }; }
+}
+
+export async function updatePaymentGatewayRef(paymentId: string, gatewayRef: string) {
+  try {
+    await updateDoc(doc(db, 'payments', paymentId), {
+      gateway_ref: gatewayRef,
+      status: 'processing',
+      updated_at: new Date().toISOString(),
+    });
+    return { error: null };
+  } catch (e: any) { return { error: e.message }; }
+}
+
+export async function markPaymentPaid(paymentId: string, transactionId: string, method: string) {
+  try {
+    await updateDoc(doc(db, 'payments', paymentId), {
+      transaction_id: transactionId,
+      status: 'paid',
+      paid_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    return { error: null };
+  } catch (e: any) { return { error: e.message }; }
 }
 
 export async function fetchPayment(orderId: string) {
@@ -503,6 +537,16 @@ export async function fetchActivePaymentMethods(methodType?: string): Promise<an
   return results;
 }
 
+export async function fetchBanglaQR(): Promise<string | null> {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'bangla_qr'));
+    if (snap.exists() && snap.data()?.qr_image_url) return snap.data().qr_image_url;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchActiveCampaigns(): Promise<any[]> {
   const snap = await getDocs(query(collection(db, 'campaigns'), where('is_active', '==', true)));
   const now = new Date();
@@ -512,7 +556,3 @@ export async function fetchActiveCampaigns(): Promise<any[]> {
   return results.slice(0, 5);
 }
 
-export async function updatePaymentGatewayRef(paymentId: string, gatewayRef: string) {
-  try { await updateDoc(doc(db, 'payments', paymentId), { gateway_ref: gatewayRef }); return { error: null }; }
-  catch (e: any) { return { error: e.message }; }
-}

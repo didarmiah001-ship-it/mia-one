@@ -4,8 +4,11 @@ import {
   adminCreatePaymentMethod,
   adminUpdatePaymentMethod,
   adminDeletePaymentMethod,
+  adminFetchSettings,
+  adminUpsertSettings,
 } from '../lib/api';
-import { CreditCard, Plus, Edit2, Trash2, Save, X, Check, Smartphone, Building, DollarSign } from 'lucide-react';
+import { uploadToImageKit } from '../lib/imagekit-upload';
+import { CreditCard, Plus, Edit2, Trash2, Save, X, Check, Smartphone, Building, DollarSign, QrCode, Upload, Loader2 } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 
@@ -70,6 +73,12 @@ export function AdminPaymentSettings() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const toast = useToast();
 
+  // Bangla QR state
+  const [banglaQRUrl, setBanglaQRUrl] = useState<string>('');
+  const [qrUploading, setQrUploading] = useState(false);
+  const [qrSaving, setQrSaving] = useState(false);
+  const [qrLoading, setQrLoading] = useState(true);
+
   const fetchMethods = useCallback(async () => {
     setLoading(true);
     const data = await adminFetchPaymentMethods();
@@ -80,6 +89,42 @@ export function AdminPaymentSettings() {
   useEffect(() => {
     fetchMethods();
   }, [fetchMethods]);
+
+  useEffect(() => {
+    adminFetchSettings('bangla_qr').then(data => {
+      if (data?.qr_image_url) setBanglaQRUrl(data.qr_image_url);
+      setQrLoading(false);
+    }).catch(() => setQrLoading(false));
+  }, []);
+
+  const handleQRUpload = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    setQrUploading(true);
+    try {
+      const result = await uploadToImageKit(file, 'bangla-qr');
+      if (result.url) {
+        setBanglaQRUrl(result.url);
+        toast.success('QR image uploaded');
+      } else {
+        toast.error('Upload failed');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Upload failed');
+    }
+    setQrUploading(false);
+  };
+
+  const handleSaveQR = async () => {
+    setQrSaving(true);
+    const { error } = await adminUpsertSettings('bangla_qr', { qr_image_url: banglaQRUrl, updated_at: new Date().toISOString() });
+    if (error) toast.error(error);
+    else toast.success('Bangla QR saved successfully');
+    setQrSaving(false);
+  };
 
   const handleEdit = (method: PaymentMethod) => {
     setEditingId(method.id);
@@ -201,6 +246,89 @@ export function AdminPaymentSettings() {
           <Plus size={16} />
           <span>Add Payment Method</span>
         </button>
+      </div>
+
+      {/* Bangla QR Upload Section */}
+      <div className="glow-card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,209,255,0.08)', border: '1px solid rgba(0,209,255,0.2)' }}>
+            <QrCode size={15} className="text-[#00D1FF]" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Bangla QR Code</h3>
+            <p className="text-[11px] text-white/30">Universal QR for mobile banking apps (bKash, Nagad, Rocket, etc.)</p>
+          </div>
+        </div>
+
+        {qrLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={20} className="animate-spin text-white/30" />
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-5 items-start">
+            {/* QR Preview */}
+            <div className="shrink-0">
+              {banglaQRUrl ? (
+                <div className="relative group">
+                  <img
+                    src={banglaQRUrl}
+                    alt="Bangla QR"
+                    className="w-32 h-32 rounded-2xl object-contain"
+                    style={{ background: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                  />
+                  <button
+                    onClick={() => setBanglaQRUrl('')}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove QR"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-32 h-32 rounded-2xl flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(255,255,255,0.03)', border: '2px dashed rgba(255,255,255,0.1)' }}>
+                  <QrCode size={32} className="text-white/20" />
+                  <span className="text-[10px] text-white/30">No QR uploaded</span>
+                </div>
+              )}
+            </div>
+
+            {/* Upload Controls */}
+            <div className="flex-1 space-y-3">
+              <label className="block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => e.target.files?.[0] && handleQRUpload(e.target.files[0])}
+                  className="hidden"
+                />
+                <div
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium cursor-pointer transition-all hover:scale-[1.01]"
+                  style={{ background: 'rgba(0,209,255,0.08)', border: '1px solid rgba(0,209,255,0.2)', color: '#00D1FF' }}
+                >
+                  {qrUploading ? (
+                    <><Loader2 size={16} className="animate-spin" /> Uploading...</>
+                  ) : (
+                    <><Upload size={16} /> {banglaQRUrl ? 'Replace QR Image' : 'Upload Bangla QR Code'}</>
+                  )}
+                </div>
+              </label>
+              <p className="text-[11px] text-white/30 leading-relaxed">
+                Upload a single Bangla QR image. Customers will see this QR at checkout when they select a mobile/digital payment method. They can scan it with any banking app to pay instantly.
+              </p>
+              {banglaQRUrl && (
+                <button
+                  onClick={handleSaveQR}
+                  disabled={qrSaving}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #00D1FF, #7B2CFF)' }}
+                >
+                  {qrSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {qrSaving ? 'Saving...' : 'Save QR Settings'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Payment Methods List */}

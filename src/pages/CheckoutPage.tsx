@@ -445,6 +445,7 @@ export function CheckoutPage() {
         method: paymentMethod,
         amount: total,
         currency: 'BDT',
+        order_number: orderNumber,
       });
       if (pmtData) paymentId = pmtData.id;
     }

@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, CreditCard, Smartphone, Building2, CheckCircle2, XCircle,
-  Loader2, Copy, AlertCircle, Lock, RefreshCw, Clock, Check, Upload, Image as ImageIcon, X,
+  Loader2, Copy, AlertCircle, Lock, RefreshCw, Clock, Check, Upload, Image as ImageIcon, X, QrCode,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from '../lib/router';
-import { submitManualPayment, initiateStripePayment, createPayment, fetchActivePaymentMethods, updatePaymentGatewayRef } from '../lib/api';
+import { submitManualPayment, initiateStripePayment, createPayment, fetchActivePaymentMethods, updatePaymentGatewayRef, markPaymentPaid, fetchBanglaQR } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation } from 'react-i18next';
 
@@ -27,11 +27,13 @@ function StripeCardForm({
   onSuccess,
   onError,
   amount,
+  paymentId,
 }: {
   clientSecret: string;
   onSuccess: () => void;
   onError: (e: string) => void;
   amount: number;
+  paymentId: string;
 }) {
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -78,7 +80,12 @@ function StripeCardForm({
     });
     setProcessing(false);
     if (error) onError(error.message);
-    else onSuccess();
+    else {
+      if (paymentId) {
+        markPaymentPaid(paymentId, `stripe_${Date.now()}`, 'stripe');
+      }
+      onSuccess();
+    }
   };
 
   return (
@@ -485,6 +492,7 @@ export function PaymentPage() {
   const [stripeError, setStripeError] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'success' | 'failed'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
+  const [banglaQRUrl, setBanglaQRUrl] = useState<string | null>(null);
 
   const meta = METHOD_META[method];
   const Icon = meta?.icon || CreditCard;
@@ -498,12 +506,15 @@ export function PaymentPage() {
           setStripeError(res.error || t('payment.initFailed'));
         } else {
           setStripeClientSecret(res.client_secret);
-          // Update payment record with gateway ref
           if (paymentId && res.payment_intent_id) {
             updatePaymentGatewayRef(paymentId, res.payment_intent_id);
           }
         }
       });
+    }
+    // Fetch Bangla QR for digital payment methods
+    if (method !== 'cod') {
+      fetchBanglaQR().then(url => setBanglaQRUrl(url));
     }
   }, [method, orderId, total]);
 
@@ -616,6 +627,7 @@ export function PaymentPage() {
                   <StripeCardForm
                     clientSecret={stripeClientSecret}
                     amount={total}
+                    paymentId={paymentId}
                     onSuccess={handleSuccess}
                     onError={handleError}
                   />
@@ -624,13 +636,45 @@ export function PaymentPage() {
             )}
 
             {(method === 'bkash' || method === 'nagad' || method === 'bank_transfer') && (
-              <ManualPaymentForm
-                method={method}
-                paymentId={paymentId}
-                orderNumber={orderNumber}
-                amount={total}
-                onSuccess={handleSuccess}
-              />
+              <>
+                {banglaQRUrl && (
+                  <div className="glow-card p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,209,255,0.1)', border: '1px solid rgba(0,209,255,0.2)' }}>
+                        <QrCode size={14} className="text-[#00D1FF]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white">Scan & Pay with Bangla QR</p>
+                        <p className="text-[11px] text-white/30">Open your banking app and scan this QR to pay ৳{total}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="relative">
+                        <img
+                          src={banglaQRUrl}
+                          alt="Bangla QR"
+                          className="w-56 h-56 rounded-2xl object-contain"
+                          style={{ background: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                        />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-mia-orange">৳{total}</p>
+                        <p className="text-[11px] text-white/40 mt-0.5">Amount to pay</p>
+                      </div>
+                      <p className="text-[11px] text-white/30 text-center max-w-xs leading-relaxed">
+                        Scan with bKash, Nagad, Rocket, or any banking app that supports Bangla QR. After paying, enter your transaction ID below.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <ManualPaymentForm
+                  method={method}
+                  paymentId={paymentId}
+                  orderNumber={orderNumber}
+                  amount={total}
+                  onSuccess={handleSuccess}
+                />
+              </>
             )}
           </>
         )}
