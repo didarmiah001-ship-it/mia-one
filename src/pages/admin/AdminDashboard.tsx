@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ShoppingBag, Users, Package, TrendingUp, Clock, CheckCircle2, DollarSign, Zap } from 'lucide-react';
 import { adminGetStats } from '../../lib/api';
+import { useNavigate } from '../../lib/router'; // রাউটিং এর জন্য ইম্পোর্ট
 
 interface Stats {
   totalProducts: number;
@@ -16,13 +17,32 @@ interface Stats {
 export function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    adminGetStats().then(s => { setStats(s as Stats); setLoading(false); });
-  }, []);
+    // 🔒 ওটিপি ভেরিফিকেশন চেক
+    const otpVerified = sessionStorage.getItem('admin_otp_verified');
+    
+    if (otpVerified !== 'true') {
+      // ওটিপি ভেরিফাই না করা থাকলে সরাসরি লগইন পেজে ব্যাক করাবে
+      setLoading(false);
+      navigate('/login'); // আপনার প্রজেক্টের লগইন রাউট অনুসারে সেট করা
+      return;
+    }
+
+    // ওটিপি পাস করলেই কেবল ড্যাশবোর্ডের ডাটা ফেস হবে
+    setIsOtpVerified(true);
+    adminGetStats().then(s => { 
+      setStats(s as Stats); 
+      setLoading(false); 
+    }).catch(() => setLoading(false));
+  }, [navigate]);
 
   if (loading) return <DashboardSkeleton />;
-  if (!stats) return null;
+  
+  // ওটিপি ভেরিফাইড না হলে স্ক্রিন একদম ব্ল্যাঙ্ক রাখবে
+  if (!isOtpVerified || !stats) return null;
 
   const maxRevenue = Math.max(...stats.revenueChart.map(d => d.revenue), 1);
 
