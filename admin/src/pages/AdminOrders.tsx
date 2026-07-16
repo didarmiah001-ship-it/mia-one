@@ -8,7 +8,7 @@ import {
   Filter, RefreshCw, FileText, MapPin, Phone, User, Calendar,
   ArrowUpDown, Eye, CreditCard, Image as ImageIcon, MessageCircle, Pencil
 } from 'lucide-react';
-import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline, fetchPayment, adminUpdateOrderDeliveryCharge } from '../lib/api';
+import { adminFetchAllOrders, adminUpdateOrderStatus, fetchOrderTimeline, fetchPayment, adminUpdateOrderDeliveryCharge, adminUpdateOrderCourier } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { appConfig } from '../lib/config';
 
@@ -22,9 +22,11 @@ export const ALL_STATUSES = [
   { key: 'processing',      label: 'Processing',      color: '#FF8A00', icon: RefreshCw },
   { key: 'packed',          label: 'Packed',          color: '#7B2CFF', icon: PackageCheck },
   { key: 'ready_for_delivery',label: 'Ready for Delivery',color: '#FF8A00', icon: PackageCheck },
+  { key: 'dispatched',      label: 'Dispatched',      color: '#7B2CFF', icon: Truck },
   { key: 'shipped',         label: 'Shipped',         color: '#FF2EC9', icon: Truck },
   { key: 'out_for_delivery',label: 'Out for Delivery',color: '#FF2EC9', icon: Truck },
   { key: 'delivered',       label: 'Delivered',       color: '#22c55e', icon: CheckCircle },
+  { key: 'returned',        label: 'Returned',        color: '#f59e0b', icon: ArrowUpDown },
   { key: 'cancelled',       label: 'Cancelled',       color: '#ef4444', icon: XCircle },
   { key: 'refunded',        label: 'Refunded',        color: '#ef4444', icon: XCircle },
 ];
@@ -55,17 +57,30 @@ const STATUS_ACTIONS: Record<string, { label: string; nextStatus: string; color:
   ],
   packed: [
     { label: 'Ready', nextStatus: 'ready_for_delivery', color: '#FF8A00' },
-    { label: 'Shipped', nextStatus: 'shipped', color: '#FF2EC9' },
+    { label: 'Dispatch', nextStatus: 'dispatched', color: '#7B2CFF' },
+    { label: 'Ship', nextStatus: 'shipped', color: '#FF2EC9' },
   ],
   ready_for_delivery: [
+    { label: 'Dispatch', nextStatus: 'dispatched', color: '#7B2CFF' },
     { label: 'Out for Delivery', nextStatus: 'out_for_delivery', color: '#FF2EC9' },
-    { label: 'Shipped', nextStatus: 'shipped', color: '#FF2EC9' },
+    { label: 'Ship', nextStatus: 'shipped', color: '#FF2EC9' },
+  ],
+  dispatched: [
+    { label: 'Ship', nextStatus: 'shipped', color: '#FF2EC9' },
+    { label: 'Out for Delivery', nextStatus: 'out_for_delivery', color: '#FF2EC9' },
+    { label: 'Return', nextStatus: 'returned', color: '#f59e0b' },
   ],
   shipped: [
     { label: 'Out for Delivery', nextStatus: 'out_for_delivery', color: '#FF2EC9' },
+    { label: 'Return', nextStatus: 'returned', color: '#f59e0b' },
   ],
   out_for_delivery: [
     { label: 'Delivered', nextStatus: 'delivered', color: '#22c55e' },
+    { label: 'Return', nextStatus: 'returned', color: '#f59e0b' },
+  ],
+  returned: [
+    { label: 'Refund', nextStatus: 'refunded', color: '#ef4444' },
+    { label: 'Cancel', nextStatus: 'cancelled', color: '#ef4444' },
   ],
 };
 
@@ -747,6 +762,9 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
   const [overrideCharge, setOverrideCharge] = useState(String(order.delivery_charge ?? 0));
   const [savingDelivery, setSavingDelivery] = useState(false);
   const [localOrder, setLocalOrder] = useState(order);
+  const [courierPartner, setCourierPartner] = useState<string>(order.courier_partner || 'none');
+  const [trackingId, setTrackingId] = useState<string>(order.courier_tracking_id || '');
+  const [savingCourier, setSavingCourier] = useState(false);
 
   // Use localOrder for display so manual override reflects immediately
   const displayOrder = localOrder;
@@ -819,6 +837,18 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
       setEditingDelivery(false);
     }
     setSavingDelivery(false);
+  };
+
+  const handleSaveCourier = async () => {
+    setSavingCourier(true);
+    const { error } = await adminUpdateOrderCourier(order.id, courierPartner === 'none' ? '' : courierPartner, trackingId);
+    if (error) { toast.error(error); }
+    else {
+      const updated = { ...localOrder, courier_partner: courierPartner, courier_tracking_id: trackingId };
+      setLocalOrder(updated);
+      toast.success('Courier info saved');
+    }
+    setSavingCourier(false);
   };
 
   const paymentScreenshotUrl = payment?.screenshot_url || payment?.payment_screenshot_url || order.payment_screenshot_url;
@@ -908,6 +938,53 @@ function OrderDrawer({ order, onClose, onStatusChange }: { order: any; onClose: 
               <MessageCircle size={14} />
               {updating ? 'Updating...' : `Update Status & Send WhatsApp`}
             </button>
+          </div>
+
+          {/* Courier Integration */}
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="flex items-center gap-2">
+              <Truck size={12} className="text-white/30" />
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Courier Integration</p>
+            </div>
+            <div>
+              <label className="text-[10px] text-white/40 block mb-1">Courier Partner</label>
+              <select
+                value={courierPartner}
+                onChange={e => setCourierPartner(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs text-white focus:outline-none"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <option value="none" style={{ background: '#1a1a2e' }}>No courier assigned</option>
+                <option value="pathao" style={{ background: '#1a1a2e' }}>Pathao</option>
+                <option value="steadfast" style={{ background: '#1a1a2e' }}>Steadfast</option>
+                <option value="redx" style={{ background: '#1a1a2e' }}>REDX</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-white/40 block mb-1">Tracking ID</label>
+              <input
+                value={trackingId}
+                onChange={e => setTrackingId(e.target.value)}
+                placeholder="e.g. PATHAO-12345 or SF-67890"
+                className="w-full px-3 py-2 rounded-xl text-xs text-white placeholder:text-white/25 focus:outline-none"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              />
+            </div>
+            <button
+              onClick={handleSaveCourier}
+              disabled={savingCourier}
+              className="w-full py-2.5 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg, #7B2CFF, #FF2EC9)' }}
+            >
+              {savingCourier ? 'Saving...' : 'Save Courier Info'}
+            </button>
+            {courierPartner !== 'none' && trackingId && (
+              <div className="text-[10px] text-white/30 text-center">
+                {courierPartner === 'pathao' && <a href={`https://pathao.com/track/${trackingId}`} target="_blank" rel="noopener noreferrer" className="text-mia-orange hover:underline">Track on Pathao →</a>}
+                {courierPartner === 'steadfast' && <a href={`https://steadfast.com/t/${trackingId}`} target="_blank" rel="noopener noreferrer" className="text-mia-orange hover:underline">Track on Steadfast →</a>}
+                {courierPartner === 'redx' && <a href={`https://redx.com/track/${trackingId}`} target="_blank" rel="noopener noreferrer" className="text-mia-orange hover:underline">Track on REDX →</a>}
+              </div>
+            )}
           </div>
 
           {/* Customer & Delivery */}
@@ -1189,8 +1266,11 @@ export function AdminOrders() {
           { key: 'confirmed', label: 'Confirmed', color: '#00D1FF' },
           { key: 'processing', label: 'Processing', color: '#FF8A00' },
           { key: 'packed', label: 'Packed', color: '#7B2CFF' },
+          { key: 'dispatched', label: 'Dispatched', color: '#7B2CFF' },
+          { key: 'shipped', label: 'Shipped', color: '#FF2EC9' },
           { key: 'out_for_delivery', label: 'Out', color: '#FF2EC9' },
           { key: 'delivered', label: 'Delivered', color: '#22c55e' },
+          { key: 'returned', label: 'Returned', color: '#f59e0b' },
           { key: 'cancelled', label: 'Cancelled', color: '#ef4444' },
         ].map(s => {
           const count = s.key === 'all' ? orders.length : (statusCounts[s.key] || 0);

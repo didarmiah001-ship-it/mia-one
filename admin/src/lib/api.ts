@@ -46,6 +46,7 @@ function mapProduct(id: string, p: any, catMap: Record<string, { name: string }>
     id,
     name: p.name,
     price: Number(p.price) || 0,
+    cost_price: Number(p.cost_price) || 0,
     discount_price: p.discount_price != null ? Number(p.discount_price) : null,
     wholesale_price: p.wholesale_price != null ? Number(p.wholesale_price) : null,
     image: p.image || '',
@@ -69,6 +70,7 @@ function mapProduct(id: string, p: any, catMap: Record<string, { name: string }>
     rating: Number(p.rating) || 0,
     reviews_count: p.reviews_count || 0,
     stock: p.stock || 0,
+    low_stock_threshold: p.low_stock_threshold != null ? Number(p.low_stock_threshold) : 5,
     is_featured: p.is_featured || false,
     is_trending: p.is_trending || false,
     is_new: p.is_new || false,
@@ -503,10 +505,27 @@ export async function adminGetStats() {
     getDocs(query(collection(db, 'profiles'), where('role', '==', 'customer'))),
   ]);
 
+  const products: AnyRecord[] = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   const orderData: AnyRecord[] = orderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   const revenue = orderData.reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+  // Net Profit = Revenue - Total Product Cost - Delivery Cost
+  const productCostMap: Record<string, number> = {};
+  products.forEach(p => { productCostMap[p.id] = Number(p.cost_price) || 0; });
+  let totalProductCost = 0;
+  orderData.forEach(o => {
+    const items = Array.isArray(o.items) ? o.items : [];
+    items.forEach((item: any) => {
+      const pid = item.product_id || item.id || '';
+      const cost = productCostMap[pid] || 0;
+      totalProductCost += cost * Number(item.quantity || 1);
+    });
+  });
+  const totalDeliveryCost = orderData.reduce((sum, o) => sum + Number(o.delivery_charge || 0), 0);
+  const netProfit = revenue - totalProductCost - totalDeliveryCost;
+
   const pendingOrders = orderData.filter(o =>
-    ['placed', 'pending', 'received', 'confirmed', 'processing', 'packed', 'ready_for_delivery', 'shipped', 'out_for_delivery'].includes(o.status)
+    ['placed', 'pending', 'received', 'confirmed', 'processing', 'packed', 'ready_for_delivery', 'shipped', 'out_for_delivery', 'dispatched'].includes(o.status)
   ).length;
   const deliveredOrders = orderData.filter(o => o.status === 'delivered').length;
 
@@ -525,15 +544,59 @@ export async function adminGetStats() {
       .reduce((s, o) => s + Number(o.total || 0), 0),
   }));
 
+  // Top Selling Products
+  const productSalesMap: Record<string, { name: string; qty: number; revenue: number; image?: string }> = {};
+  orderData.forEach(o => {
+    const items = Array.isArray(o.items) ? o.items : [];
+    items.forEach((item: any) => {
+      const id = item.product_id || item.id || 'unknown';
+      if (!productSalesMap[id]) productSalesMap[id] = { name: item.name || 'Unknown', qty: 0, revenue: 0, image: item.image };
+      productSalesMap[id].qty += Number(item.quantity || 1);
+      productSalesMap[id].revenue += Number(item.price || 0) * Number(item.quantity || 1);
+    });
+  });
+  const topSellingProducts = Object.entries(productSalesMap)
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
+
+  // Low Stock Alerts
+  const lowStockProducts = products
+    .filter(p => Number(p.stock) <= Number(p.low_stock_threshold || 5))
+    .map(p => ({ id: p.id, name: p.name, stock: Number(p.stock) || 0, threshold: Number(p.low_stock_threshold) || 5, image: p.image || '' }));
+
+  // Sales Target (from settings/targets)
+  let salesTarget = 100000;
+  let monthlyRevenue = 0;
+  try {
+    const settingsSnap = await getDoc(doc(db, 'settings', 'targets'));
+    if (settingsSnap.exists() && settingsSnap.data()) {
+      const data = settingsSnap.data();
+      salesTarget = Number(data.monthly_sales_target) || 100000;
+    }
+  } catch {}
+  const now = new Date();
+  monthlyRevenue = orderData.filter(o => {
+    const d = new Date(o.created_at);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s, o) => s + Number(o.total || 0), 0);
+
   return {
     totalProducts: prodSnap.size,
     totalOrders: orderSnap.size,
     totalCustomers: custSnap.size,
     totalRevenue: revenue,
+    netProfit,
+    totalProductCost,
+    totalDeliveryCost,
     pendingOrders,
     deliveredOrders,
     todaysSales,
     revenueChart,
+    topSellingProducts,
+    lowStockProducts,
+    salesTarget,
+    monthlyRevenue,
   };
 }
 
@@ -928,10 +991,15 @@ export async function adminFetchCustomersWithStats() {
   const customers: AnyRecord[] = custSnap.docs.map(d => {
     const p: AnyRecord = { id: d.id, ...d.data() };
     const custOrders = orders.filter(o => o.user_id === p.id);
+    const completedOrders = custOrders.filter(o => o.status === 'delivered');
+    const ltv = completedOrders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
     return {
       ...p,
       totalOrders: custOrders.length,
       totalSpent: custOrders.reduce((s: number, o: any) => s + Number(o.total || 0), 0),
+      ltv,
+      is_blacklisted: p.is_blacklisted || false,
+      blacklist_reason: p.blacklist_reason || '',
       lastOrderDate: custOrders.length > 0
         ? custOrders.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
         : null,
@@ -939,6 +1007,32 @@ export async function adminFetchCustomersWithStats() {
   });
   customers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   return customers;
+}
+
+export async function adminUpdateCustomerBlacklist(customerId: string, isBlacklisted: boolean, reason?: string) {
+  try {
+    await updateDoc(doc(db, 'profiles', customerId), {
+      is_blacklisted: isBlacklisted,
+      blacklist_reason: reason || '',
+      updated_at: new Date().toISOString(),
+    });
+    return { error: null };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+export async function adminUpdateOrderCourier(orderId: string, courierPartner: string, trackingId: string) {
+  try {
+    await updateDoc(doc(db, 'orders', orderId), {
+      courier_partner: courierPartner || null,
+      courier_tracking_id: trackingId || null,
+      updated_at: new Date().toISOString(),
+    });
+    return { error: null };
+  } catch (e: any) {
+    return { error: e.message };
+  }
 }
 
 export async function adminFetchCustomerOrders(customerId: string) {

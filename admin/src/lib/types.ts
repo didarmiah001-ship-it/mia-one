@@ -2,6 +2,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  cost_price: number;
   discount_price: number | null;
   wholesale_price: number | null;
   image: string;
@@ -25,6 +26,7 @@ export interface Product {
   rating: number;
   reviews_count: number;
   stock: number;
+  low_stock_threshold: number;
   is_featured: boolean;
   is_trending: boolean;
   is_new: boolean;
@@ -47,9 +49,11 @@ export interface Order {
   items: CartItem[];
   total: number;
   delivery_charge: number;
-  status: 'placed' | 'processing' | 'packed' | 'out_for_delivery' | 'delivered';
+  status: 'placed' | 'processing' | 'packed' | 'out_for_delivery' | 'delivered' | 'pending' | 'dispatched' | 'shipped' | 'returned' | 'cancelled';
   payment_method: string;
   address: OrderAddress;
+  courier_partner?: 'none' | 'pathao' | 'steadfast' | 'redx' | null;
+  courier_tracking_id?: string | null;
   created_at: string;
 }
 

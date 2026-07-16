@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, User, Phone, MapPin, Calendar, Package, ChevronRight, X, Eye, CreditCard, FileText } from 'lucide-react';
-import { adminFetchCustomersWithStats, adminFetchCustomerOrders } from '../lib/api';
+import { Search, User, Phone, MapPin, Calendar, Package, ChevronRight, X, Eye, CreditCard, FileText, Ban, Shield, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { adminFetchCustomersWithStats, adminFetchCustomerOrders, adminUpdateCustomerBlacklist } from '../lib/api';
+import { useToast } from '../components/Toast';
 
 interface CustomerWithStats {
   id: string;
@@ -12,6 +13,9 @@ interface CustomerWithStats {
   email?: string;
   totalOrders: number;
   totalSpent: number;
+  ltv: number;
+  is_blacklisted: boolean;
+  blacklist_reason: string;
   lastOrderDate?: string;
 }
 
@@ -27,13 +31,18 @@ function fmtDateTime(iso: string) {
 function CustomerDrawer({
   customer,
   onClose,
+  onBlacklistToggle,
 }: {
   customer: CustomerWithStats;
   onClose: () => void;
+  onBlacklistToggle: (id: string, isBlacklisted: boolean, reason?: string) => Promise<void>;
 }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [showBlacklistModal, setShowBlacklistModal] = useState(false);
+  const [blacklistReason, setBlacklistReason] = useState(customer.blacklist_reason || '');
+  const [togglingBlacklist, setTogglingBlacklist] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -44,6 +53,14 @@ function CustomerDrawer({
     };
     fetchOrders();
   }, [customer.id]);
+
+  const handleToggleBlacklist = async () => {
+    setTogglingBlacklist(true);
+    await onBlacklistToggle(customer.id, !customer.is_blacklisted, blacklistReason);
+    setTogglingBlacklist(false);
+    setShowBlacklistModal(false);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[9990] flex">
@@ -84,11 +101,58 @@ function CustomerDrawer({
               <p className="text-[10px] text-white/40">Spent</p>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
-              <p className="text-xs font-bold text-green-400">
-                {customer.lastOrderDate ? fmtDate(customer.lastOrderDate) : '—'}
-              </p>
-              <p className="text-[10px] text-white/40">Last Order</p>
+              <p className="text-base font-bold text-green-400">৳{customer.ltv.toLocaleString()}</p>
+              <p className="text-[10px] text-white/40">LTV</p>
             </div>
+          </div>
+
+          {/* Blacklist Status / Action */}
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: customer.is_blacklisted ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.02)', border: customer.is_blacklisted ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {customer.is_blacklisted ? <Ban size={14} className="text-red-400" /> : <Shield size={14} className="text-white/40" />}
+                <span className="text-xs font-semibold text-white/70">Blacklist Status</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${customer.is_blacklisted ? 'bg-red-500/15 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
+                {customer.is_blacklisted ? 'BLACKLISTED' : 'ACTIVE'}
+              </span>
+            </div>
+            {customer.is_blacklisted && customer.blacklist_reason && (
+              <p className="text-[11px] text-red-300/70 pl-6">Reason: {customer.blacklist_reason}</p>
+            )}
+            {!showBlacklistModal ? (
+              <button
+                onClick={() => setShowBlacklistModal(true)}
+                className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-all ${customer.is_blacklisted ? 'text-green-400 hover:bg-green-500/10' : 'text-red-400 hover:bg-red-500/10'}`}
+                style={{ border: `1px solid ${customer.is_blacklisted ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}
+              >
+                {customer.is_blacklisted ? 'Remove from Blacklist' : 'Add to Blacklist'}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <textarea
+                  value={blacklistReason}
+                  onChange={e => setBlacklistReason(e.target.value)}
+                  placeholder="Reason for blacklisting (optional)..."
+                  className="w-full px-3 py-2 rounded-xl text-xs text-white placeholder:text-white/25 resize-none focus:outline-none"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                  rows={2}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowBlacklistModal(false)}
+                    className="flex-1 py-2 rounded-xl text-xs font-medium text-white/50 hover:bg-white/5 transition-colors"
+                  >Cancel</button>
+                  <button
+                    onClick={handleToggleBlacklist}
+                    disabled={togglingBlacklist}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-40 ${customer.is_blacklisted ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}
+                  >
+                    {togglingBlacklist ? 'Saving...' : customer.is_blacklisted ? 'Confirm Remove' : 'Confirm Blacklist'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Contact Info */}
@@ -222,10 +286,12 @@ function CustomerDrawer({
 }
 
 export function AdminCustomers() {
+  const toast = useToast();
   const [customers, setCustomers] = useState<CustomerWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithStats | null>(null);
+  const [filterBlacklisted, setFilterBlacklisted] = useState(false);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -237,10 +303,21 @@ export function AdminCustomers() {
     fetchCustomers();
   }, []);
 
+  const handleBlacklistToggle = async (id: string, isBlacklisted: boolean, reason?: string) => {
+    const { error } = await adminUpdateCustomerBlacklist(id, isBlacklisted, reason);
+    if (error) {
+      toast.error(error);
+    } else {
+      toast.success(isBlacklisted ? 'Customer blacklisted' : 'Customer removed from blacklist');
+      setCustomers(prev => prev.map(c => c.id === id ? { ...c, is_blacklisted: isBlacklisted, blacklist_reason: reason || '' } : c));
+    }
+  };
+
   const filtered = customers.filter(c =>
-    !search ||
+    (!search ||
     (c.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.phone || '').includes(search)
+    (c.phone || '').includes(search)) &&
+    (!filterBlacklisted || c.is_blacklisted)
   );
 
   return (
@@ -252,16 +329,28 @@ export function AdminCustomers() {
           </h2>
           <p className="text-xs text-white/30 mt-0.5">
             Total Revenue: <span className="text-mia-orange font-semibold">৳{filtered.reduce((s, c) => s + c.totalSpent, 0).toLocaleString()}</span>
+            <span className="mx-2 text-white/15">|</span>
+            Total LTV: <span className="text-green-400 font-semibold">৳{filtered.reduce((s, c) => s + (c.ltv || 0), 0).toLocaleString()}</span>
           </p>
         </div>
-        <div className="relative w-full sm:w-auto">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search customers…"
-            className="w-full sm:w-60 pl-9 pr-3 py-2 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setFilterBlacklisted(!filterBlacklisted)}
+            className={`px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${filterBlacklisted ? 'text-red-400' : 'text-white/40'}`}
+            style={{ background: filterBlacklisted ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${filterBlacklisted ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}` }}
+          >
+            <Ban size={12} />
+            Blacklisted
+          </button>
+          <div className="relative flex-1 sm:flex-initial">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search customers…"
+              className="w-full sm:w-60 pl-9 pr-3 py-2 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40"
+            />
+          </div>
         </div>
       </div>
 
@@ -312,7 +401,8 @@ export function AdminCustomers() {
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Phone</th>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Orders</th>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Total Spent</th>
-                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Last Order</th>
+                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">LTV</th>
+                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Status</th>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Joined</th>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3"></th>
                   </tr>
@@ -341,8 +431,13 @@ export function AdminCustomers() {
                       <td className="px-4 py-3">
                         <span className="text-xs font-semibold text-mia-orange">৳{c.totalSpent.toLocaleString()}</span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-white/40">
-                        {c.lastOrderDate ? fmtDate(c.lastOrderDate) : '—'}
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-semibold text-green-400">৳{(c.ltv || 0).toLocaleString()}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {c.is_blacklisted
+                          ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 font-bold">BLACKLISTED</span>
+                          : <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-bold">ACTIVE</span>}
                       </td>
                       <td className="px-4 py-3 text-xs text-white/40">
                         {fmtDate(c.created_at)}
@@ -366,6 +461,7 @@ export function AdminCustomers() {
         <CustomerDrawer
           customer={selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
+          onBlacklistToggle={handleBlacklistToggle}
         />
       )}
     </div>
