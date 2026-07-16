@@ -30,7 +30,7 @@ export function LoginPage() {
 
   // 🔒 ওভি ভাই, এই পেজটি লোড হওয়া মাত্রই আগের সব পুরোনো অবাধ্য সেশন আমরা জোর করে ডিলিট করে দেবো
   useEffect(() => {
-    signOut(auth).catch(err => console.error(err));
+    signOut(auth).catch(() => {});
     sessionStorage.removeItem('admin_otp_verified');
   }, []);
 
@@ -41,7 +41,6 @@ export function LoginPage() {
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
     if (!serviceId || !templateId || !publicKey) {
-      console.error("EmailJS environment variables are missing!");
       return false;
     }
 
@@ -57,8 +56,7 @@ export function LoginPage() {
         publicKey
       );
       return true;
-    } catch (err) {
-      console.error("Failed to send OTP email:", err);
+    } catch {
       return false;
     }
   };
@@ -92,7 +90,7 @@ export function LoginPage() {
           if (emailSent) {
             setShowOtpScreen(true);
           } else {
-            setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে।");
+            setError("Could not send verification code. Please contact support.");
           }
         } else {
           setError("আপনার অ্যাকাউন্ট থেকে লগইন করার অনুমতি নেই।");
@@ -108,9 +106,8 @@ export function LoginPage() {
           navigate('/');
         }
       }
-    } catch (err) {
-      console.error(err);
-      setError('লগইন প্রসেসে সমস্যা হয়েছে। নেটওয়ার্ক চেক করুন।');
+    } catch {
+      setError('Could not send verification code. Please contact support.');
       setLoading(false);
     }
   };
