@@ -225,19 +225,26 @@ function ManualPaymentForm({
       const fileExt = screenshotFile.name.split('.').pop();
       const fileName = `payment-proof-${orderNumber}-${Date.now()}.${fileExt}`;
 
+      const authRes = await fetch('https://ljtwvmgxrhwrwaaovlbi.supabase.co/functions/v1/imagekit-auth');
+      if (!authRes.ok) {
+        console.error(`[ImageKit] Auth failed: ${authRes.status} ${authRes.statusText}`);
+        return null;
+      }
+      const { token, expire, signature } = await authRes.json();
+
       const formData = new FormData();
       formData.append('file', screenshotFile);
       formData.append('fileName', fileName);
       formData.append('publicKey', 'public_i67rlxsde');
-
-      const authRes = await fetch('https://ik.imagekit.io/i67rlxsde/auth');
-      const { token, expire, signature } = await authRes.json();
       formData.append('signature', signature);
       formData.append('expire', String(expire));
       formData.append('token', token);
 
       const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', { method: 'POST', body: formData });
-      if (!uploadRes.ok) return null;
+      if (!uploadRes.ok) {
+        console.error(`[ImageKit] Upload failed: ${uploadRes.status}`, await uploadRes.text().catch(() => ''));
+        return null;
+      }
       const uploadData = await uploadRes.json();
       return uploadData.url || null;
     } catch (err) {

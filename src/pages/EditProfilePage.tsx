@@ -59,7 +59,11 @@ export function EditProfilePage() {
     const ext = avatarFile.name.split('.').pop();
     const fileName = `avatar-${user!.uid}-${Date.now()}.${ext}`;
 
-    const authRes = await fetch('https://ik.imagekit.io/i67rlxsde/auth');
+    const authRes = await fetch('https://ljtwvmgxrhwrwaaovlbi.supabase.co/functions/v1/imagekit-auth');
+    if (!authRes.ok) {
+      console.error(`[ImageKit] Auth failed: ${authRes.status} ${authRes.statusText}`);
+      return avatarPreview || null;
+    }
     const { token, expire, signature } = await authRes.json();
 
     const formData = new FormData();
@@ -71,7 +75,10 @@ export function EditProfilePage() {
     formData.append('token', token);
 
     const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', { method: 'POST', body: formData });
-    if (!uploadRes.ok) return avatarPreview;
+    if (!uploadRes.ok) {
+      console.error(`[ImageKit] Upload failed: ${uploadRes.status}`, await uploadRes.text().catch(() => ''));
+      return avatarPreview;
+    }
     const uploadData = await uploadRes.json();
     return uploadData.url || avatarPreview;
   };
