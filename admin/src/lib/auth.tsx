@@ -6,7 +6,7 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { query, where, limit, getDocs, collection } from 'firebase/firestore';
 import { isOtpVerified, clearOtpState } from './otp';
 
 export interface AdminProfile {
@@ -14,6 +14,7 @@ export interface AdminProfile {
   email: string;
   role: string;
   active: boolean;
+  is_allowed_to_login: boolean;
 }
 
 interface AuthContextValue {
@@ -36,23 +37,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (email: string) => {
     try {
-      const snap = await getDoc(doc(db, 'admins', userId));
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.active === true && data.role === 'admin') {
-          setProfile({ id: snap.id, email: data.email || '', role: data.role, active: data.active });
+      const q = query(collection(db, 'admins'), where('email', '==', email), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const docSnap = snap.docs[0];
+        const data = docSnap.data();
+        if (data.active === true && data.is_allowed_to_login === true && data.role === 'admin') {
+          setProfile({ id: docSnap.id, email: data.email || '', role: data.role, active: data.active, is_allowed_to_login: data.is_allowed_to_login });
           setAuthError(null);
           return true;
         } else {
           setProfile(null);
-          setAuthError(`Admin check failed: active=${data.active}, role=${data.role}.`);
+          setAuthError(`Admin check failed: active=${data.active}, is_allowed_to_login=${data.is_allowed_to_login}, role=${data.role}.`);
           return false;
         }
       } else {
         setProfile(null);
-        setAuthError(`No admin document found at: admins/${userId}`);
+        setAuthError(`No admin document found for email: ${email}`);
         return false;
       }
     } catch (err: any) {
@@ -65,14 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) await fetchProfile(user.uid);
+    if (user?.email) await fetchProfile(user.email);
   }, [user, fetchProfile]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setUser(fbUser);
       if (fbUser) {
-        await fetchProfile(fbUser.uid);
+        await fetchProfile(fbUser.email!);
       } else {
         setProfile(null);
         setAuthError(null);
@@ -85,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verifyCredentials = useCallback(async (email: string, password: string) => {
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      const isAdmin = await fetchProfile(cred.user.uid);
+      const isAdmin = await fetchProfile(cred.user.email!);
       if (!isAdmin) {
         await fbSignOut(auth);
         return { error: authError || 'This account does not have admin privileges.' };
@@ -117,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       profile,
       loading,
-      isAdmin: profile?.active === true && profile?.role === 'admin' && isOtpVerified(),
+      isAdmin: profile?.active === true && profile?.is_allowed_to_login === true && profile?.role === 'admin' && isOtpVerified(),
       authError,
       verifyCredentials,
       finalizeSignIn,
