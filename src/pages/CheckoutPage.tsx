@@ -169,6 +169,8 @@ const DELIVERY_ZONES: Record<string, { charge: number; zone: string }> = {
 const DEFAULT_DELIVERY_SETTINGS = {
   inside_dhaka: 60,
   outside_dhaka: 120,
+  remote_area: 150,
+  munshiganj: 80,
   free_delivery_min: 500,
   express_delivery: 100,
   express_enabled: false,
@@ -186,6 +188,21 @@ interface PaymentMethodDB {
   is_active: boolean;
   sort_order: number;
 }
+
+// Fallback payment method shown when DB fetch fails or returns no methods
+const FALLBACK_PAYMENT_METHODS: PaymentMethodDB[] = [
+  {
+    id: 'fallback-cod',
+    payment_type: 'cash_on_delivery',
+    account_name: '',
+    account_number: '',
+    account_type: 'cash',
+    display_name: 'Cash on Delivery',
+    payment_instructions: 'Pay with cash when your order is delivered.',
+    is_active: true,
+    sort_order: 999,
+  },
+];
 
 // Map payment type to icon and color
 const PAYMENT_TYPE_CONFIG: Record<string, { icon: any; color: string }> = {
@@ -247,9 +264,13 @@ export function CheckoutPage() {
 
   // Fetch delivery charge settings from admin-configured DB values
   useEffect(() => {
-    fetchDeliverySettings().then(value => {
-      if (value) setDeliverySettings({ ...DEFAULT_DELIVERY_SETTINGS, ...value });
-    });
+    fetchDeliverySettings()
+      .then(value => {
+        if (value) setDeliverySettings({ ...DEFAULT_DELIVERY_SETTINGS, ...value });
+      })
+      .catch(() => {
+        // Keep default settings on error
+      });
   }, []);
 
   // Get thanas for selected district - with safe fallback
@@ -265,10 +286,10 @@ export function CheckoutPage() {
 
   // Calculate base delivery charge from admin settings based on zone
   const baseCharge = (() => {
-    if (isRemote) return deliverySettings.remote_area;
-    if (isMunshiganj) return deliverySettings.munshiganj;
-    if (isInsideDhaka) return deliverySettings.inside_dhaka;
-    return deliverySettings.outside_dhaka;
+    if (isRemote) return deliverySettings.remote_area ?? 150;
+    if (isMunshiganj) return deliverySettings.munshiganj ?? 80;
+    if (isInsideDhaka) return deliverySettings.inside_dhaka ?? 60;
+    return deliverySettings.outside_dhaka ?? 120;
   })();
 
   // Add express delivery charge if selected and enabled
@@ -304,9 +325,13 @@ export function CheckoutPage() {
           if (data[0]) {
             setPaymentMethod(data[0].payment_type);
           }
+        } else {
+          // No methods configured in DB — use COD fallback
+          setPaymentMethodsDB(FALLBACK_PAYMENT_METHODS);
         }
-      } catch (err) {
-        // Silently handle errors - will fallback to COD
+      } catch {
+        // Fetch failed — use COD fallback so checkout is never blocked
+        setPaymentMethodsDB(FALLBACK_PAYMENT_METHODS);
       }
       setLoadingPaymentMethods(false);
     };

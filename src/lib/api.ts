@@ -542,17 +542,25 @@ export async function initiateSSLCommerzPayment(_payload: any) {
 // ── Settings & Payment Methods (customer-facing) ──────────────────────────────
 
 export async function fetchDeliverySettings(): Promise<any> {
-  const snap = await getDoc(doc(db, 'settings', 'delivery_charges'));
-  return snap.exists() ? snap.data().value : null;
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'delivery_charges'));
+    return snap.exists() ? snap.data().value : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchActivePaymentMethods(methodType?: string): Promise<any[]> {
-  let q = query(collection(db, 'payment_methods'), where('is_active', '==', true));
-  const snap = await getDocs(q);
-  let results = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
-  if (methodType) results = results.filter(m => m.payment_type === methodType);
-  results.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-  return results;
+  try {
+    let q = query(collection(db, 'payment_methods'), where('is_active', '==', true));
+    const snap = await getDocs(q);
+    let results = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+    if (methodType) results = results.filter(m => m.payment_type === methodType);
+    results.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    return results;
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchBanglaQR(): Promise<string | null> {
