@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import {
   User as FbUser,
   signInWithEmailAndPassword,
@@ -15,6 +15,11 @@ export interface AdminProfile {
   role: string;
   active: boolean;
   is_allowed_to_login: boolean;
+}
+
+interface FetchResult {
+  ok: boolean;
+  error: string | null;
 }
 
 interface AuthContextValue {
@@ -36,8 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const manualSignInRef = useRef(false);
 
-  const fetchProfile = useCallback(async (email: string) => {
+  const fetchProfile = useCallback(async (email: string): Promise<FetchResult> => {
     try {
       const q = query(collection(db, 'admins'), where('email', '==', email), limit(1));
       const snap = await getDocs(q);
@@ -45,23 +51,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const docSnap = snap.docs[0];
         const data = docSnap.data();
         if (data.active === true && data.is_allowed_to_login === true && data.role === 'admin') {
-          setProfile({ id: docSnap.id, email: data.email || '', role: data.role, active: data.active, is_allowed_to_login: data.is_allowed_to_login });
+          setProfile({
+            id: docSnap.id,
+            email: data.email || '',
+            role: data.role,
+            active: data.active,
+            is_allowed_to_login: data.is_allowed_to_login,
+          });
           setAuthError(null);
-          return true;
+          return { ok: true, error: null };
         } else {
           setProfile(null);
-          setAuthError(`Admin check failed: active=${data.active}, is_allowed_to_login=${data.is_allowed_to_login}, role=${data.role}.`);
-          return false;
+          const msg = `Admin check failed: active=${data.active}, is_allowed_to_login=${data.is_allowed_to_login}, role=${data.role}.`;
+          setAuthError(msg);
+          return { ok: false, error: msg };
         }
       } else {
         setProfile(null);
-        setAuthError(`No admin document found for email: ${email}`);
-        return false;
+        const msg = `No admin document found for email: ${email}`;
+        setAuthError(msg);
+        return { ok: false, error: msg };
       }
     } catch (err: any) {
       setProfile(null);
-      setAuthError(err?.message || 'Failed to verify admin status.');
-      return false;
+      const msg = err?.message || 'Failed to verify admin status.';
+      setAuthError(msg);
+      return { ok: false, error: msg };
     } finally {
       setLoading(false);
     }
@@ -75,7 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setUser(fbUser);
       if (fbUser) {
-        await fetchProfile(fbUser.email!);
+        if (manualSignInRef.current) {
+          setLoading(false);
+        } else {
+          await fetchProfile(fbUser.email!);
+        }
       } else {
         setProfile(null);
         setAuthError(null);
@@ -87,26 +106,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyCredentials = useCallback(async (email: string, password: string) => {
     try {
+      manualSignInRef.current = true;
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      const isAdmin = await fetchProfile(cred.user.email!);
-      if (!isAdmin) {
+      const result = await fetchProfile(cred.user.email!);
+      manualSignInRef.current = false;
+      if (!result.ok) {
         await fbSignOut(auth);
-        return { error: authError || 'This account does not have admin privileges.' };
+        return { error: result.error || 'This account does not have admin privileges.' };
       }
       return { error: null };
     } catch (e: any) {
+      manualSignInRef.current = false;
       return { error: e.message };
     }
-  }, [fetchProfile, authError]);
+  }, [fetchProfile]);
 
   const finalizeSignIn = useCallback(async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      manualSignInRef.current = true;
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const result = await fetchProfile(cred.user.email!);
+      manualSignInRef.current = false;
+      if (!result.ok) {
+        return { error: result.error || 'Admin verification failed after OTP.' };
+      }
       return { error: null };
     } catch (e: any) {
+      manualSignInRef.current = false;
       return { error: e.message };
     }
-  }, []);
+  }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
     clearOtpState();
