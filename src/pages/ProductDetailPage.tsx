@@ -5,6 +5,7 @@ import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { ProductCard } from '../components/ProductCard';
 import { appConfig } from '../lib/config';
+import { ikMedium, ikLarge, ikThumb } from '../lib/imagekit';
 import { useToast } from '../components/Toast';
 import { useTranslation } from 'react-i18next';
 
@@ -69,7 +70,7 @@ export function ProductDetailPage() {
           <div className="px-4 mt-2">
             <div className="aspect-square rounded-2xl overflow-hidden mb-3 flex items-center justify-center" style={{ background: "var(--bg-surface)" }}>
               <img
-                src={product.images[selectedImage]}
+                src={ikLarge(product.images[selectedImage])}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -96,7 +97,7 @@ export function ProductDetailPage() {
                       idx === selectedImage ? 'border-mia-orange' : 'border-transparent opacity-50'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={ikThumb(img)} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

@@ -10,6 +10,7 @@ import { useStore } from '../store/StoreContext';
 import { fetchBrands, searchProducts, SearchFilters } from '../lib/api';
 import { Product } from '../lib/types';
 import { useTranslation } from 'react-i18next';
+import { ikThumb } from '../lib/imagekit';
 
 const SORT_OPTIONS = [
   { key: 'newest', labelKey: 'search.sortNewest' },
@@ -121,7 +122,7 @@ function ResultCard({ product }: { product: Product }) {
       className="glow-card p-3 flex gap-3 cursor-pointer group transition-all duration-200 hover:scale-[1.01]">
       <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0"
         style={{ background: 'rgba(255,255,255,0.03)' }}>
-        <img src={product.image} alt={product.name}
+        <img src={ikThumb(product.image)} alt={product.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
         {discount > 0 && (
           <span className="absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md text-white"

@@ -9,6 +9,7 @@ import {
   where,
   getDoc,
   setDoc,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Product, Category } from './types';
@@ -161,6 +162,23 @@ export async function fetchOrders(userId: string) {
   const results = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
   results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   return results;
+}
+
+export function subscribeToOrders(
+  userId: string,
+  callback: (orders: any[]) => void,
+  onError?: (err: Error) => void
+): () => void {
+  const q = query(collection(db, 'orders'), where('user_id', '==', userId));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const results = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+      results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      callback(results);
+    },
+    (err) => onError?.(err)
+  );
 }
 
 export async function createOrder(order: {

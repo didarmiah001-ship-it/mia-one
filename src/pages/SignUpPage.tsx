@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export function SignUpPage() {
   const { t } = useTranslation();
@@ -129,6 +130,16 @@ export function SignUpPage() {
             {loading ? t('auth.creatingAccount') : <>{t('auth.createAccount')} <ArrowRight size={16} /></>}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-xs text-white/30 font-medium">or</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+
+        {/* Google Sign-In */}
+        <GoogleSignInButton label="Sign up with Google" />
 
         <p className="text-center text-sm text-white/40 mt-6">
           {t('auth.haveAccount')}{' '}

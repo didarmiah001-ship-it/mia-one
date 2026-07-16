@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import { useAuth } from '../lib/auth';
-import { fetchOrders, fetchOrderTimeline, cancelOrder } from '../lib/api';
+import { fetchOrderTimeline, cancelOrder, subscribeToOrders } from '../lib/api';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
 
@@ -299,14 +299,19 @@ export function OrdersPage() {
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
-    async function load() {
-      if (user) {
-        const orders = await fetchOrders(user.id);
-        setDbOrders(orders);
-      }
+    if (!user) {
       setLoading(false);
+      return;
     }
-    load();
+    const unsub = subscribeToOrders(
+      user.id,
+      (orders) => {
+        setDbOrders(orders);
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
+    return () => unsub();
   }, [user]);
 
   const rawOrders: any[] = user

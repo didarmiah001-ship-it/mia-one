@@ -27,6 +27,12 @@ const BANGLADESH_DISTRICTS = [
   'Satkhira', 'Shariatpur', 'Sherpur', 'Sirajganj', 'Sunamganj', 'Sylhet', 'Tangail', 'Thakurgaon'
 ];
 
+const REMOTE_DISTRICTS = [
+  'Bandarban', 'Barguna', 'Bhola', 'Chuadanga', 'Cox\'s Bazar', 'Khagrachari',
+  'Kurigram', 'Lalmonirhat', 'Meherpur', 'Panchagarh', 'Patuakhali', 'Rangamati',
+  'Satkhira', 'Sherpur', 'Sunamganj', 'Sylhet', 'Thakurgaon',
+];
+
 const BANGLADESH_THANAS: Record<string, string[]> = {
   'Dhaka': ['Dhanmondi', 'Gulshan', 'Mirpur', 'Mohammadpur', 'Motijheel', 'Pallabi', 'Sabujbagh', 'Tejgaon', 'Uttara', 'Wari', 'Cantonment', 'Kafrul', 'Adabor', 'Badda', 'Khilgaon', 'Demra', 'Shyampur', 'Sutrapur', 'Kotwali', 'Ramna', 'Hazaribagh', 'Lalbagh', 'Chawkbazar', 'Bangsal', 'Shahjahanpur', 'Shahbag', 'New Market', 'Kalabagan', 'Jatrabari', 'Kadamtali', 'Gendaria', 'Sutrapur', 'Wari'],
   'Gazipur': ['Gazipur Sadar', 'Kaliakair', 'Kaliganj', 'Kapasia', 'Sreepur', 'Tongi'],

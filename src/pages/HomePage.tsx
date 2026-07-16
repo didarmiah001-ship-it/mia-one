@@ -8,6 +8,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
+import { ikThumb, ikBanner } from '../lib/imagekit';
 import { fetchActiveCampaigns } from '../lib/api';
 
 export function HomePage() {
@@ -138,8 +139,8 @@ export function HomePage() {
                   {/* Slides — fade transition */}
                   {banners.map((banner, idx) => {
                     const isActive = idx === currentBanner;
-                    const bgImage = banner.mobile_image || banner.desktop_image || banner.image_url || '';
-                    const desktopImage = banner.desktop_image || banner.image_url || '';
+                    const bgImage = ikBanner(banner.mobile_image || banner.desktop_image || banner.image_url || '');
+                    const desktopImage = ikBanner(banner.desktop_image || banner.image_url || '');
                     return (
                       <div
                         key={banner.id}
@@ -343,7 +344,7 @@ export function HomePage() {
                     onClick={() => navigate('/')}
                     style={{ border: '1px solid rgba(255,138,0,0.15)' }}>
                     {c.banner_url ? (
-                      <img src={c.banner_url} alt={c.name} className="w-full h-32 sm:h-40 object-cover" />
+                      <img src={ikBanner(c.banner_url)} alt={c.name} className="w-full h-32 sm:h-40 object-cover" />
                     ) : (
                       <div className="w-full h-32 flex items-center justify-center p-4"
                         style={{ background: 'linear-gradient(135deg, rgba(255,138,0,0.08), rgba(255,46,201,0.08))' }}>

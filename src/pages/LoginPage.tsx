@@ -6,6 +6,7 @@ import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import emailjs from '@emailjs/browser';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
@@ -237,6 +238,23 @@ export function LoginPage() {
             {loading ? 'Processing...' : <>{t('auth.signIn')} <ArrowRight size={16} /></>}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-xs text-white/30 font-medium">or</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+
+        {/* Google Sign-In */}
+        <GoogleSignInButton />
+
+        <p className="text-center text-sm text-white/40 mt-6">
+          {t('auth.dontHaveAccount')}{' '}
+          <button onClick={() => navigate('/signup')} className="text-mia-orange font-medium hover:underline">
+            {t('auth.signUp')}
+          </button>
+        </p>
       </div>
     </div>
   );

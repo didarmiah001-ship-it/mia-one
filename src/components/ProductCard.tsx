@@ -4,6 +4,7 @@ import { useNavigate } from '../lib/router';
 import { Product } from '../lib/types';
 import { useStore } from '../store/StoreContext';
 import { useTranslation } from 'react-i18next';
+import { ikThumb } from '../lib/imagekit';
 
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
   const { t } = useTranslation();
@@ -33,7 +34,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
           </div>
         ) : (
           <img
-            src={product.image}
+            src={ikThumb(product.image)}
             alt={product.name}
             width={300}
             height={300}

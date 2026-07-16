@@ -10,6 +10,8 @@ import {
   User as FbUser,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut as fbSignOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
@@ -36,6 +38,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updateProfile: (data: Partial<Pick<Profile, 'full_name' | 'phone' | 'avatar_url'>>) => Promise<{ error: string | null }>;
@@ -102,6 +105,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const cred = await signInWithPopup(auth, provider);
+      const user = cred.user;
+
+      // Check if profile already exists; if not, create one (new user registration)
+      const profileRef = doc(db, 'profiles', user.uid);
+      const existing = await getDoc(profileRef);
+      if (!existing.exists()) {
+        await setDoc(profileRef, {
+          full_name: user.displayName || '',
+          phone: user.phoneNumber || '',
+          avatar_url: user.photoURL || '',
+          email: user.email || '',
+          role: 'customer',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+      return { error: null };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     await fbSignOut(auth);
     setProfile(null);
@@ -139,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: profile?.role === 'admin',
       signUp,
       signIn,
+      signInWithGoogle,
       signOut,
       resetPassword,
       updateProfile,

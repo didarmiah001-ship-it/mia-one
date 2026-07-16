@@ -1,8 +1,13 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  CACHE_SIZE_UNLIMITED,
+} from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// সরাসরি আপনার MIA ONE প্রজেক্টের আসল ফায়ারবেস চাবিগুলো বসিয়ে দেওয়া হলো
 const firebaseConfig = {
   apiKey: "AIzaSyA-gKMI2Z-0MgeVWQ1jLz2Ccod4DfHbehI",
   authDomain: "mia-one-5554d.firebaseapp.com",
@@ -13,5 +18,21 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+// Enable offline persistence with unlimited cache size so cached product data
+// loads instantly on subsequent visits without waiting for network requests.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+      tabManager: persistentMultipleTabManager(),
+    }),
+  });
+} catch {
+  // Fallback if already initialized (e.g. HMR in dev)
+  db = getFirestore(app);
+}
+
+export { db };
 export const auth = getAuth(app);
