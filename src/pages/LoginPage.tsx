@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useNavigate } from '../lib/router';
 import { appConfig } from '../lib/config';
 import { useTranslation } from 'react-i18next';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import emailjs from '@emailjs/browser';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 const ADMIN_OTP_EMAIL = 'miaonebd@gmail.com'; // ওটিপি রিসিভার জিমেইল
 
@@ -27,6 +28,12 @@ export function LoginPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
+  // 🔒 ওভি ভাই, এই পেজটি লোড হওয়া মাত্রই আগের সব পুরোনো অবাধ্য সেশন আমরা জোর করে ডিলিট করে দেবো
+  useEffect(() => {
+    signOut(auth).catch(err => console.error(err));
+    sessionStorage.removeItem('admin_otp_verified');
+  }, []);
+
   // EmailJS দিয়ে ওটিপি পাঠানোর ফাংশন
   const sendOtpEmail = async (otp: string, loginEmail: string) => {
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -43,9 +50,9 @@ export function LoginPage() {
         serviceId,
         templateId,
         {
-          email: ADMIN_OTP_EMAIL, // ইমেইল রিসিভার
-          admin_user: loginEmail, // যে ইমেইল দিয়ে লগইন করা হচ্ছে
-          passcode: otp,          // ওটিপি কোড
+          email: ADMIN_OTP_EMAIL,
+          admin_user: loginEmail,
+          passcode: otp,
         },
         publicKey
       );
@@ -63,67 +70,76 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      // ১. প্রথমে ফায়ারবেসের মেইন সাইন ইন ট্রাই করব
-      const { data, error: signInErr } = await signIn(email, password);
+      // ১. ডাটাবেজে ওটিপি পাঠানোর আগে আমরা ফায়ারবেসের অফিশিয়াল সেশন এড়িয়ে শুধু চেক করব ইউজার অ্যাডমিন কি না
+      const adminQuery = query(
+        collection(db, 'admins'),
+        where('email', '==', email.trim().toLowerCase()),
+        where('role', '==', 'admin')
+      );
+      const adminSnap = await getDocs(adminQuery);
 
-      if (signInErr) {
-        setError('ভুল ইমেইল অথবা পাসওয়ার্ড!');
-        setLoading(false);
-        return;
-      }
+      if (!adminSnap.empty) {
+        const adminData = adminSnap.docs[0].data();
 
-      if (data?.user) {
-        // ২. ইউজার সফলভাবে মিললে ফায়ারবেস থেকে চেক করব সে অ্যাডমিন কি না
-        const adminQuery = query(
-          collection(db, 'admins'),
-          where('email', '==', email.trim().toLowerCase()),
-          where('role', '==', 'admin')
-        );
-        const adminSnap = await getDocs(adminQuery);
+        if (adminData.is_allowed_to_login === true) {
+          // ২. অ্যাডমিন ভেরিফাইড! এবার ওটিপি কোড জেনারেট করে মেইলে পাঠানো হবে
+          const otp = Math.floor(100000 + Math.random() * 900000).toString();
+          setGeneratedOtp(otp);
 
-        if (!adminSnap.empty) {
-          const adminData = adminSnap.docs[0].data();
+          const emailSent = await sendOtpEmail(otp, email);
+          setLoading(false);
 
-          if (adminData.is_allowed_to_login === true) {
-            // ৩. অ্যাডমিন ভেরিফাইড হলে ওটিপি কোড তৈরি করে পাঠানো হবে
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            setGeneratedOtp(otp);
-
-            const emailSent = await sendOtpEmail(otp, email);
-            setLoading(false);
-
-            if (emailSent) {
-              setShowOtpScreen(true);
-            } else {
-              setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে।");
-            }
+          if (emailSent) {
+            setShowOtpScreen(true);
           } else {
-            setError("লগইন করার অনুমতি নেই।");
-            setLoading(false);
+            setError("ওটিপি কোড ইমেইলে পাঠাতে ব্যর্থ হয়েছে।");
           }
         } else {
-          // সাধারণ কাস্টমার হলে মেইন পেজে রিডাইরেক্ট
+          setError("আপনার অ্যাকাউন্ট থেকে লগইন করার অনুমতি নেই।");
           setLoading(false);
+        }
+      } else {
+        // অ্যাডমিন না হলে সাধারণ কাস্টমার হিসেবে সরাসরি মেইন অ্যাপে সাইন-ইন করে হোমপেজে চলে যাবে
+        const { error: signInErr } = await signIn(email, password);
+        setLoading(false);
+        if (signInErr) {
+          setError('ভুল ইমেইল অথবা পাসওয়ার্ড!');
+        } else {
           navigate('/');
         }
       }
     } catch (err) {
-      setError('লগইন প্রসেসে সমস্যা হয়েছে।');
+      console.error(err);
+      setError('লগইন প্রসেসে সমস্যা হয়েছে। নেটওয়ার্ক চেক করুন।');
       setLoading(false);
     }
   };
 
   // ওটিপি ভেরিফাই হওয়ার ফাংশন
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
+    setLoading(true);
 
     if (userOtpInput === generatedOtp) {
-      // ওটিপি মিললে ব্রাউজারের সেশন স্টোরেজে ভেরিফাইড স্ট্যাটাস ট্রু করে দেওয়া হচ্ছে
-      sessionStorage.setItem('admin_otp_verified', 'true');
-      navigate('/admin/dashboard');
+      try {
+        // ওটিপি মিললেই কেবল অফিশিয়াল ফায়ারবেস লগইন সেশন চালু করা হবে
+        const { error: signInErr } = await signIn(email, password);
+        setLoading(false);
+
+        if (signInErr) {
+          setOtpError('অথেনটিকেশন ফেইল হয়েছে! ভুল পাসওয়ার্ড বা ইমেইল হতে পারে।');
+        } else {
+          sessionStorage.setItem('admin_otp_verified', 'true');
+          navigate('/admin/dashboard');
+        }
+      } catch (err) {
+        setOtpError('লগইন প্রসেস সম্পন্ন করা যায়নি।');
+        setLoading(false);
+      }
     } else {
       setOtpError('ভুল ওটিপি কোড! অনুগ্রহ করে পুনরায় চেক করুন।');
+      setLoading(false);
     }
   };
 
@@ -138,7 +154,7 @@ export function LoginPage() {
           
           <h2 className="text-xl font-bold text-white mb-2">অ্যাডমিন ওটিপি ভেরিফিকেশন</h2>
           <p className="text-sm text-white/60 mb-6">
-            নিরাপত্তার জন্য আপনার রেজিস্টার্ড জিমেইল <strong>{ADMIN_OTP_EMAIL}</strong>-এ একটি ৬ ডিজিটের ওটিপি কোড পাঠানো হয়েছে।
+            নিরাপত্তার জন্য আপনার রেজিস্টার্ড জিমেইল <strong>{ADMIN_OTP_EMAIL}</strong>-এ একটি ۶ ডিজিটের ওটিপি কোড পাঠানো হয়েছে।
           </p>
 
           <form onSubmit={handleVerifyOtp} className="space-y-4">
@@ -155,11 +171,12 @@ export function LoginPage() {
               onChange={e => setUserOtpInput(e.target.value.replace(/\D/g, ''))}
               placeholder="৬ ডিজিটের ওটিপি কোড লিখুন"
               required
+              disabled={loading}
               className="w-full text-center tracking-[1em] pl-[1em] py-3.5 bg-white/[0.03] border border-white/8 rounded-2xl text-lg font-bold text-white focus:outline-none focus:border-mia-orange/40 transition-all"
             />
 
-            <button type="submit" className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
-              ভেরিফাই করুন <ArrowRight size={16} />
+            <button type="submit" disabled={loading} className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn flex items-center justify-center gap-2 disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
+              {loading ? 'ভেরিফাই হচ্ছে...' : <>ভেরিফাই করুন <ArrowRight size={16} /></>}
             </button>
           </form>
         </div>
