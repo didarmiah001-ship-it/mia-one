@@ -187,6 +187,9 @@ interface PaymentMethodDB {
   payment_instructions: string;
   is_active: boolean;
   sort_order: number;
+  qr_code_url?: string;  // ডাটাবেস বা ফায়ারবেস থেকে কিউআর লিঙ্কের জন্য টাইপ সেফটি
+  image_url?: string;
+  qr_url?: string;
 }
 
 // Fallback payment method shown when DB fetch fails or returns no methods
@@ -204,7 +207,7 @@ const FALLBACK_PAYMENT_METHODS: PaymentMethodDB[] = [
   },
 ];
 
-// Map payment type to icon and color (ওভির জন্য বাংলা কিউআর ও ডিফল্ট কিউআর আইকন যুক্ত করা হয়েছে)
+// Map payment type to icon and color
 const PAYMENT_TYPE_CONFIG: Record<string, { icon: any; color: string }> = {
   'bkash': { icon: Smartphone, color: '#E2136E' },
   'nagad': { icon: Smartphone, color: '#F6921E' },
@@ -213,7 +216,7 @@ const PAYMENT_TYPE_CONFIG: Record<string, { icon: any; color: string }> = {
   'cash_on_delivery': { icon: Banknote, color: '#FF8A00' },
   'stripe': { icon: CreditCard, color: '#6772E5' },
   'sslcommerz': { icon: Globe, color: '#00AEEF' },
-  'bangla_qr': { icon: QrCode, color: '#10B981' }, // কাস্টম বাংলা কিউআর
+  'bangla_qr': { icon: QrCode, color: '#10B981' }, 
 };
 
 function generateOrderId() {
@@ -889,22 +892,42 @@ export function CheckoutPage() {
                   <p className="text-[11px] text-white/50">{t('checkout.sslNote')}</p>
                 </div>
               )}
-              {/* ওভির ডাটাবেস থেকে আসা যেকোনো ম্যানুয়াল বা কাস্টম কিউআর কোডের ইমেজ ও ইনস্ট্রাকশন রেন্ডার করার ডাইনামিক ফিল্টার */}
+              {/* ডাটাবেস থেকে আসা কাস্টম পেমেন্ট মেথডের ইনস্ট্রাকশন এবং আপলোড করা কিউআর ছবি ডাইনামিকালি রেন্ডার করার ফিল্টার */}
               {paymentMethod !== 'cash_on_delivery' && paymentMethod !== 'stripe' && paymentMethod !== 'sslcommerz' && (() => {
                 const selectedMethod = paymentMethodsDB.find(pm => pm.payment_type === paymentMethod);
-                if (selectedMethod?.payment_instructions || selectedMethod?.account_number) {
+                // কিউআর ইমেজের সম্ভাব্য যেকোনো ফিল্ড নেম হ্যান্ডেল করার ব্যাকআপ (`qr_code_url` বা `image_url` বা `qr_url`)
+                const qrImageSrc = selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url;
+
+                if (selectedMethod?.payment_instructions || selectedMethod?.account_number || qrImageSrc) {
                   return (
-                    <div className="mt-3 px-4 py-3 rounded-xl"
+                    <div className="mt-3 px-4 py-3 rounded-xl flex flex-col items-center gap-3"
                       style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line">
-                        {selectedMethod.payment_instructions}
-                      </p>
-                      {selectedMethod.account_number && (
-                        <div className="mt-2 pt-2 border-t border-white/5">
-                          <p className="text-[10px] text-white/40">Account/Number: {selectedMethod.account_number}</p>
-                          {selectedMethod.account_name && <p className="text-[10px] text-white/40">Name: {selectedMethod.account_name}</p>}
+                      
+                      {/* কিউআর ছবি ডাটাবেসে থাকলে সুন্দর একটি কার্ডের ভেতর লাইভ রেন্ডার হবে */}
+                      {qrImageSrc && (
+                        <div className="w-48 h-48 bg-white p-2.5 rounded-2xl flex items-center justify-center shadow-2xl my-1 border border-white/10">
+                          <img 
+                            src={qrImageSrc} 
+                            alt={`${selectedMethod.display_name || 'Payment'} QR Code`} 
+                            className="w-full h-full object-contain rounded-xl"
+                            loading="lazy"
+                          />
                         </div>
                       )}
+
+                      <div className="w-full text-left">
+                        {selectedMethod.payment_instructions && (
+                          <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line mb-2">
+                            {selectedMethod.payment_instructions}
+                          </p>
+                        )}
+                        {selectedMethod.account_number && (
+                          <div className="pt-2 border-t border-white/5">
+                            <p className="text-[10px] text-white/40">Account/Number: {selectedMethod.account_number}</p>
+                            {selectedMethod.account_name && <p className="text-[10px] text-white/40">Name: {selectedMethod.account_name}</p>}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 }
