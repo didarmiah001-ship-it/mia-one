@@ -13,6 +13,9 @@ import {
   createOrder, validateCoupon, incrementCouponUsage, fetchAddresses,
   createPayment, initiateSSLCommerzPayment, fetchDeliverySettings, fetchActivePaymentMethods,
 } from '../lib/api';
+// ফায়ারবেস থেকে সরাসরি সেটিংস ডাটা অটোমেটিক রিড করার জন্য ইমপোর্ট
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase'; 
 
 // Bangladesh Districts and Thanas
 const BANGLADESH_DISTRICTS = [
@@ -187,7 +190,7 @@ interface PaymentMethodDB {
   payment_instructions: string;
   is_active: boolean;
   sort_order: number;
-  qr_code_url?: string;  // ডাটাবেস বা ফায়ারবেস থেকে কিউআর লিঙ্কের জন্য টাইপ সেফটি
+  qr_code_url?: string;
   image_url?: string;
   qr_url?: string;
 }
@@ -263,6 +266,9 @@ export function CheckoutPage() {
   const [senderNumber, setSenderNumber] = useState('');
   const [transactionId, setTransactionId] = useState('');
 
+  // অ্যাডমিন প্যানেল থেকে লাইভ কিউআর ইমেজের ডাটা স্টোর করার স্টেট
+  const [globalAdminQrUrl, setGlobalAdminQrUrl] = useState('');
+
   // Coupon
   const [couponInput, setCouponInput] = useState('');
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number } | null>(null);
@@ -279,6 +285,24 @@ export function CheckoutPage() {
       .catch(() => {
         // Keep default settings on error
       });
+  }, []);
+
+  // ওভির অ্যাপের ডাটাবেস গ্লোবাল সেটিংস কালেকশন থেকে রিয়েলটাইম কিউআর ইমেজ লিঙ্ক রিড করার হুক
+  useEffect(() => {
+    const fetchGlobalQrSettings = async () => {
+      try {
+        const settingsDocRef = doc(db, 'settings', 'payment');
+        const snap = await getDoc(settingsDocRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          const url = data?.bangla_qr_url || data?.qr_url || data?.image_url || data?.qr_code_url;
+          if (url) setGlobalAdminQrUrl(url);
+        }
+      } catch (err) {
+        console.error("Error fetching global QR:", err);
+      }
+    };
+    fetchGlobalQrSettings();
   }, []);
 
   // Get thanas for selected district - with safe fallback
@@ -422,7 +446,7 @@ export function CheckoutPage() {
   const removeCoupon = () => { setCouponApplied(null); setCouponInput(''); setCouponError(''); };
   const isFormValid = form.full_name.trim() && form.phone.trim() && form.address.trim() && form.district && form.thana;
 
-  // ১০০% ডাইনামিক ম্যানুয়াল পেমেন্ট ভ্যালিডেশন (ওভির জন্য ফিক্সড)
+  // ১০০% ডাইনামিক ম্যানুয়াল পেমেন্ট ভ্যালিডেশন
   const isManualPayment = paymentMethod !== 'cash_on_delivery' && paymentMethod !== 'stripe' && paymentMethod !== 'sslcommerz';
   const isPaymentFieldsFilled = isManualPayment ? (senderNumber.trim() && transactionId.trim()) : true;
 
@@ -535,9 +559,8 @@ export function CheckoutPage() {
     dispatch({ type: 'CLEAR_CART' });
     setSubmitting(false);
 
-    // ডাইনামিক রিডাইরেকশন কন্ডিশন ফিক্স (ওভির জন্য)
     if (isManualPayment) {
-      navigate(`/payment?order_id=${orderId}&order_number=${orderNumber}&total=${total}&method=${paymentMethod}&payment_id=${paymentId}`);
+      navigate(`/order-success?id=${orderId}&number=${orderNumber}&total=${total}&method=${paymentMethod}`);
       return;
     }
 
@@ -908,19 +931,22 @@ export function CheckoutPage() {
                   <p className="text-[11px] text-white/50">{t('checkout.sslNote')}</p>
                 </div>
               )}
-
-              {/* ডাইনামিক ম্যানুয়াল এবং কিউআর পেমেন্ট সেকশন - ১০০% স্ট্যাটাস ম্যাচ সেফটি */}
+              
+              {/* ওভির ম্যানুয়াল এবং কিউআর পেমেন্ট সেকশন - ১০০% ডাইনামিক এবং স্বয়ংক্রিয় অটো-সেটিংস */}
               {isManualPayment && (() => {
                 const selectedMethod = paymentMethodsDB.find(pm => pm.payment_type === paymentMethod);
-                const qrImageSrc = selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url;
+                // যদি টাইপ 'bangla_qr' হয়, তবে গ্লোবাল অ্যাডমিন ইমেজকিট ইউআরএল ব্যবহার করবে, অন্যথায় মেথডের নিজস্ব কিউআর ইউআরএল দেখাবে
+                const qrImageSrc = paymentMethod === 'bangla_qr' 
+                  ? (globalAdminQrUrl || selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url)
+                  : (selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url);
 
                 return (
                   <div className="mt-3 px-4 py-4 rounded-xl flex flex-col items-center gap-4"
                     style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     
-                    {/* কিউআর কোড ডিসপ্লে */}
+                    {/* অ্যাডমিন প্যানেল থেকে ছবি চেঞ্জ করার সাথে সাথে এখানে রিয়েলটাইম লোড হবে */}
                     {qrImageSrc && (
-                      <div className="w-44 h-44 bg-white p-2 rounded-2xl flex items-center justify-center shadow-xl border border-white/10">
+                      <div className="w-44 h-44 bg-white p-2.5 rounded-2xl flex items-center justify-center shadow-xl border border-white/10">
                         <img src={qrImageSrc} alt="Payment QR" className="w-full h-full object-contain rounded-xl" />
                       </div>
                     )}
