@@ -259,6 +259,10 @@ export function CheckoutPage() {
   const [paymentMethodsDB, setPaymentMethodsDB] = useState<PaymentMethodDB[]>([]);
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
 
+  // কাস্টমারের সেন্ডার নাম্বার এবং ট্রানজেকশন আইডি স্টোর করার স্টেট (ওভির জন্য নতুন)
+  const [senderNumber, setSenderNumber] = useState('');
+  const [transactionId, setTransactionId] = useState('');
+
   // Coupon
   const [couponInput, setCouponInput] = useState('');
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number } | null>(null);
@@ -418,8 +422,12 @@ export function CheckoutPage() {
   const removeCoupon = () => { setCouponApplied(null); setCouponInput(''); setCouponError(''); };
   const isFormValid = form.full_name.trim() && form.phone.trim() && form.address.trim() && form.district && form.thana;
 
+  // ম্যানুয়াল পেমেন্ট মেথডগুলোর জন্য কাস্টমার ইনপুট ভ্যালিডেশন
+  const isManualPayment = ['bkash', 'nagad', 'rocket', 'bank_transfer', 'bangla_qr'].includes(paymentMethod);
+  const isPaymentFieldsFilled = isManualPayment ? (senderNumber.trim() && transactionId.trim()) : true;
+
   const handlePlaceOrder = async () => {
-    if (!isFormValid) return;
+    if (!isFormValid || !isPaymentFieldsFilled) return;
     setSubmitting(true);
     setError('');
 
@@ -453,6 +461,9 @@ export function CheckoutPage() {
       coupon_discount: couponDiscount,
       delivery_discount: deliveryDiscount,
       city: form.district,
+      // ওভির ব্যাকএন্ড ট্র্যাকিংয়ের জন্য পেলোডে সরাসরি সেন্ডার নাম্বার ও TxID পুশ করা হলো
+      sender_number: isManualPayment ? senderNumber : null,
+      transaction_id: isManualPayment ? transactionId : null,
     };
 
     let orderId = generateOrderId();
@@ -481,6 +492,9 @@ export function CheckoutPage() {
         amount: total,
         currency: 'BDT',
         order_number: orderNumber,
+        // ফায়ারবেস পেমেন্টস কালেকশনেও ডেটা ট্র্যাক রাখার ব্যবস্থা
+        sender_number: isManualPayment ? senderNumber : null,
+        transaction_id: isManualPayment ? transactionId : null,
       });
       if (pmtData) paymentId = pmtData.id;
     }
@@ -523,12 +537,7 @@ export function CheckoutPage() {
     dispatch({ type: 'CLEAR_CART' });
     setSubmitting(false);
 
-    // Manual banking and custom QR methods go to payment page to submit TxID
-    if (paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'bank_transfer' || paymentMethod === 'rocket' || paymentMethod !== 'cash_on_delivery') {
-      navigate(`/payment?order_id=${orderId}&order_number=${orderNumber}&total=${total}&method=${paymentMethod}&payment_id=${paymentId}`);
-      return;
-    }
-
+    // যেহেতু এখানেই ডেটা ইনপুট নিয়ে নিচ্ছি, কাস্টমারকে সরাসরি অর্ডার সাকসেসফুল পেজে পাঠিয়ে দেওয়া হবে
     navigate(`/order-success?id=${orderId}&number=${orderNumber}&total=${total}&method=${paymentMethod}`);
   };
 
@@ -892,46 +901,57 @@ export function CheckoutPage() {
                   <p className="text-[11px] text-white/50">{t('checkout.sslNote')}</p>
                 </div>
               )}
-              {/* ডাটাবেস থেকে আসা কাস্টম পেমেন্ট মেথডের ইনস্ট্রাকশন এবং আপলোড করা কিউআর ছবি ডাইনামিকালি রেন্ডার করার ফিল্টার */}
-              {paymentMethod !== 'cash_on_delivery' && paymentMethod !== 'stripe' && paymentMethod !== 'sslcommerz' && (() => {
+              
+              {/* ওভির ম্যানুয়াল এবং কিউআর পেমেন্ট সেকশন - যেখানে কাস্টমার সরাসরি তার নাম্বার ও TxID টাইপ করবে */}
+              {isManualPayment && (() => {
                 const selectedMethod = paymentMethodsDB.find(pm => pm.payment_type === paymentMethod);
-                // কিউআর ইমেজের সম্ভাব্য যেকোনো ফিল্ড নেম হ্যান্ডেল করার ব্যাকআপ (`qr_code_url` বা `image_url` বা `qr_url`)
                 const qrImageSrc = selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url;
 
-                if (selectedMethod?.payment_instructions || selectedMethod?.account_number || qrImageSrc) {
-                  return (
-                    <div className="mt-3 px-4 py-3 rounded-xl flex flex-col items-center gap-3"
-                      style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      
-                      {/* কিউআর ছবি ডাটাবেসে থাকলে সুন্দর একটি কার্ডের ভেতর লাইভ রেন্ডার হবে */}
-                      {qrImageSrc && (
-                        <div className="w-48 h-48 bg-white p-2.5 rounded-2xl flex items-center justify-center shadow-2xl my-1 border border-white/10">
-                          <img 
-                            src={qrImageSrc} 
-                            alt={`${selectedMethod.display_name || 'Payment'} QR Code`} 
-                            className="w-full h-full object-contain rounded-xl"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
+                return (
+                  <div className="mt-3 px-4 py-4 rounded-xl flex flex-col items-center gap-4"
+                    style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    
+                    {/* কিউআর কোড ডিসপ্লে */}
+                    {qrImageSrc && (
+                      <div className="w-44 h-44 bg-white p-2 rounded-2xl flex items-center justify-center shadow-xl border border-white/10">
+                        <img src={qrImageSrc} alt="Payment QR" className="w-full h-full object-contain rounded-xl" />
+                      </div>
+                    )}
 
-                      <div className="w-full text-left">
-                        {selectedMethod.payment_instructions && (
-                          <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line mb-2">
-                            {selectedMethod.payment_instructions}
-                          </p>
-                        )}
-                        {selectedMethod.account_number && (
-                          <div className="pt-2 border-t border-white/5">
-                            <p className="text-[10px] text-white/40">Account/Number: {selectedMethod.account_number}</p>
-                            {selectedMethod.account_name && <p className="text-[10px] text-white/40">Name: {selectedMethod.account_name}</p>}
-                          </div>
-                        )}
+                    <div className="w-full text-left space-y-3">
+                      {selectedMethod?.payment_instructions && (
+                        <p className="text-[11px] text-white/50 leading-relaxed whitespace-pre-line">
+                          {selectedMethod.payment_instructions}
+                        </p>
+                      )}
+                      
+                      {/* ইউজার সেন্ডার নাম্বার ইনপুট বক্স */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-white/40 block">আপনার সেন্ডার নাম্বার (যে নাম্বার থেকে টাকা পাঠিয়েছেন): *</label>
+                        <input 
+                          type="tel" 
+                          placeholder="01XXXXXXXXX" 
+                          value={senderNumber}
+                          onChange={e => setSenderNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                          maxLength={11}
+                          className="w-full px-3 py-2 bg-white/[0.03] border border-white/[0.08] focus:border-mia-orange/40 rounded-xl text-xs text-white focus:outline-none transition-colors"
+                        />
+                      </div>
+
+                      {/* ট্রানজেকশন আইডি ইনপুট বক্স */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-white/40 block">ট্রানজেকশন আইডি (Transaction ID / TxID): *</label>
+                        <input 
+                          type="text" 
+                          placeholder="8X7Y6Z..." 
+                          value={transactionId}
+                          onChange={e => setTransactionId(e.target.value)}
+                          className="w-full px-3 py-2 bg-white/[0.03] border border-white/[0.08] focus:border-mia-orange/40 rounded-xl text-xs text-white focus:outline-none transition-colors font-mono uppercase"
+                        />
                       </div>
                     </div>
-                  );
-                }
-                return null;
+                  </div>
+                );
               })()}
             </div>
 
@@ -1048,7 +1068,7 @@ export function CheckoutPage() {
       {step === 'payment' && (
         <div className="fixed left-0 right-0 z-40 px-4 pb-2" style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}>
           <div className="max-w-lg md:max-w-2xl mx-auto">
-            <button onClick={handlePlaceOrder} disabled={submitting}
+            <button onClick={handlePlaceOrder} disabled={submitting || !isPaymentFieldsFilled}
               className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white glow-btn disabled:opacity-50 flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)', boxShadow: '0 8px 32px rgba(255,138,0,0.3)' }}>
               {submitting
