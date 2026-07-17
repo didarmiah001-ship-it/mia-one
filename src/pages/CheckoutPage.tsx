@@ -13,7 +13,7 @@ import {
   createOrder, validateCoupon, incrementCouponUsage, fetchAddresses,
   createPayment, initiateSSLCommerzPayment, fetchDeliverySettings, fetchActivePaymentMethods,
 } from '../lib/api';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase'; 
 
 // Bangladesh Districts and Thanas
@@ -200,8 +200,6 @@ export function CheckoutPage() {
   const [senderNumber, setSenderNumber] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [copiedField, setCopiedField] = useState(false);
-  
-  // ডাইনামিক লাইভ কিউআর ইউআরএল লোডিং এর জন্য স্টেট
   const [globalAdminQrUrl, setGlobalAdminQrUrl] = useState('');
 
   const [couponInput, setCouponInput] = useState('');
@@ -218,24 +216,18 @@ export function CheckoutPage() {
       .catch(() => {});
   }, []);
 
-  // ওভির রিয়েল-টাইম অ্যাডমিন সেটিংস ট্র্যাকিং লুপ (অন-স্প্যাপশট ইমপ্লিমেন্টেশন)
+  // ওভির অ্যাপের ডাটাবেস সেটিংস কালেকশন সিঙ্ক্রোনাইজেশন (সুরক্ষিত অন-স্ন্যাপশট)
   useEffect(() => {
     const settingsDocRef = doc(db, 'settings', 'payment');
-    
-    // রিয়েল-টাইম লিসেনার যুক্ত করা হলো যাতে অ্যাডমিন প্যানেলে ছবি সেভ করার সাথে সাথে ফ্রন্টএন্ডে ছবি রেন্ডার হয়
     const unsubscribe = onSnapshot(settingsDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // সম্ভাব্য সব ধরনের নেমিং ফিল্ড স্ক্যান করবে যেন কোনো টাইপো অমিল না থাকে
         const url = data?.bangla_qr_url || data?.qr_url || data?.image_url || data?.qr_code_url || data?.url || data?.qrCode;
-        if (url) {
-          setGlobalAdminQrUrl(url);
-        }
+        if (url) setGlobalAdminQrUrl(url);
       }
     }, (err) => {
-      console.error("Firebase live stream error:", err);
+      console.error("Firebase fetch error:", err);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -244,7 +236,6 @@ export function CheckoutPage() {
   const isMunshiganj = form.district === 'Munshiganj';
   const isRemoteDistrict = REMOTE_DISTRICTS.includes(form.district || '');
   const isRemote = form.isRemoteArea || isRemoteDistrict;
-  const deliveryZone = isRemote ? 'remote_area' : isMunshiganj ? 'munshiganj' : isInsideDhaka ? 'inside_dhaka' : 'outside_dhaka';
 
   const baseCharge = (() => {
     if (isRemote) return deliverySettings.remote_area ?? 150;
@@ -370,7 +361,7 @@ export function CheckoutPage() {
   };
 
   return (
-    <div className={`page-transition pb-[180px]`}>
+    <div className="page-transition pb-[140px]">
       <header className="sticky top-0 z-30 glass px-4 py-3">
         <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between">
           <button onClick={() => step === 'payment' ? setStep('info') : navigate('/cart')} className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center bg-white/5">
@@ -429,19 +420,17 @@ export function CheckoutPage() {
                 })}
               </div>
 
-              {/* ওভির ম্যানুয়াল এবং কিউআর পেমেন্ট সেকশন - ১০০% স্বয়ংক্রিয় রিয়েল-টাইম ডাটা ফেচিং ইমপ্লিমেন্টেশন */}
+              {/* ওভির ম্যানুয়াল এবং কিউআর পেমেন্ট সেকশন */}
               {isManualPayment && (() => {
                 const selectedMethod = paymentMethodsDB.find(pm => pm.payment_type === paymentMethod);
-                // বাংলা কিউআর বা অন্য যেকোনো মেথডের কিউআর কোডের ব্যাকআপ সোর্স ডিটেকশন লজিক
-                const qrImageSrc = paymentMethod === 'bangla_qr' 
-                  ? (globalAdminQrUrl || selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url)
-                  : (selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url);
+                // ফায়ারবেস ডকের কিউআর ইউআরএল মেথড লেভেলে থাকলে সেটাকে ১ নম্বর প্রায়োরিটি দেবে, নইলে সেটিংস থেকে ডাইনামিক সোর্স নিবে
+                const qrImageSrc = selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url || (paymentMethod === 'bangla_qr' ? globalAdminQrUrl : '');
                 const isBank = paymentMethod === 'bank_transfer';
 
                 return (
                   <div className="mt-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
                     
-                    {/* ফায়ারবেস লাইভ স্ট্রীম ইমেজ কন্টেইনার */}
+                    {/* ফায়ারবেস ইমেজ সোর্স কন্ডিশনাল চেকিং */}
                     {qrImageSrc ? (
                       <div className="flex justify-center my-1">
                         <div className="w-44 h-44 bg-white p-2.5 rounded-2xl shadow-xl flex items-center justify-center">
@@ -449,11 +438,10 @@ export function CheckoutPage() {
                         </div>
                       </div>
                     ) : (
-                      /* যদি ফায়ারবেসের ডক সিঙ্ক হতে ১ সেকেন্ড দেরি হয়, তবে কিউআর লোডার প্লেসহোল্ডার দেখাবে */
                       paymentMethod === 'bangla_qr' && (
                         <div className="flex flex-col items-center justify-center my-2 p-4 rounded-xl border border-dashed border-white/10 bg-white/5">
                           <Loader2 size={24} className="animate-spin text-mia-orange mb-1" />
-                          <span className="text-[10px] text-white/40">Loading Admin QR Code...</span>
+                          <span className="text-[10px] text-white/40">Syncing Live QR Code...</span>
                         </div>
                       )
                     )}
@@ -517,15 +505,28 @@ export function CheckoutPage() {
         )}
       </div>
 
-      {/* বটম অ্যাকশন বার */}
-      <div className="fixed left-0 right-0 bottom-0 z-40 px-4 py-3 bg-neutral-950/80 backdrop-blur-md border-t border-white/5">
-        <div className="max-w-lg md:max-w-2xl mx-auto flex items-center justify-between gap-4">
-          <div><p className="text-[10px] text-white/40">Total Amount</p><p className="text-xl font-bold text-mia-orange">৳{total}</p></div>
+      {/* ওভির নতুন ডিজাইনড মিডলড ফুল-উইডথ স্মার্ট বার */}
+      <div className="fixed left-0 right-0 bottom-0 z-40 px-4 py-3.5 bg-neutral-950/80 backdrop-blur-md border-t border-white/5">
+        <div className="max-w-lg md:max-w-2xl mx-auto">
           {step === 'info' ? (
-            <button onClick={() => { if (validateForm()) setStep('payment'); }} disabled={!isFormValid} className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-mia-orange to-mia-pink text-white text-sm font-bold flex items-center gap-2 disabled:opacity-40">Continue <ArrowRight size={16}/></button>
+            <button 
+              onClick={() => { if (validateForm()) setStep('payment'); }} 
+              disabled={!isFormValid} 
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-mia-orange to-mia-pink text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-40"
+            >
+              Continue to Payment (৳{total}) <ArrowRight size={16}/>
+            </button>
           ) : (
-            <button onClick={handlePlaceOrder} disabled={submitting || !isPaymentFieldsFilled} className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-mia-orange to-mia-pink text-white text-sm font-bold flex items-center gap-2 disabled:opacity-40">
-              {submitting ? <Loader2 size={16} className="animate-spin" /> : `Place Order ৳${total}`}
+            <button 
+              onClick={handlePlaceOrder} 
+              disabled={submitting || !isPaymentFieldsFilled} 
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-mia-orange to-mia-pink text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-40"
+            >
+              {submitting ? (
+                <><Loader2 size={16} className="animate-spin" /> Confirming...</>
+              ) : (
+                <>Confirm & Place Order — ৳{total}</>
+              )}
             </button>
           )}
         </div>
