@@ -1,7 +1,7 @@
 import { urlEndpoint } from './imagekit';
 
-const SUPABASE_URL = 'https://ljtwvmgxrhwrwaaovlbi.supabase.co';
-const AUTH_ENDPOINT = `${SUPABASE_URL}/functions/v1/imagekit-auth`;
+// সুপাবেস বাদ দিয়ে নিজের লোকাল এপিআই রাউট ব্যবহার করা হলো
+const AUTH_ENDPOINT = '/api/imagekit-auth';
 const PUBLIC_KEY = 'public_yEPy2DHHPu/KY2jJ3R5GIjfbkZc=';
 const UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
 
@@ -19,7 +19,7 @@ interface AuthParams {
 }
 
 async function fetchAuthParams(): Promise<AuthParams> {
-  console.log('[ImageKit] Fetching auth params from', AUTH_ENDPOINT);
+  console.log('[ImageKit] Fetching auth params from local API:', AUTH_ENDPOINT);
   const res = await fetch(AUTH_ENDPOINT);
 
   if (!res.ok) {
@@ -29,18 +29,15 @@ async function fetchAuthParams(): Promise<AuthParams> {
   }
 
   const data = await res.json();
-  console.log('[ImageKit] Auth response:', {
-    token: data.token,
-    expire: data.expire,
-    signature: data.signature ? '(present)' : '(missing)',
-    publicKey: data.publicKey,
-  });
+  
+  // ব্যাকএন্ড যদি শুধু টোকেন, এক্সপায়ার আর সিগনেচার দেয়, পাবলিক কি আমরা এখান থেকে পাস করব
+  const pKey = data.publicKey || PUBLIC_KEY;
 
-  if (!data.token || !data.expire || !data.signature || !data.publicKey) {
+  if (!data.token || !data.expire || !data.signature) {
     throw new Error('ImageKit auth endpoint returned incomplete data');
   }
 
-  return { token: data.token, expire: data.expire, signature: data.signature, publicKey: data.publicKey };
+  return { token: data.token, expire: data.expire, signature: data.signature, publicKey: pKey };
 }
 
 export async function uploadToImageKit(file: File | Blob, fileName?: string): Promise<UploadResponse> {
