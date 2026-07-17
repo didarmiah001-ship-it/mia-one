@@ -430,22 +430,16 @@ export function CheckoutPage() {
                 return (
                   <div className="mt-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
                     
-                    {/* ফায়ারবেস ইমেজ সোর্স কন্ডিশনাল চেকিং */}
-                    {qrImageSrc ? (
-                      <div className="flex justify-center my-1">
-                        <div className="w-44 h-44 bg-white p-2.5 rounded-2xl shadow-xl flex items-center justify-center">
-                          <img src={qrImageSrc} alt="Payment QR" className="w-full h-full object-contain" />
-                        </div>
+                 {/* ওভির জন্য ১০০% ফিক্সড কিউআর ইমেজ সোর্স */}
+                    <div className="flex justify-center my-1">
+                      <div className="w-44 h-44 bg-white p-2.5 rounded-2xl shadow-xl flex items-center justify-center">
+                        <img 
+                          src={qrImageSrc || "https://ik.imagekit.io/i67rlxsde/default-image.jpg"} 
+                          alt="Payment QR" 
+                          className="w-full h-full object-contain rounded-xl" 
+                        />
                       </div>
-                    ) : (
-                      paymentMethod === 'bangla_qr' && (
-                        <div className="flex flex-col items-center justify-center my-2 p-4 rounded-xl border border-dashed border-white/10 bg-white/5">
-                          <Loader2 size={24} className="animate-spin text-mia-orange mb-1" />
-                          <span className="text-[10px] text-white/40">Syncing Live QR Code...</span>
-                        </div>
-                      )
-                    )}
-
+                    </div>
                     {/* পেমেন্ট ডিটেইলস কার্ড */}
                     <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2.5">
                       <div className="flex items-center justify-between">
