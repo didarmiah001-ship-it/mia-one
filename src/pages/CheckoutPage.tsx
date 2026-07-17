@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, ArrowRight, Banknote, Smartphone, CreditCard, Building2, Globe,
   MapPin, User, Phone, ChevronDown, Tag, CheckCircle2, Loader2, X, Lock,
-  ShieldCheck, Zap, AlertCircle, Edit3, Plus, Truck,
+  ShieldCheck, Zap, AlertCircle, Edit3, Plus, Truck, QrCode
 } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import { useAuth } from '../lib/auth';
@@ -149,7 +149,7 @@ const DELIVERY_ZONES: Record<string, { charge: number; zone: string }> = {
   'Rangpur': { charge: 130, zone: 'Rangpur' },
   'Nilphamari': { charge: 130, zone: 'Rangpur' },
   'Panchagarh': { charge: 140, zone: 'Rangpur' },
-  'Thakurgaon': { charge: 140, zone: 'Rangpur' },
+  'Thakurgaon': { charge: 140, text: 'Rangpur' },
   'Kurigram': { charge: 140, zone: 'Rangpur' },
   'Lalmonirhat': { charge: 140, zone: 'Rangpur' },
   'Gaibandha': { charge: 130, zone: 'Rangpur' },
@@ -204,7 +204,7 @@ const FALLBACK_PAYMENT_METHODS: PaymentMethodDB[] = [
   },
 ];
 
-// Map payment type to icon and color
+// Map payment type to icon and color (ওভির জন্য বাংলা কিউআর ও ডিফল্ট কিউআর আইকন যুক্ত করা হয়েছে)
 const PAYMENT_TYPE_CONFIG: Record<string, { icon: any; color: string }> = {
   'bkash': { icon: Smartphone, color: '#E2136E' },
   'nagad': { icon: Smartphone, color: '#F6921E' },
@@ -213,6 +213,7 @@ const PAYMENT_TYPE_CONFIG: Record<string, { icon: any; color: string }> = {
   'cash_on_delivery': { icon: Banknote, color: '#FF8A00' },
   'stripe': { icon: CreditCard, color: '#6772E5' },
   'sslcommerz': { icon: Globe, color: '#00AEEF' },
+  'bangla_qr': { icon: QrCode, color: '#10B981' }, // কাস্টম বাংলা কিউআর
 };
 
 function generateOrderId() {
@@ -514,13 +515,13 @@ export function CheckoutPage() {
       return;
     }
 
-    // For manual payments (COD / bKash / Nagad / bank_transfer)
+    // For manual payments (COD / bKash / Nagad / bank_transfer / bangla_qr)
     dispatch({ type: 'ADD_ORDER', order: { id: orderId, items: [...(state?.cart || [])], total, delivery_charge: deliveryCharge, status: 'placed', payment_method: paymentMethod, address: { full_name: form.full_name, mobile: form.phone, address: form.address, district: form.district, thana: form.thana, area: `${form.thana}, ${form.district}`, notes: form.notes }, created_at: new Date().toISOString() } });
     dispatch({ type: 'CLEAR_CART' });
     setSubmitting(false);
 
-    // bKash / Nagad go to payment page to submit TxID
-    if (paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'bank_transfer') {
+    // Manual banking and custom QR methods go to payment page to submit TxID
+    if (paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'bank_transfer' || paymentMethod === 'rocket' || paymentMethod !== 'cash_on_delivery') {
       navigate(`/payment?order_id=${orderId}&order_number=${orderNumber}&total=${total}&method=${paymentMethod}&payment_id=${paymentId}`);
       return;
     }
@@ -888,11 +889,10 @@ export function CheckoutPage() {
                   <p className="text-[11px] text-white/50">{t('checkout.sslNote')}</p>
                 </div>
               )}
-              {/* Show payment instructions from database for mobile banking */}
-              {['bkash', 'nagad', 'rocket', 'bank_transfer'].includes(paymentMethod) && (() => {
+              {/* ওভির ডাটাবেস থেকে আসা যেকোনো ম্যানুয়াল বা কাস্টম কিউআর কোডের ইমেজ ও ইনস্ট্রাকশন রেন্ডার করার ডাইনামিক ফিল্টার */}
+              {paymentMethod !== 'cash_on_delivery' && paymentMethod !== 'stripe' && paymentMethod !== 'sslcommerz' && (() => {
                 const selectedMethod = paymentMethodsDB.find(pm => pm.payment_type === paymentMethod);
-                const config = PAYMENT_TYPE_CONFIG[paymentMethod] || { color: '#FF8A00' };
-                if (selectedMethod?.payment_instructions) {
+                if (selectedMethod?.payment_instructions || selectedMethod?.account_number) {
                   return (
                     <div className="mt-3 px-4 py-3 rounded-xl"
                       style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -901,7 +901,7 @@ export function CheckoutPage() {
                       </p>
                       {selectedMethod.account_number && (
                         <div className="mt-2 pt-2 border-t border-white/5">
-                          <p className="text-[10px] text-white/40">Account: {selectedMethod.account_number}</p>
+                          <p className="text-[10px] text-white/40">Account/Number: {selectedMethod.account_number}</p>
                           {selectedMethod.account_name && <p className="text-[10px] text-white/40">Name: {selectedMethod.account_name}</p>}
                         </div>
                       )}
