@@ -45,7 +45,7 @@ const BANGLADESH_THANAS: Record<string, string[]> = {
   'Khulna': ['Khulna Sadar', 'Sonadanga', 'Khalishpur', 'Daulatpur', 'Khan Jahan Ali', 'Bataghata', 'Dumuria', 'Digholia', 'Koyra', 'Paikgachha', 'Rupsa', 'Terokhada'],
   'Barishal': ['Barishal Sadar', 'Bakerganj', 'Babalakandi', 'Gaurnadi', 'Hizla', 'Mehendiganj', 'Muladi', 'Banaripara', 'Uzirpur', 'Agailjhara', 'Gournadi'],
   'Rangpur': ['Rangpur Sadar', 'Badarganj', 'Gangachara', 'Haridevpur', 'Kaunia', 'Pirgachha', 'Pirganj', 'Mithapukur', 'Taraganj', 'Rangpur City'],
-  'Bogra': ['Bogra Sadar', 'Adamdighi', 'Bogra Sadar Upazila', 'Dhunat', 'Dhupchanchia', 'Gabtali', 'Kahaloo', 'Nandigram', 'Sariakandi', 'Shajahanpur', 'Sherpur', 'Shibganj', 'Sonatala'],
+  'Bogra': ['Bogra Sadar', 'Adamdighi', 'Bogra Sadar Upazila', 'Dhunat', 'Dhupchanchia', 'Gabtali', 'Kahaloo', 'Nandigram', 'Sariakandi', 'Shajahanpur', 'Sherpur', 'Shibҷanj', 'Sonatala'],
   'Dinajpur': ['Dinajpur Sadar', 'Birampur', 'Birganj', 'Biral', 'Bochaganj', 'Chirirbandar', 'Fulbari', 'Ghoraghat', 'Hakimpur', 'Kaharole', 'Khanshama', 'Nawabganj', 'Parbatipur', 'Phulbari', 'Setabganj'],
   'Faridpur': ['Faridpur Sadar', 'Alfadanga', 'Boalmari', 'Charbhadrasan', 'Madukhali', 'Nagarkanda', 'Saltha', 'Bhanga', 'Sadarpur'],
   'Jashore': ['Jashore Sadar', 'Abhaynagar', 'Bagherpara', 'Chaugachha', 'Keshabpur', 'Manirampur', 'Sharsha', 'Jhikargachha', 'Chowgacha'],
@@ -259,7 +259,7 @@ export function CheckoutPage() {
   const [paymentMethodsDB, setPaymentMethodsDB] = useState<PaymentMethodDB[]>([]);
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
 
-  // কাস্টমারের সেন্ডার নাম্বার এবং ট্রানজেকশন আইডি স্টোর করার স্টেট (ওভির জন্য নতুন)
+  // কাস্টমারের সেন্ডার নাম্বার এবং ট্রানজেকশন আইডি স্টোর করার স্টেট
   const [senderNumber, setSenderNumber] = useState('');
   const [transactionId, setTransactionId] = useState('');
 
@@ -422,8 +422,8 @@ export function CheckoutPage() {
   const removeCoupon = () => { setCouponApplied(null); setCouponInput(''); setCouponError(''); };
   const isFormValid = form.full_name.trim() && form.phone.trim() && form.address.trim() && form.district && form.thana;
 
-  // ম্যানুয়াল পেমেন্ট মেথডগুলোর জন্য কাস্টমার ইনপুট ভ্যালিডেশন
-  const isManualPayment = ['bkash', 'nagad', 'rocket', 'bank_transfer', 'bangla_qr'].includes(paymentMethod);
+  // ১০০% ডাইনামিক ম্যানুয়াল পেমেন্ট ভ্যালিডেশন (ওভির জন্য ফিক্সড)
+  const isManualPayment = paymentMethod !== 'cash_on_delivery' && paymentMethod !== 'stripe' && paymentMethod !== 'sslcommerz';
   const isPaymentFieldsFilled = isManualPayment ? (senderNumber.trim() && transactionId.trim()) : true;
 
   const handlePlaceOrder = async () => {
@@ -461,7 +461,6 @@ export function CheckoutPage() {
       coupon_discount: couponDiscount,
       delivery_discount: deliveryDiscount,
       city: form.district,
-      // ওভির ব্যাকএন্ড ট্র্যাকিংয়ের জন্য পেলোডে সরাসরি সেন্ডার নাম্বার ও TxID পুশ করা হলো
       sender_number: isManualPayment ? senderNumber : null,
       transaction_id: isManualPayment ? transactionId : null,
     };
@@ -492,7 +491,6 @@ export function CheckoutPage() {
         amount: total,
         currency: 'BDT',
         order_number: orderNumber,
-        // ফায়ারবেস পেমেন্টস কালেকশনেও ডেটা ট্র্যাক রাখার ব্যবস্থা
         sender_number: isManualPayment ? senderNumber : null,
         transaction_id: isManualPayment ? transactionId : null,
       });
@@ -537,7 +535,12 @@ export function CheckoutPage() {
     dispatch({ type: 'CLEAR_CART' });
     setSubmitting(false);
 
-    // যেহেতু এখানেই ডেটা ইনপুট নিয়ে নিচ্ছি, কাস্টমারকে সরাসরি অর্ডার সাকসেসফুল পেজে পাঠিয়ে দেওয়া হবে
+    // ডাইনামিক রিডাইরেকশন কন্ডিশন ফিক্স (ওভির জন্য)
+    if (isManualPayment) {
+      navigate(`/payment?order_id=${orderId}&order_number=${orderNumber}&total=${total}&method=${paymentMethod}&payment_id=${paymentId}`);
+      return;
+    }
+
     navigate(`/order-success?id=${orderId}&number=${orderNumber}&total=${total}&method=${paymentMethod}`);
   };
 
@@ -860,7 +863,11 @@ export function CheckoutPage() {
                     const displayName = pm.display_name || pm.payment_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                     const accountInfo = pm.account_number || '';
                     return (
-                      <button key={pm.id} onClick={() => setPaymentMethod(pm.payment_type)}
+                      <button key={pm.id} onClick={() => {
+                        setPaymentMethod(pm.payment_type);
+                        setSenderNumber('');
+                        setTransactionId('');
+                      }}
                         className="w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all duration-200"
                         style={isSelected
                           ? { background: `${color}0E`, border: `1.5px solid ${color}40` }
@@ -901,8 +908,8 @@ export function CheckoutPage() {
                   <p className="text-[11px] text-white/50">{t('checkout.sslNote')}</p>
                 </div>
               )}
-              
-              {/* ওভির ম্যানুয়াল এবং কিউআর পেমেন্ট সেকশন - যেখানে কাস্টমার সরাসরি তার নাম্বার ও TxID টাইপ করবে */}
+
+              {/* ডাইনামিক ম্যানুয়াল এবং কিউআর পেমেন্ট সেকশন - ১০০% স্ট্যাটাস ম্যাচ সেফটি */}
               {isManualPayment && (() => {
                 const selectedMethod = paymentMethodsDB.find(pm => pm.payment_type === paymentMethod);
                 const qrImageSrc = selectedMethod?.qr_code_url || selectedMethod?.image_url || selectedMethod?.qr_url;
@@ -927,7 +934,7 @@ export function CheckoutPage() {
                       
                       {/* ইউজার সেন্ডার নাম্বার ইনপুট বক্স */}
                       <div className="space-y-1">
-                        <label className="text-[11px] font-medium text-white/40 block">আপনার সেন্ডার নাম্বার (যে নাম্বার থেকে টাকা পাঠিয়েছেন): *</label>
+                        <label className="text-[11px] font-medium text-white/40 block">আপনার সেন্ডার নাম্বার (যে নাম্বার থেকে টাকা পাঠিয়েছেন): *</label>
                         <input 
                           type="tel" 
                           placeholder="01XXXXXXXXX" 
