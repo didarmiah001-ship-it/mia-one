@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'rwact';
 import { Search, ChevronRight, ChevronLeft, Bell, Zap, TrendingUp, Sparkles, Megaphone } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useTranslation } from 'react-i18next';
