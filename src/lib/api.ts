@@ -502,7 +502,7 @@ export async function submitManualPayment(
     // Fraud prevention: reject duplicate transaction IDs across ALL manual methods
     const exists = await checkTransactionIdExists(normalizedTxId);
     if (exists) {
-      return { error: 'This Transaction ID has already been used. Please enter a valid Transaction ID.' };
+      return { error: 'This Transaction ID has already been used. Please enter a different Transaction ID.' };
     }
 
     const updates: any = {
