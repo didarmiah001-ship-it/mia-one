@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Plus, Edit2, Trash2, X, Image, Calendar, ArrowUp, ArrowDown,
-  Upload, CheckCircle, AlertTriangle, ExternalLink, Eye, EyeOff,
+  Upload, CheckCircle, AlertTriangle, ExternalLink, Eye, EyeOff, LayoutGrid,
 } from 'lucide-react';
 import {
   adminFetchBanners, adminCreateBanner, adminUpdateBanner,
   adminDeleteBanner, adminUploadBannerImage,
+  adminFetchPromoBanners, adminCreatePromoBanner, adminUpdatePromoBanner, adminDeletePromoBanner
 } from '../lib/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
@@ -51,6 +52,8 @@ const EMPTY: FormState = {
 };
 
 const COLORS = ['#FF8A00', '#FF2EC9', '#7B2CFF', '#00D1FF', '#22c55e', '#f59e0b', '#ef4444', '#ffffff'];
+
+const selectDarkStyles = "w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#1A202C]/60 border border-white/10 text-white focus:outline-none focus:border-mia-orange/40 transition-colors";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -130,12 +133,10 @@ function ImageUploadField({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Immediate local preview
     const objectUrl = URL.createObjectURL(file);
     onChange(objectUrl);
     setUpload({ uploading: true, warning: null, done: false });
 
-    // Dimension check (warning, non-blocking)
     const { w, h } = await getImageDimensions(file);
     let warning: string | null = null;
     if (w > 0 && h > 0 && (w !== recW || h !== recH)) {
@@ -152,7 +153,6 @@ function ImageUploadField({
       onChange(url);
       setUpload({ uploading: false, warning, done: true });
     }
-    // Reset file input so same file can be re-selected
     if (inputRef.current) inputRef.current.value = '';
   }, [onChange, slot, recW, recH]);
 
@@ -211,13 +211,17 @@ function ImageUploadField({
 export function AdminBanners() {
   const toast = useToast();
   const [banners, setBanners]       = useState<any[]>([]);
+  const [promoBanners, setPromoBanners] = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
+  
   const [showForm, setShowForm]     = useState(false);
+  const [modalMode, setModalMode]   = useState<'hero' | 'promo'>('hero');
   const [editing, setEditing]       = useState<any>(null);
   const [form, setForm]             = useState<FormState>(EMPTY);
   const [saving, setSaving]         = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<any>(null);
+  const [deleteMode, setDeleteMode] = useState<'hero' | 'promo'>('hero');
   const [previewTab, setPreviewTab] = useState<'desktop' | 'mobile'>('desktop');
   const [showPreview, setShowPreview] = useState(true);
 
@@ -227,14 +231,19 @@ export function AdminBanners() {
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    try { const b = await adminFetchBanners(); setBanners(b); }
+    try { 
+      const [b, pb] = await Promise.all([adminFetchBanners(), adminFetchPromoBanners()]); 
+      setBanners(b);
+      setPromoBanners(pb);
+    }
     catch (e: any) { setError(e.message || 'Failed to load banners'); }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const openCreate = () => {
+  const openCreate = (mode: 'hero' | 'promo') => {
+    setModalMode(mode);
     setEditing(null);
     setForm(EMPTY);
     setPreviewTab('desktop');
@@ -242,7 +251,8 @@ export function AdminBanners() {
     setShowForm(true);
   };
 
-  const openEdit = (b: any) => {
+  const openEdit = (b: any, mode: 'hero' | 'promo') => {
+    setModalMode(mode);
     setEditing(b);
     setForm({
       title:          b.title ?? '',
@@ -273,10 +283,10 @@ export function AdminBanners() {
       color:          form.color,
       desktop_image:  form.desktop_image,
       mobile_image:   form.mobile_image,
-      image_url:      form.desktop_image,   // backward compat
+      image_url:      form.desktop_image,
       button_text:    form.button_text,
       button_link:    form.button_link,
-      link_url:       form.button_link,     // backward compat
+      link_url:       form.button_link,
       open_in_new_tab: form.open_in_new_tab,
       is_active:      form.status !== 'draft',
       priority:       form.priority,
@@ -285,166 +295,209 @@ export function AdminBanners() {
       ends_at:        form.ends_at   || null,
     };
 
-    if (editing) {
-      const { error } = await adminUpdateBanner(editing.id, payload);
-      if (error) {
-        toast.error(error);
+    if (modalMode === 'hero') {
+      if (editing) {
+        const { error } = await adminUpdateBanner(editing.id, payload);
+        if (error) toast.error(error);
+        else {
+          setBanners(bs => bs.map(b => b.id === editing.id ? { ...b, ...payload } : b));
+          toast.success('Hero banner updated');
+          setShowForm(false);
+          await load();
+        }
       } else {
-        // Optimistic update — swap the banner in-place, then reload
-        setBanners(bs => bs.map(b => b.id === editing.id ? { ...b, ...payload } : b));
-        toast.success('Banner updated');
-        setShowForm(false);
-        await load();
+        const { error } = await adminCreateBanner(payload);
+        if (error) toast.error(error);
+        else {
+          toast.success('Hero banner created');
+          setShowForm(false);
+          await load();
+        }
       }
     } else {
-      const { error } = await adminCreateBanner(payload);
-      if (error) {
-        toast.error(error);
+      if (editing) {
+        const { error } = await adminUpdatePromoBanner(editing.id, payload);
+        if (error) toast.error(error);
+        else {
+          setPromoBanners(pbs => pbs.map(b => b.id === editing.id ? { ...b, ...payload } : b));
+          toast.success('Promo banner updated');
+          setShowForm(false);
+          await load();
+        }
       } else {
-        toast.success('Banner created');
-        setShowForm(false);
-        await load();
+        const { error } = await adminCreatePromoBanner(payload);
+        if (error) toast.error(error);
+        else {
+          toast.success('Promo banner created');
+          setShowForm(false);
+          await load();
+        }
       }
     }
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await adminDeleteBanner(id);
-    if (error) toast.error(error);
-    else { setBanners(bs => bs.filter(b => b.id !== id)); toast.success('Banner deleted'); }
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    if (deleteMode === 'hero') {
+      const { error } = await adminDeleteBanner(confirmDelete.id);
+      if (error) toast.error(error);
+      else { setBanners(bs => bs.filter(b => b.id !== confirmDelete.id)); toast.success('Hero banner deleted'); }
+    } else {
+      const { error } = await adminDeletePromoBanner(confirmDelete.id);
+      if (error) toast.error(error);
+      else { setPromoBanners(pbs => pbs.filter(b => b.id !== confirmDelete.id)); toast.success('Promo banner deleted'); }
+    }
     setConfirmDelete(null);
   };
 
-  const handleToggle = async (b: any) => {
+  const handleToggle = async (b: any, mode: 'hero' | 'promo') => {
     const newActive = !b.is_active;
-    await adminUpdateBanner(b.id, { is_active: newActive });
-    setBanners(bs => bs.map(x => x.id === b.id ? { ...x, is_active: newActive } : x));
+    if (mode === 'hero') {
+      await adminUpdateBanner(b.id, { is_active: newActive });
+      setBanners(bs => bs.map(x => x.id === b.id ? { ...x, is_active: newActive } : x));
+    } else {
+      await adminUpdatePromoBanner(b.id, { is_active: newActive });
+      setPromoBanners(pbs => pbs.map(x => x.id === b.id ? { ...x, is_active: newActive } : x));
+    }
     toast.success(newActive ? 'Banner enabled' : 'Banner disabled');
   };
 
-  const handlePriority = async (b: any, dir: 'up' | 'down') => {
+  const handlePriority = async (b: any, dir: 'up' | 'down', mode: 'hero' | 'promo') => {
     const p = dir === 'up' ? b.priority + 1 : Math.max(0, b.priority - 1);
-    await adminUpdateBanner(b.id, { priority: p });
-    setBanners(bs => bs.map(x => x.id === b.id ? { ...x, priority: p } : x));
+    if (mode === 'hero') {
+      await adminUpdateBanner(b.id, { priority: p });
+      setBanners(bs => bs.map(x => x.id === b.id ? { ...x, priority: p } : x));
+    } else {
+      await adminUpdatePromoBanner(b.id, { priority: p });
+      setPromoBanners(pbs => pbs.map(x => x.id === b.id ? { ...x, priority: p } : x));
+    }
   };
 
   const previewImage = previewTab === 'desktop' ? form.desktop_image : form.mobile_image;
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-white">
-          Hero Banners <span className="text-white/30 text-sm font-normal">({banners.length})</span>
-        </h2>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white glow-btn"
-          style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
-        >
-          <Plus size={14} /> Add Banner
-        </button>
-      </div>
-
-      {/* List */}
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => <div key={i} className="glow-card h-28 shimmer" />)}
+    <div className="space-y-8">
+      {/* ── SECTION 1: HERO BANNERS ──────────────────────────────── */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <LayoutGrid size={16} className="text-mia-orange" />
+            Hero Banners <span className="text-white/30 text-sm font-normal">({banners.length})</span>
+          </h2>
+          <button
+            onClick={() => openCreate('hero')}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white glow-btn"
+            style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}
+          >
+            <Plus size={14} /> Add Banner
+          </button>
         </div>
-      ) : error ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <p className="text-red-400 text-sm font-medium">{error}</p>
-          <button onClick={() => load()} className="px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>Retry</button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {banners.length === 0 && (
-            <div className="text-center py-16 text-white/20 text-sm">
-              No banners yet — click Add Banner to create one.
-            </div>
-          )}
-          {banners.map(b => {
-            const img = b.desktop_image || b.image_url || '';
-            return (
-              <div key={b.id} className="glow-card overflow-hidden">
-                <div className="flex items-stretch">
-                  {/* Thumbnail */}
-                  <div className="w-28 h-24 shrink-0 relative overflow-hidden bg-white/[0.02]">
-                    {img ? (
-                      <img src={img} alt={b.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ background: `${b.color}08` }}>
-                        <Image size={20} style={{ color: `${b.color}60` }} />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(to right, transparent, ${b.color}15)` }} />
-                  </div>
 
-                  {/* Info */}
-                  <div className="flex-1 px-4 py-3 flex flex-col justify-between min-w-0">
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <p className="text-sm font-bold truncate" style={{ color: b.color }}>{b.title}</p>
-                        <StatusBadge banner={b} />
-                        {b.open_in_new_tab && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/15">
-                            <ExternalLink size={8} className="inline mr-0.5" />new tab
-                          </span>
-                        )}
-                        {b.priority > 0 && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/30">P{b.priority}</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-white/45 truncate">{b.subtitle}</p>
-                      {(b.starts_at || b.ends_at) && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Calendar size={9} className="text-white/25" />
-                          <span className="text-[9px] text-white/25">
-                            {b.starts_at ? new Date(b.starts_at).toLocaleDateString() : '—'}
-                            {' → '}
-                            {b.ends_at ? new Date(b.ends_at).toLocaleDateString() : 'ongoing'}
-                          </span>
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => <div key={i} className="glow-card h-28 shimmer" />)}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {banners.length === 0 && (
+              <div className="text-center py-10 bg-white/[0.01] rounded-2xl border border-white/5 text-white/20 text-sm">
+                No hero banners found.
+              </div>
+            )}
+            {banners.map(b => {
+              const img = b.desktop_image || b.image_url || '';
+              return (
+                <div key={b.id} className="glow-card overflow-hidden">
+                  <div className="flex items-stretch">
+                    <div className="w-28 h-24 shrink-0 relative overflow-hidden bg-white/[0.02]">
+                      {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={20} className="text-white/10" /></div>}
+                    </div>
+                    <div className="flex-1 px-4 py-3 flex flex-col justify-between min-w-0">
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <p className="text-sm font-bold truncate" style={{ color: b.color }}>{b.title}</p>
+                          <StatusBadge banner={b} />
+                          {b.priority > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/30">P{b.priority}</span>}
                         </div>
-                      )}
-                      {b.button_text && (
-                        <span className="inline-block mt-1 text-[9px] px-2 py-0.5 rounded-md font-medium"
-                          style={{ color: b.color, background: `${b.color}10`, border: `1px solid ${b.color}20` }}>
-                          {b.button_text}
-                        </span>
-                      )}
+                        <p className="text-xs text-white/75 truncate">{b.subtitle}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center justify-center gap-1.5 px-3 border-l border-white/5 shrink-0">
+                      <button onClick={() => handlePriority(b, 'up', 'hero')} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10"><ArrowUp size={11} className="text-white/40" /></button>
+                      <button onClick={() => handleToggle(b, 'hero')} className="w-7 h-7 rounded-lg text-[9px] font-bold" style={b.is_active ? { color: '#22c55e', background: 'rgba(34,197,94,0.08)' } : { color: 'rgba(255,255,255,0.2)' }}>{b.is_active ? 'ON' : 'OFF'}</button>
+                      <button onClick={() => openEdit(b, 'hero')} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center"><Edit2 size={11} className="text-white/50" /></button>
+                      <button onClick={() => { setConfirmDelete(b); setDeleteMode('hero'); }} className="w-7 h-7 rounded-lg bg-red-500/5 flex items-center justify-center"><Trash2 size={11} className="text-red-400/60" /></button>
                     </div>
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col items-center justify-center gap-1.5 px-3 border-l border-white/5 shrink-0">
-                    <button onClick={() => handlePriority(b, 'up')} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Increase priority">
-                      <ArrowUp size={11} className="text-white/40" />
-                    </button>
-                    <button onClick={() => handlePriority(b, 'down')} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" title="Decrease priority">
-                      <ArrowDown size={11} className="text-white/40" />
-                    </button>
-                    <button onClick={() => handleToggle(b)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold transition-colors"
-                      style={b.is_active
-                        ? { color: '#22c55e', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }
-                        : { color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }
-                      }>
-                      {b.is_active ? 'ON' : 'OFF'}
-                    </button>
-                    <button onClick={() => openEdit(b)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                      <Edit2 size={11} className="text-white/50" />
-                    </button>
-                    <button onClick={() => setConfirmDelete(b)} className="w-7 h-7 rounded-lg bg-red-500/5 flex items-center justify-center hover:bg-red-500/10 transition-colors">
-                      <Trash2 size={11} className="text-red-400/60" />
-                    </button>
+      {/* ── SECTION 2: BOTTOM PROMO BANNERS ───────────────────────── */}
+      <div className="space-y-4 pt-4 border-t border-white/5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <LayoutGrid size={16} className="text-[#00D1FF]" />
+              Bottom Promo Banners <span className="text-white/30 text-sm font-normal">({promoBanners.length})</span>
+            </h2>
+            <p className="text-[11px] text-white/30 mt-0.5">Middle section dynamic slidable promo banners grid</p>
+          </div>
+          <button
+            onClick={() => openCreate('promo')}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white glow-btn"
+            style={{ background: 'linear-gradient(135deg, #00D1FF, #7B2CFF)' }}
+          >
+            <Plus size={14} /> Add Promo Banner
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 1 }).map((_, i) => <div key={i} className="glow-card h-28 shimmer" />)}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {promoBanners.length === 0 && (
+              <div className="text-center py-12 bg-white/[0.01] rounded-2xl border border-white/5 text-white/20 text-sm">
+                No bottom promo banners configured. Admin text fallback will show on user site.
+              </div>
+            )}
+            {promoBanners.map(b => {
+              const img = b.desktop_image || b.image_url || '';
+              return (
+                <div key={b.id} className="glow-card overflow-hidden border border-[#00D1FF]/10">
+                  <div className="flex items-stretch">
+                    <div className="w-28 h-24 shrink-0 relative overflow-hidden bg-white/[0.02]">
+                      {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Image size={20} className="text-white/10" /></div>}
+                    </div>
+                    <div className="flex-1 px-4 py-3 flex flex-col justify-between min-w-0">
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <p className="text-sm font-bold truncate" style={{ color: b.color || '#00D1FF' }}>{b.title}</p>
+                          <StatusBadge banner={b} />
+                          {b.priority > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">P{b.priority}</span>}
+                        </div>
+                        <p className="text-xs text-white/75 truncate">{b.subtitle}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center justify-center gap-1.5 px-3 border-l border-white/5 shrink-0">
+                      <button onClick={() => handlePriority(b, 'up', 'promo')} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center"><ArrowUp size={11} className="text-white/40" /></button>
+                      <button onClick={() => handleToggle(b, 'promo')} className="w-7 h-7 rounded-lg text-[9px] font-bold" style={b.is_active ? { color: '#00D1FF', background: 'rgba(0,209,255,0.08)' } : { color: 'rgba(255,255,255,0.2)' }}>{b.is_active ? 'ON' : 'OFF'}</button>
+                      <button onClick={() => openEdit(b, 'promo')} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center"><Edit2 size={11} className="text-white/50" /></button>
+                      <button onClick={() => { setConfirmDelete(b); setDeleteMode('promo'); }} className="w-7 h-7 rounded-lg bg-red-500/5 flex items-center justify-center"><Trash2 size={11} className="text-red-400/60" /></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ── Create / Edit Modal ──────────────────────────────── */}
       {showForm && (
@@ -459,12 +512,14 @@ export function AdminBanners() {
               style={{ background: '#13131A', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: 'rgba(255,138,0,0.12)', border: '1px solid rgba(255,138,0,0.2)' }}>
-                  <Image size={15} className="text-[#FF8A00]" />
+                  style={{ background: modalMode === 'hero' ? 'rgba(255,138,0,0.12)' : 'rgba(0,209,255,0.12)', border: `1px solid ${modalMode === 'hero' ? 'rgba(255,138,0,0.2)' : 'rgba(0,209,255,0.2)'}` }}>
+                  <Image size={15} className={modalMode === 'hero' ? 'text-[#FF8A00]' : 'text-[#00D1FF]'} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white leading-tight">{editing ? 'Edit Banner' : 'New Banner'}</h3>
-                  <p className="text-[10px] text-white/30">Homepage hero carousel</p>
+                  <h3 className="text-sm font-bold text-white leading-tight">
+                    {editing ? 'Edit' : 'New'} {modalMode === 'hero' ? 'Hero Banner' : 'Bottom Promo Banner'}
+                  </h3>
+                  <p className="text-[10px] text-white/30">{modalMode === 'hero' ? 'Homepage hero carousel element' : 'Bottom side list view promo banner'}</p>
                 </div>
               </div>
               <button onClick={() => setShowForm(false)}
@@ -474,8 +529,7 @@ export function AdminBanners() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
-
-              {/* ── Preview ── */}
+              {/* Preview */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <button type="button" onClick={() => setShowPreview(v => !v)}
@@ -488,7 +542,7 @@ export function AdminBanners() {
                       <button key={tab} type="button" onClick={() => setPreviewTab(tab)}
                         className="text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-colors capitalize"
                         style={previewTab === tab
-                          ? { color: tab === 'desktop' ? '#FF8A00' : '#00D1FF', background: tab === 'desktop' ? 'rgba(255,138,0,0.1)' : 'rgba(0,209,255,0.1)', border: `1px solid ${tab === 'desktop' ? 'rgba(255,138,0,0.25)' : 'rgba(0,209,255,0.25)'}` }
+                          ? { color: modalMode === 'hero' ? '#FF8A00' : '#00D1FF', background: modalMode === 'hero' ? 'rgba(255,138,0,0.1)' : 'rgba(0,209,255,0.1)', border: `1px solid ${modalMode === 'hero' ? 'rgba(255,138,0,0.25)' : 'rgba(0,209,255,0.25)'}` }
                           : { color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                         {tab}
                       </button>
@@ -512,7 +566,7 @@ export function AdminBanners() {
                       <div className="absolute inset-0 flex flex-col justify-center px-4 pointer-events-none"
                         style={{ background: 'linear-gradient(to right, rgba(9,11,20,0.75) 0%, transparent 60%)' }}>
                         <p className="text-sm font-bold drop-shadow" style={{ color: form.color }}>{form.title}</p>
-                        {form.subtitle && <p className="text-xs text-white/60 mt-0.5">{form.subtitle}</p>}
+                        {form.subtitle && <p className="text-xs text-white/90 mt-0.5">{form.subtitle}</p>}
                         {form.button_text && (
                           <span className="inline-block mt-2 text-[9px] px-2 py-0.5 rounded font-semibold w-fit"
                             style={{ background: form.color, color: '#0A0A0F' }}>
@@ -543,7 +597,6 @@ export function AdminBanners() {
 
               <Divider label="Images" />
 
-              {/* Desktop Image Upload */}
               <ImageUploadField
                 label="Desktop Image"
                 hint="Recommended 1200×400 px"
@@ -552,7 +605,6 @@ export function AdminBanners() {
                 slot="desktop"
               />
 
-              {/* Mobile Image Upload */}
               <ImageUploadField
                 label="Mobile Image"
                 hint="Recommended 768×300 px"
@@ -578,7 +630,6 @@ export function AdminBanners() {
                 </Field>
               </div>
 
-              {/* Open in New Tab */}
               <label className="flex items-center gap-3 cursor-pointer py-0.5">
                 <input type="checkbox" checked={form.open_in_new_tab}
                   onChange={e => set('open_in_new_tab', e.target.checked)}
@@ -594,7 +645,6 @@ export function AdminBanners() {
 
               <Divider label="Status & Schedule" />
 
-              {/* Status select */}
               <Field label="Banner Status">
                 <div className="grid grid-cols-3 gap-2">
                   {(['active', 'draft', 'scheduled'] as BannerStatus[]).map(s => {
@@ -613,7 +663,6 @@ export function AdminBanners() {
                 </div>
               </Field>
 
-              {/* Schedule dates — always shown, required when Scheduled */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Start Date & Time">
                   <input type="datetime-local" value={form.starts_at}
@@ -630,14 +679,12 @@ export function AdminBanners() {
 
               <Divider label="Appearance" />
 
-              {/* Priority */}
-              <Field label="Display Priority" hint="Higher = shown first in slider">
+              <Field label="Display Priority" hint="Higher = shown first in list">
                 <input type="number" min="0" value={form.priority}
                   onChange={e => set('priority', Number(e.target.value))}
                   className="admin-input" style={{ maxWidth: 100 }} />
               </Field>
 
-              {/* Accent Color */}
               <Field label="Accent Color">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   {COLORS.map(c => (
@@ -655,20 +702,11 @@ export function AdminBanners() {
                 </div>
               </Field>
 
-              {/* Submit */}
               <div className="pt-2">
                 <button type="submit" disabled={saving}
                   className="w-full py-3 rounded-xl text-sm font-bold text-white glow-btn disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: 'linear-gradient(135deg, #FF8A00, #FF2EC9)' }}>
-                  {saving ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Saving…
-                    </span>
-                  ) : editing ? 'Update Banner' : 'Create Banner'}
+                  style={{ background: modalMode === 'hero' ? 'linear-gradient(135deg, #FF8A00, #FF2EC9)' : 'linear-gradient(135deg, #00D1FF, #7B2CFF)' }}>
+                  {saving ? 'Saving…' : editing ? 'Update Banner' : 'Create Banner'}
                 </button>
               </div>
             </form>
@@ -682,7 +720,7 @@ export function AdminBanners() {
           message={`Delete "${confirmDelete.title}"? This cannot be undone.`}
           confirmLabel="Delete"
           danger
-          onConfirm={() => handleDelete(confirmDelete.id)}
+          onConfirm={handleDelete}
           onCancel={() => setConfirmDelete(null)}
         />
       )}
