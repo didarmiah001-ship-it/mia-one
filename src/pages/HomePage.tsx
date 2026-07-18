@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, ChevronRight, ChevronLeft, Bell, Zap, TrendingUp, Sparkles, Megaphone, Globe } from 'lucide-react';
+import { Search, ChevronRight, ChevronLeft, Bell, Zap, TrendingUp, Sparkles, Megaphone, User } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../components/ProductCard';
 import { CategoryIcon } from '../components/CategoryIcon';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
@@ -22,10 +21,10 @@ export function HomePage() {
   const { products, categories, banners, promoBanners } = useData();
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
-  // মেসেঞ্জার স্টাইল স্ক্রোল ইফেক্ট হ্যান্ডল করার জন্য লিসেনার
+  // মেসেঞ্জার স্টাইল স্মুথ স্ক্রোল ডিটেকশন
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 30) {
+      if (window.scrollY > 20) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
@@ -99,13 +98,16 @@ export function HomePage() {
   return (
     <div className="page-transition pb-32 bg-gray-50/50 dark:bg-zinc-950 min-h-screen text-gray-900 dark:text-zinc-50 antialiased w-full">
       
-      {/* 1. Messenger Style Sticky Header (লোগো নিজের জায়গায় লকড থাকে, স্ক্রোল করলে সার্চবার উপরে উঠে যায়) */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 dark:bg-zinc-950/95 border-b border-gray-100 dark:border-zinc-900 transition-all duration-300">
+      {/* ১. মেসেঞ্জারের মতো ট্রু-স্টিকি ফিক্সড হেডার */}
+      <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 border-b ${
+        isScrolled 
+          ? 'bg-white/95 dark:bg-zinc-950/95 border-gray-100 dark:border-zinc-900/80 shadow-sm' 
+          : 'bg-white dark:bg-zinc-950 border-transparent'
+      }`}>
         <div className={`w-full px-4 mx-auto flex flex-col justify-center transition-all duration-300 ${isScrolled ? 'h-14' : 'h-28'}`}>
           
-          {/* Top Bar: লোগো এবং মেইন অ্যাকশন বাটন যা সবসময় স্ক্রিনে নিজস্ব জায়গায় দৃশ্যমান থাকে */}
+          {/* লোগো এবং বাটন রো - এটি সবসময় নিজস্ব জায়গায় লকড থাকবে */}
           <div className="flex items-center justify-between w-full relative z-10">
-            {/* Logo বামে */}
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
               <div className="relative w-8 h-8 shrink-0">
                 <img src={appConfig.logo} alt="Logo" className="w-full h-full object-contain" />
@@ -115,11 +117,14 @@ export function HomePage() {
               </h1>
             </div>
 
-            {/* Action Icons ডানে - স্ক্রোল করলে লোগোর লাইনে সিঙ্কড হয়ে যাবে */}
+            {/* অ্যাকশন বাটনসমূহ যেখানে ল্যাঙ্গুয়েজ আইকন সরিয়ে প্রোফাইল আইকন দেওয়া হয়েছে */}
             <div className="flex items-center gap-2 shrink-0">
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800/80 hover:opacity-80 transition-opacity cursor-pointer">
-                <LanguageSwitcher variant="icon" />
-              </div>
+              <button 
+                onClick={() => navigate('/profile')} 
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800/80 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+              >
+                <User size={15} className="text-gray-600 dark:text-white/70" />
+              </button>
               
               <button 
                 onClick={() => navigate('/notifications')} 
@@ -131,7 +136,7 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* Bottom Bar: Search বার যা স্ক্রোল করলে উপরের দিকে ঠেলে উঠে অদৃশ্য হয়ে যাবে */}
+          {/* সার্চ বার - স্ক্রোল করলে এটি মেসেঞ্জারের মতো উপরের দিকে স্লাইড হয়ে হাইড হয়ে যাবে */}
           <div className={`w-full transition-all duration-300 origin-top overflow-hidden ${isScrolled ? 'h-0 opacity-0 mt-0 pointer-events-none' : 'h-10 opacity-100 mt-2'}`}>
             <div className="w-full relative">
               <button
@@ -147,10 +152,10 @@ export function HomePage() {
         </div>
       </header>
 
-      {/* Main Content Layout - ডেস্কটপে ফুল স্ক্রিন এবং মোবাইলে হাফ/মিডিয়াম বাউন্ডিং */}
+      {/* কন্টেন্ট লেআউট (ডেস্কটপে ফুল স্ক্রিন এবং মোবাইলে সুইট বাউন্ডিং) */}
       <div className="w-full lg:max-w-none md:max-w-none max-w-lg mx-auto pt-32 md:pt-36 space-y-10">
         
-        {/* 2. Hero Banner Slider */}
+        {/* ২. হিরো ব্যানার স্লাইডার */}
         <section className="w-full px-4 lg:px-8">
           <div className="banner-slider relative overflow-hidden rounded-3xl border border-white/5 shadow-md bg-zinc-900" style={{ height: 'clamp(180px, 28vw, 360px)' }}>
             {banners.length === 0 ? (
@@ -186,15 +191,6 @@ export function HomePage() {
                           {banner.title}
                         </span>
                         {banner.subtitle && <p className="text-xs md:text-base text-white/75 mb-5 max-w-md">{banner.subtitle}</p>}
-                        {banner.button_text && (
-                          <button
-                            onClick={() => { if (banner.button_link) window.open(banner.button_link, '_blank'); }}
-                            className="text-xs md:text-sm font-semibold px-6 py-2.5 rounded-xl w-fit transition-all duration-300 hover:scale-105 active:scale-95"
-                            style={{ backgroundColor: `${banner.color}18`, color: banner.color, border: `1px solid ${banner.color}35`, boxShadow: `0 4px 16px ${banner.color}20` }}
-                          >
-                            {banner.button_text}
-                          </button>
-                        )}
                       </div>
                     </div>
                   );
@@ -215,7 +211,7 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* 3. Categories */}
+        {/* ৩. ক্যাটাগরি সেকশন */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-white/60">{t('home.categories')}</h2>
@@ -240,7 +236,7 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* 4. Flash Sale */}
+        {/* ৪. ফ্ল্যাশ সেল */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
@@ -255,7 +251,7 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* 5. Featured Products */}
+        {/* ৫. ফিচার্ড পণ্য */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-gray-800 dark:text-white/90">{t('home.featured')}</h2>
@@ -265,7 +261,7 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* 6. Trending Products */}
+        {/* ৬. ট্রেন্ডিং পণ্য */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
@@ -280,7 +276,7 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* 7. New Arrivals */}
+        {/* ৭. নতুন আগমন */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
@@ -295,35 +291,25 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* 8. Recently Viewed */}
-        {state.recentlyViewed.length > 0 && (
-          <section className="w-full px-4 lg:px-8">
-            <h2 className="text-base font-bold text-gray-800 dark:text-white/90 mb-4">{t('home.recentlyViewed')}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {state.recentlyViewed.slice(0, 6).map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
-          </section>
-        )}
-
-        {/* 9. Promo Banner (সাইজ ২-৩ গুণ বাড়িয়ে হিরো ব্যানারের ঠিক সামঞ্জস্যপূর্ণ করা হয়েছে) */}
+        {/* ৮. প্রোমো ব্যানার (মোবাইলে ২-৩ গুণ বড় সাইজ এবং টাকার টেক্সট ফন্ট সাইজ বৃদ্ধি করা হয়েছে) */}
         <section className="w-full px-4 lg:px-8 pt-4 pb-6">
           {promoBanners && promoBanners.length > 0 ? (
             <div className="flex flex-col gap-6">
               {promoBanners.map(b => {
                 const pImg = b.mobile_image || b.desktop_image || b.image_url || '';
                 return (
-                  <div key={b.id} className="rounded-[32px] relative overflow-hidden backdrop-blur-md bg-white/5 dark:bg-black/30 border border-white/10 dark:border-zinc-800/60 shadow-xl aspect-[1200/260] w-full flex flex-col justify-center cursor-pointer group transition-transform duration-300 active:scale-[0.99]"
+                  <div key={b.id} className="rounded-[32px] relative overflow-hidden backdrop-blur-md bg-white/5 dark:bg-black/30 border border-white/10 dark:border-zinc-800/60 shadow-xl aspect-[1200/380] md:aspect-[1200/260] w-full flex flex-col justify-center cursor-pointer group transition-transform duration-300 active:scale-[0.99]"
                     onClick={() => { if (b.button_link) navigate(b.button_link); }}>
                     {pImg && (
                       <>
                         <img src={ikBanner(pImg)} alt="" className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-500 group-hover:scale-102" />
-                        <div className="absolute inset-0 z-5 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+                        <div className="absolute inset-0 z-5 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
                       </>
                     )}
-                    <div className="relative z-10 px-8 md:px-12 flex items-center justify-between gap-6">
-                      <div className="max-w-[75%]">
-                        <h3 className="text-base sm:text-xl md:text-2xl font-black text-white mb-1.5 truncate tracking-wide">{b.title}</h3>
-                        {b.subtitle && <p className="text-xs sm:text-sm text-white/80 mb-0 truncate font-medium">{b.subtitle}</p>}
+                    <div className="relative z-10 px-6 md:px-12 flex items-center justify-between gap-6">
+                      <div className="max-w-[70%]">
+                        <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white mb-2 truncate tracking-wide">{b.title}</h3>
+                        {b.subtitle && <p className="text-sm sm:text-base md:text-lg font-bold text-orange-400 mt-1 drop-shadow-md tracking-wider">{b.subtitle}</p>}
                       </div>
                       {b.button_text && (
                         <button className="text-xs md:text-sm px-6 py-2.5 rounded-full font-bold shrink-0 transition-all shadow-md group-hover:brightness-110"
@@ -341,15 +327,17 @@ export function HomePage() {
               })}
             </div>
           ) : (
-            /* Fallback Dynamic Size Premium Glass Banner */
-            <div className="rounded-[32px] p-8 md:p-12 relative overflow-hidden backdrop-blur-md bg-white/40 dark:bg-zinc-900/40 border border-white/20 dark:border-zinc-800/40 shadow-sm transition-all duration-300 aspect-[1200/260] flex items-center">
+            /* ফলব্যাক ডাইনামিক প্রিমিয়াম গ্লাস ব্যানার - টাকার টেক্সট সাইজ ফিক্সড */
+            <div className="rounded-[32px] p-6 md:p-12 relative overflow-hidden backdrop-blur-md bg-white/40 dark:bg-zinc-900/40 border border-white/20 dark:border-zinc-800/40 shadow-sm aspect-[1200/380] md:aspect-[1200/260] flex items-center">
               <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full opacity-15 blur-2xl bg-cyan-500" />
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10 w-full">
                 <div>
-                  <h3 className="text-lg md:text-2xl font-black text-slate-800 dark:text-white mb-1">{t('home.freeDelivery')}</h3>
-                  <p className="text-xs md:text-sm text-slate-600 dark:text-white/70 font-medium">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+                  <h3 className="text-xl md:text-3xl font-black text-slate-800 dark:text-white mb-1.5">{t('home.freeDelivery')}</h3>
+                  <p className="text-sm md:text-lg text-orange-600 dark:text-orange-400 font-extrabold tracking-wide">
+                    {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}
+                  </p>
                 </div>
-                <button className="text-xs md:text-sm px-6 py-2.5 rounded-full font-bold transition-all bg-cyan-500/10 text-cyan-500 border border-cyan-500/25 shadow-sm hover:bg-cyan-500/20 w-fit">
+                <button className="text-xs md:text-sm px-6 py-2.5 rounded-full font-bold transition-all bg-cyan-500/10 text-cyan-500 border border-cyan-500/25 shadow-sm w-fit">
                   {t('home.shopNow')}
                 </button>
               </div>
@@ -357,7 +345,7 @@ export function HomePage() {
           )}
         </section>
 
-        {/* 10. Special Campaigns Section */}
+        {/* ৯. স্পেশাল ক্যাম্পেইন সেকশন */}
         {campaigns.length > 0 && (
           <section className="w-full px-4 lg:px-8 pb-16">
             <div className="flex items-center gap-2 mb-4">
@@ -366,21 +354,9 @@ export function HomePage() {
             </div>
             <div className="space-y-4">
               {campaigns.map(c => (
-                <div key={c.id} className="rounded-3xl overflow-hidden relative group cursor-pointer border border-orange-500/15"
-                  onClick={() => navigate('/')}>
-                  {c.banner_url ? (
+                <div key={c.id} className="rounded-3xl overflow-hidden relative group cursor-pointer border border-orange-500/15" onClick={() => navigate('/')}>
+                  {c.banner_url && (
                     <img src={ikBanner(c.banner_url)} alt={c.name} className="w-full h-36 sm:h-48 object-cover transition-transform duration-500 group-hover:scale-101" />
-                  ) : (
-                    <div className="w-full h-36 flex items-center justify-center p-6 bg-gradient-to-r from-orange-500/5 to-pink-500/5">
-                      <div className="text-center">
-                        <h4 className="text-lg font-bold text-gray-800 dark:text-white">{c.name}</h4>
-                        {c.discount_value > 0 && (
-                          <p className="text-2xl font-black text-orange-500 mt-1">
-                            {c.discount_type === 'percentage' ? `${c.discount_value}% OFF` : `৳${c.discount_value} OFF`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
                   )}
                 </div>
               ))}
