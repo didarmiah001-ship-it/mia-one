@@ -14,6 +14,9 @@ const FLAG_STYLES: Record<string, { color: string; label: string }> = {
 
 type SortKey = 'name' | 'price' | 'stock' | 'created_at';
 
+// Custom dropdown select dark styling constant
+const selectDarkStyles = "px-3 py-2 text-xs bg-[#1A202C]/60 border border-white/10 rounded-xl text-white/80 focus:outline-none focus:border-mia-orange/40 transition-colors cursor-pointer appearance-none pr-8";
+
 export function AdminProducts() {
   const toast = useToast();
   const [products, setProducts] = useState<any[]>([]);
@@ -108,25 +111,31 @@ export function AdminProducts() {
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Filters with Dark Option Overrides */}
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[180px]">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or SKU..."
             className="w-full pl-8 pr-3 py-2 text-xs bg-white/[0.03] border border-white/8 rounded-xl text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40" />
         </div>
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          className="px-3 py-2 text-xs bg-white/[0.03] border border-white/8 rounded-xl text-white/70 focus:outline-none focus:border-mia-orange/40">
-          <option value="">All Categories</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="px-3 py-2 text-xs bg-white/[0.03] border border-white/8 rounded-xl text-white/70 focus:outline-none focus:border-mia-orange/40">
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="low_stock">Low Stock</option>
-        </select>
+        
+        <div className="relative">
+          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+            className={selectDarkStyles}>
+            <option value="" className="bg-[#141820] text-white">All Categories</option>
+            {categories.map(c => <option key={c.id} value={c.id} className="bg-[#141820] text-white">{c.name}</option>)}
+          </select>
+        </div>
+
+        <div className="relative">
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+            className={selectDarkStyles}>
+            <option value="all" className="bg-[#141820] text-white">All Status</option>
+            <option value="active" className="bg-[#141820] text-white">Active</option>
+            <option value="inactive" className="bg-[#141820] text-white">Inactive</option>
+            <option value="low_stock" className="bg-[#141820] text-white">Low Stock</option>
+          </select>
+        </div>
       </div>
 
       {/* Table — desktop */}
