@@ -33,14 +33,14 @@ const CATEGORY_OPTIONS = [
 ];
 
 const CHANNEL_OPTIONS = [
-  { value: 'in_app', label: 'In-App Only',        icon: Smartphone },
+  { value: 'in_app', label: 'In-App Only',         icon: Smartphone },
   { value: 'email',  label: 'Email Only',          icon: Mail       },
   { value: 'all',    label: 'In-App + Email',      icon: Layers     },
 ];
 
 const STATUS_META: Record<string, { color: string; icon: any; label: string }> = {
   draft:  { color: '#8B8B9A', icon: Clock,        label: 'Draft'  },
-  sent:   { color: '#34D399', icon: CheckCircle2,  label: 'Sent'   },
+  sent:   { color: '#34D399', icon: CheckCircle2, label: 'Sent'   },
   failed: { color: '#F87171', icon: XCircle,       label: 'Failed' },
 };
 
@@ -48,6 +48,9 @@ const EMPTY_FORM = {
   title: '', message: '', type: 'info', category: 'general',
   channel: 'in_app', target: 'all', link: '',
 };
+
+// Custom Tailwind-styled background class override for dark theme input alignment
+const inputDarkStyles = "w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#1A202C]/60 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-mia-orange/40 transition-colors";
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', {
@@ -191,7 +194,7 @@ export function AdminNotifications() {
   const toast = useToast();
   const [campaigns, setCampaigns]   = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [showForm, setShowForm]     = useState(false);
+  const [showForm, setShowForm]      = useState(false);
   const [form, setForm]             = useState(EMPTY_FORM);
   const [saving, setSaving]         = useState(false);
   const [sendingId, setSendingId]   = useState<string | null>(null);
@@ -278,7 +281,7 @@ export function AdminNotifications() {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total',  value: campaigns.length,           color: '#00D1FF', icon: Bell        },
+          { label: 'Total',  value: campaigns.length,           color: '#00D1FF', icon: Bell         },
           { label: 'Sent',   value: sentCount,                  color: '#34D399', icon: CheckCircle2 },
           { label: 'Drafts', value: draftCount,                 color: '#F59E0B', icon: Clock        },
         ].map(s => {
@@ -301,10 +304,11 @@ export function AdminNotifications() {
             key={f}
             onClick={() => setFilterStatus(f)}
             className="px-4 py-1.5 rounded-xl text-xs font-medium transition-all capitalize"
-            style={filterStatus === f
-              ? { background: 'rgba(255,138,0,0.1)', color: '#FF8A00', border: '1px solid rgba(255,138,0,0.2)' }
-              : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.06)' }
-            }
+            style={{
+              background: filterStatus === f ? 'rgba(255,138,0,0.1)' : 'rgba(255,255,255,0.03)',
+              color: filterStatus === f ? '#FF8A00' : 'rgba(255,255,255,0.35)',
+              border: filterStatus === f ? '1px solid rgba(255,138,0,0.2)' : '1px solid rgba(255,255,255,0.06)'
+            }}
           >
             {f}
           </button>
@@ -380,7 +384,7 @@ export function AdminNotifications() {
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   placeholder="e.g. 50% off flash sale!"
-                  className="admin-input"
+                  className={inputDarkStyles}
                 />
               </div>
 
@@ -393,7 +397,7 @@ export function AdminNotifications() {
                   onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                   placeholder="Your notification message…"
                   rows={3}
-                  className="admin-input resize-none"
+                  className={`${inputDarkStyles} resize-none`}
                 />
               </div>
 
@@ -405,10 +409,10 @@ export function AdminNotifications() {
                     <select
                       value={form.type}
                       onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                      className="admin-input appearance-none pr-8"
+                      className={`${inputDarkStyles} appearance-none pr-8 bg-[#1A202C] text-white`}
                     >
                       {TYPE_OPTIONS.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
+                        <option key={o.value} value={o.value} className="bg-[#141820] text-white">{o.label}</option>
                       ))}
                     </select>
                     <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -420,10 +424,10 @@ export function AdminNotifications() {
                     <select
                       value={form.category}
                       onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                      className="admin-input appearance-none pr-8"
+                      className={`${inputDarkStyles} appearance-none pr-8 bg-[#1A202C] text-white`}
                     >
                       {CATEGORY_OPTIONS.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
+                        <option key={o.value} value={o.value} className="bg-[#141820] text-white">{o.label}</option>
                       ))}
                     </select>
                     <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -456,9 +460,9 @@ export function AdminNotifications() {
                   <select
                     value={form.target}
                     onChange={e => setForm(f => ({ ...f, target: e.target.value }))}
-                    className="admin-input appearance-none pr-8"
+                    className={`${inputDarkStyles} appearance-none pr-8 bg-[#1A202C] text-white`}
                   >
-                    <option value="all">All Users</option>
+                    <option value="all" className="bg-[#141820] text-white">All Users</option>
                   </select>
                   <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
                 </div>
@@ -471,7 +475,7 @@ export function AdminNotifications() {
                   value={form.link}
                   onChange={e => setForm(f => ({ ...f, link: e.target.value }))}
                   placeholder="/product/123 or /coupons"
-                  className="admin-input"
+                  className={inputDarkStyles}
                 />
               </div>
 
