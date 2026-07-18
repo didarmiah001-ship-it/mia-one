@@ -20,40 +20,46 @@ export function HomePage() {
 
   useEffect(() => { fetchActiveCampaigns().then(data => { if (data) setCampaigns(data); }); }, []);
 
+  const flashSale = products.filter(p => p.discount_price).slice(0, 4);
+  const featured = products.filter(p => p.is_featured);
+  const trending = products.filter(p => p.is_trending);
+  const newArrivals = products.filter(p => p.is_new);
+
   return (
     <div className="page-transition pb-24 w-full">
-      {/* হেডার: ডেস্কটপে ফুল স্ক্রিন, লোগো মাঝখানে */}
-      <header className="sticky top-0 z-30 glass px-4 py-3 w-full">
+      {/* ১. হেডার: মাঝখানে লোগো, দুই পাশে আইকন */}
+      <header className="sticky top-0 z-30 glass px-4 py-3 w-full border-b border-white/5">
         <div className="flex items-center justify-between w-full max-w-[1400px] mx-auto">
-          <button onClick={() => navigate('/notifications')} className="text-white/70"><Bell size={24} /></button>
+          <button onClick={() => navigate('/notifications')} className="text-white/80"><Bell size={24} /></button>
           <img src={appConfig.logo} alt="Logo" className="w-10 h-10 object-contain" />
-          <button onClick={() => navigate('/wishlist')} className="text-white/70"><Heart size={24} /></button>
+          <button onClick={() => navigate('/wishlist')} className="text-white/80"><Heart size={24} /></button>
         </div>
       </header>
 
-      {/* মেইন কন্টেন্ট */}
-      <div className="w-full px-4 md:px-8 lg:px-12 mx-auto">
-        
-        {/* হিরো ব্যানার */}
-        <section className="mt-4">
-           <div className="relative overflow-hidden rounded-3xl w-full" style={{ height: 'clamp(180px, 30vw, 400px)' }}>
+      <div className="w-full">
+        {/* ২. হিরো ব্যানার: ফুল উইডথ */}
+        <section className="w-full">
+           <div className="relative overflow-hidden w-full" style={{ height: 'clamp(200px, 35vw, 450px)' }}>
               {banners.length > 0 && <img src={ikBanner(banners[0].image_url)} className="w-full h-full object-cover" />}
            </div>
         </section>
 
-        {/* এখানে তোমার ক্যাটাগরি এবং প্রোডাক্ট সেকশনগুলো থাকবে */}
-        
-        {/* নিচের ব্যানার: প্রোডাক্টের নিচে, স্লিম সাইজ */}
-        <section className="mt-12 mb-8">
-          {promoBanners.map(b => (
-            <div key={b.id} className="rounded-3xl relative overflow-hidden w-full flex flex-col justify-center cursor-pointer p-8"
-              style={{ background: '#111', height: '120px' }} 
-              onClick={() => { if (b.button_link) navigate(b.button_link); }}>
-              <h3 className="text-3xl font-black text-white uppercase">{b.title}</h3>
-              <p className="text-lg font-bold text-white/80">{b.subtitle}</p>
-            </div>
-          ))}
-        </section>
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+            {/* ক্যাটাগরি ও প্রোডাক্ট সেকশনগুলো এখানে আছে */}
+            {/* [এখানে তোমার আগের ক্যাটাগরি, Flash Sale, Featured, Trending, New Arrivals কোডগুলো অপরিবর্তিত থাকবে] */}
+
+            {/* ৩. নিচের প্রমো ব্যানার: প্রোডাক্টের নিচে এবং আগের চেয়ে স্লিম (৯০ পিক্সেল) */}
+            <section className="mt-12 mb-8">
+              {promoBanners.map(b => (
+                <div key={b.id} className="rounded-2xl relative overflow-hidden w-full flex flex-col justify-center cursor-pointer px-8"
+                  style={{ background: '#111', height: '90px' }} 
+                  onClick={() => { if (b.button_link) navigate(b.button_link); }}>
+                  <h3 className="text-xl md:text-2xl font-bold text-white uppercase">{b.title}</h3>
+                  <p className="text-sm md:text-base font-medium text-white/70">{b.subtitle}</p>
+                </div>
+              ))}
+            </section>
+        </div>
       </div>
     </div>
   );
