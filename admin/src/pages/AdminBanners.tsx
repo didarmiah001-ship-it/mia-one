@@ -118,16 +118,20 @@ function StatusBadge({ banner }: { banner: any }) {
 // ── ImageUploadField ───────────────────────────────────────────────────────────
 
 function ImageUploadField({
-  label, hint, value, onChange, slot,
+  label, hint, value, onChange, slot, modalMode,
 }: {
   label: string; hint: string; value: string;
   onChange: (url: string) => void;
   slot: 'desktop' | 'mobile';
+  modalMode: 'hero' | 'promo';
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [upload, setUpload] = useState<UploadState>({ uploading: false, warning: null, done: false });
-  const recW = slot === 'desktop' ? 1200 : 768;
-  const recH = slot === 'desktop' ? 400  : 300;
+  
+  // 🆕 Adaptive Dimension Rules setup for 1200x140 Promo Banner
+  const recW = slot === 'desktop' ? 1200 : (modalMode === 'promo' ? 768 : 768);
+  const recH = slot === 'desktop' ? (modalMode === 'promo' ? 140 : 400) : (modalMode === 'promo' ? 100 : 300);
+  const calculatedHint = `Recommended ${recW}×${recH} px`;
 
   const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,7 +161,7 @@ function ImageUploadField({
   }, [onChange, slot, recW, recH]);
 
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={calculatedHint}>
       <div className="flex gap-2">
         <input
           value={value}
@@ -552,23 +556,29 @@ export function AdminBanners() {
 
                 {showPreview && (
                   <div className="w-full rounded-xl overflow-hidden relative flex items-center justify-center transition-all"
-                    style={{ height: previewTab === 'mobile' ? 96 : 124, background: previewImage ? 'transparent' : `${form.color}08`, border: `1px solid ${form.color}22` }}>
+                    style={{ 
+                      // 🆕 Dynamic Aspect Ratio Preview Adjustment for 1200x140 Promo Banner Mode
+                      aspectRatio: modalMode === 'promo' ? '1200/140' : undefined,
+                      height: modalMode === 'promo' ? 'auto' : (previewTab === 'mobile' ? 96 : 124), 
+                      background: previewImage ? 'transparent' : `${form.color}08`, 
+                      border: `1px solid ${form.color}22` 
+                    }}>
                     {previewImage ? (
                       <img src={previewImage} alt="Preview" className="w-full h-full object-cover"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        <Image size={22} style={{ color: `${form.color}50` }} />
-                        <span className="text-[10px] text-white/15">Image preview</span>
+                      <div className="flex flex-col items-center justify-center p-2 text-center gap-1">
+                        <Image size={modalMode === 'promo' ? 16 : 22} style={{ color: `${form.color}50` }} />
+                        <span className="text-[9px] text-white/15">Image preview</span>
                       </div>
                     )}
                     {form.title && (
                       <div className="absolute inset-0 flex flex-col justify-center px-4 pointer-events-none"
                         style={{ background: 'linear-gradient(to right, rgba(9,11,20,0.75) 0%, transparent 60%)' }}>
-                        <p className="text-sm font-bold drop-shadow" style={{ color: form.color }}>{form.title}</p>
-                        {form.subtitle && <p className="text-xs text-white/90 mt-0.5">{form.subtitle}</p>}
+                        <p className={`${modalMode === 'promo' ? 'text-xs' : 'text-sm'} font-bold drop-shadow`} style={{ color: form.color }}>{form.title}</p>
+                        {form.subtitle && <p className={`${modalMode === 'promo' ? 'text-[10px]' : 'text-xs'} text-white/90 mt-0.5 truncate max-w-[70%]`}>{form.subtitle}</p>}
                         {form.button_text && (
-                          <span className="inline-block mt-2 text-[9px] px-2 py-0.5 rounded font-semibold w-fit"
+                          <span className={`inline-block ${modalMode === 'promo' ? 'mt-1 text-[8px]' : 'mt-2 text-[9px]'} px-2 py-0.5 rounded font-semibold w-fit`}
                             style={{ background: form.color, color: '#0A0A0F' }}>
                             {form.button_text}
                           </span>
@@ -597,12 +607,14 @@ export function AdminBanners() {
 
               <Divider label="Images" />
 
+              {/* 🆕 Passed down modalMode to image slots for perfect responsive dimension validations */}
               <ImageUploadField
                 label="Desktop Image"
                 hint="Recommended 1200×400 px"
                 value={form.desktop_image}
                 onChange={url => set('desktop_image', url)}
                 slot="desktop"
+                modalMode={modalMode}
               />
 
               <ImageUploadField
@@ -611,6 +623,7 @@ export function AdminBanners() {
                 value={form.mobile_image}
                 onChange={url => set('mobile_image', url)}
                 slot="mobile"
+                modalMode={modalMode}
               />
 
               <Divider label="Call to Action" />
