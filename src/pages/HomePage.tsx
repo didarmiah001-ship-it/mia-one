@@ -18,7 +18,7 @@ export function HomePage() {
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
   const { state } = useStore();
-  const { products, categories, banners } = useData();
+  const { products, categories, banners, promoBanners } = useData();
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
   useEffect(() => {
@@ -267,24 +267,57 @@ export function HomePage() {
             </div>
           </section>
 
-          {/* Offer Banner */}
+          {/* ── Dynamic Bottom Promo Banners Grid Engine (1200x140 Ratio Setup) ── */}
           <section className="px-4 mt-9">
-            <div className="rounded-3xl p-6 relative overflow-hidden banner-glass"
-              style={{ border: '1px solid rgba(0,209,255,0.12)' }}>
-              <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
-                style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
-              <h3 className="text-lg font-bold text-white mb-1.5">{t('home.freeDelivery')}</h3>
-              <p className="text-xs text-white/90 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
-              <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
-                style={{
-                  background: 'rgba(0,209,255,0.1)',
-                  color: '#00D1FF',
-                  border: '1px solid rgba(0,209,255,0.25)',
-                  boxShadow: '0 4px 12px rgba(0,209,255,0.1)',
-                }}>
-                {t('home.shopNow')}
-              </button>
-            </div>
+            {promoBanners && promoBanners.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {promoBanners.map(b => {
+                  const pImg = b.mobile_image || b.desktop_image || b.image_url || '';
+                  return (
+                    <div key={b.id} className="rounded-3xl relative overflow-hidden banner-glass aspect-[1200/140] w-full flex flex-col justify-center cursor-pointer"
+                      onClick={() => { if (b.button_link) navigate(b.button_link); }}>
+                      {pImg && (
+                        <>
+                          <img src={ikBanner(pImg)} alt="" className="absolute inset-0 w-full h-full object-cover z-0" />
+                          <div className="absolute inset-0 z-5" style={{ background: 'linear-gradient(to right, rgba(9,11,20,0.8) 0%, rgba(9,11,20,0.3) 60%, transparent 100%)' }} />
+                        </>
+                      )}
+                      <div className="relative z-10 px-6">
+                        <h3 className="text-sm md:text-base font-bold text-white mb-0.5 leading-tight">{b.title}</h3>
+                        {b.subtitle && <p className="text-[11px] md:text-xs text-white/85 dark:text-white/90 mb-2 max-w-[70%] truncate leading-normal">{b.subtitle}</p>}
+                        {b.button_text && (
+                          <button className="text-[9px] md:text-[10px] px-3 py-1 rounded-xl font-bold transition-all active:scale-95"
+                            style={{
+                              background: b.color ? `${b.color}22` : 'rgba(0,209,255,0.1)',
+                              color: b.color || '#00D1FF',
+                              border: `1px solid ${b.color ? b.color + '44' : 'rgba(0,209,255,0.3)'}`,
+                            }}>
+                            {b.button_text}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Fallback static banner with adaptive light/dark typography setup */
+              <div className="rounded-3xl p-6 relative overflow-hidden banner-glass"
+                style={{ border: '1px solid rgba(0,209,255,0.12)' }}>
+                <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
+                  style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1.5">{t('home.freeDelivery')}</h3>
+                <p className="text-xs text-slate-600 dark:text-white/90 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+                <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
+                  style={{
+                    background: 'rgba(0,209,255,0.1)', color: '#00D1FF',
+                    border: '1px solid rgba(0,209,255,0.25)',
+                    boxShadow: '0 4px 12px rgba(0,209,255,0.1)',
+                  }}>
+                  {t('home.shopNow')}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* Active Campaigns */}
