@@ -9,7 +9,7 @@ import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
 import { ikThumb, ikBanner } from '../lib/imagekit';
-import { fetchActiveCampaigns } from '../lib/api';
+import { fetchActiveCampaigns, fetchPromoBanners } from '../lib/api';
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -20,9 +20,12 @@ export function HomePage() {
   const { state } = useStore();
   const { products, categories, banners } = useData();
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [promoBanners, setPromoBanners] = useState<any[]>([]);
 
   useEffect(() => {
     fetchActiveCampaigns().then(data => { if (data) setCampaigns(data); });
+    // Fetch dynamic bottom promo banners from the new Firestore stream engine
+    fetchPromoBanners().then(data => { if (data) setPromoBanners(data); }).catch(() => {});
   }, []);
 
   const goTo = useCallback((idx: number) => {
@@ -108,7 +111,7 @@ export function HomePage() {
             </button>
           </div>
         </div>
-        {/* Search bar — taps into full search page */}
+        {/* Search bar */}
         <div className="max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto relative">
           <button
             onClick={() => navigate('/search')}
@@ -125,7 +128,6 @@ export function HomePage() {
           <section className="px-4 mt-4">
             <div className="banner-slider relative overflow-hidden rounded-3xl banner-glass" style={{ height: 'clamp(160px, 25vw, 220px)' }}>
               {banners.length === 0 ? (
-                /* Fallback when no DB banners */
                 <div className="absolute inset-0 flex flex-col justify-center px-6">
                   <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, #FF8A00, transparent)', animation: 'breathe-neon 4s ease-in-out infinite' }} />
                   <span className="text-2xl font-extrabold mb-1.5" style={{ color: '#FF8A00', textShadow: '0 0 20px #FF8A0040' }}>{t('home.flashSaleTitle')}</span>
@@ -136,7 +138,6 @@ export function HomePage() {
                 </div>
               ) : (
                 <>
-                  {/* Slides — fade transition */}
                   {banners.map((banner, idx) => {
                     const isActive = idx === currentBanner;
                     const bgImage = ikBanner(banner.mobile_image || banner.desktop_image || banner.image_url || '');
@@ -147,36 +148,18 @@ export function HomePage() {
                         className="absolute inset-0 transition-opacity duration-500"
                         style={{ opacity: isActive ? (fadingOut ? 0 : 1) : 0, pointerEvents: isActive ? 'auto' : 'none' }}
                       >
-                        {/* Responsive background image */}
-                        {(bgImage || desktopImage) && (
-                          <>
-                            {/* Mobile image */}
-                            {bgImage && (
-                              <img src={bgImage} alt={banner.title} className="absolute inset-0 w-full h-full object-cover md:hidden" />
-                            )}
-                            {/* Desktop image */}
-                            {desktopImage && (
-                              <img src={desktopImage} alt={banner.title} className="absolute inset-0 w-full h-full object-cover hidden md:block" />
-                            )}
-                            {/* Gradient overlay for text readability */}
-                            <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(9,11,20,0.75) 0%, rgba(9,11,20,0.3) 60%, transparent 100%)' }} />
-                          </>
+                        {bgImage && (
+                          <img src={bgImage} alt={banner.title} className="absolute inset-0 w-full h-full object-cover md:hidden" />
                         )}
-
-                        {/* Ambient orbs when no image */}
-                        {!bgImage && !desktopImage && (
-                          <>
-                            <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-3xl" style={{ background: `radial-gradient(circle, ${banner.color}, transparent)`, animation: 'breathe-neon 4s ease-in-out infinite' }} />
-                            <div className="absolute bottom-0 left-1/3 w-20 h-20 rounded-full opacity-10 blur-2xl" style={{ background: `radial-gradient(circle, #00D1FF, transparent)`, animation: 'breathe-neon 5s ease-in-out infinite reverse' }} />
-                          </>
+                        {desktopImage && (
+                          <img src={desktopImage} alt={banner.title} className="absolute inset-0 w-full h-full object-cover hidden md:block" />
                         )}
-
-                        {/* Text content */}
+                        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(9,11,20,0.75) 0%, rgba(9,11,20,0.3) 60%, transparent 100%)' }} />
                         <div className="absolute inset-0 flex flex-col justify-center px-6">
                           <span className="text-xl md:text-2xl font-extrabold mb-1.5 leading-tight" style={{ color: banner.color, textShadow: `0 0 24px ${banner.color}50` }}>
                             {banner.title}
                           </span>
-                          {banner.subtitle && <p className="text-xs md:text-sm text-white/65 mb-4 max-w-xs">{banner.subtitle}</p>}
+                          {banner.subtitle && <p className="text-xs md:text-sm text-white/75 mb-4 max-w-xs">{banner.subtitle}</p>}
                           {banner.button_text && (
                             <button
                               onClick={() => { if (banner.button_link) window.open(banner.button_link, '_blank'); }}
@@ -191,36 +174,21 @@ export function HomePage() {
                     );
                   })}
 
-                  {/* Prev / Next arrows — visible on hover */}
                   {banners.length > 1 && (
                     <>
-                      <button
-                        onClick={handlePrev}
-                        className="banner-nav-btn absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10"
-                        style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(8px)' }}
-                        aria-label="Previous banner"
-                      >
+                      <button onClick={handlePrev} className="banner-nav-btn absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10" style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(8px)' }} aria-label="Previous banner">
                         <ChevronLeft size={16} className="text-white/80" />
                       </button>
-                      <button
-                        onClick={handleNext}
-                        className="banner-nav-btn absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10"
-                        style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(8px)' }}
-                        aria-label="Next banner"
-                      >
+                      <button onClick={handleNext} className="banner-nav-btn absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10" style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(8px)' }} aria-label="Next banner">
                         <ChevronRight size={16} className="text-white/80" />
                       </button>
                     </>
                   )}
 
-                  {/* Indicator dots */}
                   {banners.length > 1 && (
                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                       {banners.map((banner, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleManualNav(idx)}
-                          className="h-1.5 rounded-full transition-all duration-400"
+                        <button key={idx} onClick={() => handleManualNav(idx)} className="h-1.5 rounded-full transition-all duration-400"
                           style={{
                             width: idx === currentBanner ? '20px' : '6px',
                             background: idx === currentBanner ? `linear-gradient(90deg, ${banner.color}, ${banner.color}80)` : 'rgba(255,255,255,0.2)',
@@ -246,31 +214,22 @@ export function HomePage() {
             </div>
             <div className="grid grid-cols-5 gap-3">
               {categories.slice(0, 5).map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => navigate(`/categories?selected=${cat.name}`)}
-                  className="flex flex-col items-center gap-2 group"
-                >
-                  <div
-                    className="w-13 h-13 rounded-2xl flex items-center justify-center transition-all duration-400 group-hover:scale-115 border"
+                <button key={cat.id} onClick={() => navigate(`/categories?selected=${cat.name}`)} className="flex flex-col items-center gap-2 group">
+                  <div className="w-13 h-13 rounded-2xl flex items-center justify-center transition-all duration-400 group-hover:scale-115 border"
                     style={{
-                      width: '52px',
-                      height: '52px',
-                      backgroundColor: `${cat.color}08`,
-                      borderColor: `${cat.color}15`,
+                      width: '52px', height: '52px',
+                      backgroundColor: `${cat.color}08`, borderColor: `${cat.color}15`,
                       boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                     }}
                     onMouseEnter={e => {
                       const el = e.currentTarget;
                       el.style.boxShadow = `0 4px 20px ${cat.color}30, 0 0 30px ${cat.color}15`;
-                      el.style.borderColor = `${cat.color}40`;
-                      el.style.backgroundColor = `${cat.color}15`;
+                      el.style.borderColor = `${cat.color}40`; el.style.backgroundColor = `${cat.color}15`;
                     }}
                     onMouseLeave={e => {
                       const el = e.currentTarget;
                       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-                      el.style.borderColor = `${cat.color}15`;
-                      el.style.backgroundColor = `${cat.color}08`;
+                      el.style.borderColor = `${cat.color}15`; el.style.backgroundColor = `${cat.color}08`;
                     }}
                   >
                     <CategoryIcon name={cat.icon} size={22} style={{ color: cat.color }} />
@@ -311,24 +270,58 @@ export function HomePage() {
             </div>
           </section>
 
-          {/* Offer Banner */}
+          {/* ── Dynamic Slidable Bottom Promo Banners Engine ───────────────── */}
           <section className="px-4 mt-9">
-            <div className="rounded-3xl p-6 relative overflow-hidden banner-glass"
-              style={{ border: '1px solid rgba(0,209,255,0.12)' }}>
-              <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
-                style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
-              <h3 className="text-lg font-bold text-white mb-1.5">{t('home.freeDelivery')}</h3>
-              <p className="text-xs text-white/50 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
-              <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
-                style={{
-                  background: 'rgba(0,209,255,0.1)',
-                  color: '#00D1FF',
-                  border: '1px solid rgba(0,209,255,0.25)',
-                  boxShadow: '0 4px 12px rgba(0,209,255,0.1)',
-                }}>
-                {t('home.shopNow')}
-              </button>
-            </div>
+            {promoBanners.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {promoBanners.map(b => {
+                  const pImg = b.mobile_image || b.desktop_image || b.image_url || '';
+                  return (
+                    <div key={b.id} className="rounded-3xl p-6 relative overflow-hidden banner-glass min-h-[110px] flex flex-col justify-center cursor-pointer"
+                      onClick={() => { if (b.button_link) navigate(b.button_link); }}
+                      style={{ border: `1px solid ${b.color ? b.color + '25' : 'rgba(0,209,255,0.15)'}` }}>
+                      {pImg && (
+                        <>
+                          <img src={ikBanner(pImg)} alt="" className="absolute inset-0 w-full h-full object-cover z-0" />
+                          <div className="absolute inset-0 z-5" style={{ background: 'linear-gradient(to right, rgba(9,11,20,0.85) 0%, rgba(9,11,20,0.4) 60%, transparent 100%)' }} />
+                        </>
+                      )}
+                      <div className="relative z-10">
+                        <h3 className="text-base font-bold text-white mb-1 leading-tight">{b.title}</h3>
+                        {b.subtitle && <p className="text-xs text-white/80 mb-3 max-w-[75%] leading-normal">{b.subtitle}</p>}
+                        {b.button_text && (
+                          <button className="text-[10px] px-4 py-1.5 rounded-xl font-bold transition-all active:scale-95"
+                            style={{
+                              background: b.color ? `${b.color}22` : 'rgba(0,209,255,0.1)',
+                              color: b.color || '#00D1FF',
+                              border: `1px solid ${b.color ? b.color + '44' : 'rgba(0,209,255,0.3)'}`,
+                            }}>
+                            {b.button_text}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Fallback static banner with text alignment fixes when no promo banners configured */
+              <div className="rounded-3xl p-6 relative overflow-hidden banner-glass"
+                style={{ border: '1px solid rgba(0,209,255,0.12)' }}>
+                <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
+                  style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
+                <h3 className="text-lg font-bold text-white mb-1.5">{t('home.freeDelivery')}</h3>
+                <p className="text-xs text-white/80 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+                <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
+                  style={{
+                    background: 'rgba(0,209,255,0.1)', color: '#00D1FF',
+                    border: '1px solid rgba(0,209,255,0.25)',
+                    boxShadow: '0 4px 12px rgba(0,209,255,0.1)',
+                  }}>
+                  {t('home.shopNow')}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* Active Campaigns */}
