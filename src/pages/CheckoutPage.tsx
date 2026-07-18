@@ -434,7 +434,7 @@ export function CheckoutPage() {
   <div className="flex justify-center my-1">
     <div className="w-44 h-44 bg-white p-2.5 rounded-2xl shadow-xl flex items-center justify-center">
       <img 
-src={globalAdminQrUrl || "https://ik.imagekit.io/i67rlxsde/bangla-qr_w9OHJ_8Sw.png"}        alt="Bangla QR Code" 
+src={globalAdminQrUrl || "https://ik.imagekit.io/i67rlxsde/bangla-qr_w9OHJ_8Sw.png?tr=w-500,h-500"}
         className="w-full h-full object-contain rounded-xl" 
       />
     </div>
