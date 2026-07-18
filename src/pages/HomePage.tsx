@@ -101,17 +101,17 @@ export function HomePage() {
   const flashSale = products.filter(p => p.discount_price).slice(0, 4);
 
   return (
-    <div className="page-transition pb-32 bg-white dark:bg-zinc-950 min-h-screen text-slate-900 dark:text-zinc-50 antialiased w-full">
+    <div className="page-transition pb-32 bg-white dark:bg-zinc-950 min-h-screen text-slate-900 dark:text-zinc-50 antialiased w-full relative">
       
-      {/* ১. সম্পূর্ণ স্টপ ও ফিক্সড হেডার (লোগো, সার্চ, নোটিফিকেশন ও প্রোফাইল আইকনসহ) */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-900">
-        <div className="w-full h-16 px-4 mx-auto flex items-center justify-between gap-3">
+      {/* ১. সম্পূর্ণ স্টপ ও লকড হেডার (স্ক্রোল করলেও সরবে না, লোগো, সার্চ, নোটিফিকেশন ও মিয়া ওয়ান নাম সবসময় থাকবে) */}
+      <header className="fixed top-0 left-0 right-0 z-[100] w-full bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-900 shadow-sm h-16">
+        <div className="w-full h-full px-4 mx-auto flex items-center justify-between gap-3">
           
-          {/* লোগো এবং নাম */}
+          {/* লোগো এবং নাম (মোবাইলেও মিয়া ওয়ান নাম সবসময় দেখা যাবে) */}
           <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
             <img src={appConfig.logo} alt="Logo" className="w-7 h-7 object-contain" />
-            <h1 className="text-sm font-black tracking-tight text-slate-950 dark:text-white hidden sm:block">
-              {appConfig.name}
+            <h1 className="text-sm font-black tracking-tight text-slate-950 dark:text-white block">
+              মিয়া ওয়ান
             </h1>
           </div>
 
@@ -138,8 +138,8 @@ export function HomePage() {
         </div>
       </header>
 
-      {/* মেইন কন্টেন্ট এরিয়া (হেডারের জন্য টপ প্যাডিং ফিক্সড) */}
-      <div className="w-full lg:max-w-none md:max-w-none max-w-lg mx-auto pt-20 space-y-10">
+      {/* মেইন কন্টেন্ট এরিয়া (হেডারের জন্য টপ প্যাডিং ও ওপরে লক রাখার জন্য রিলেটিভ কন্টেন্ট পজিশনিং করা হয়েছে) */}
+      <div className="w-full lg:max-w-none md:max-w-none max-w-lg mx-auto pt-20 space-y-10 relative z-10">
         
         {/* ২. হিরো ব্যানার স্লাইডার (কোনো চেঞ্জিং আইকন/বাটন নেই, সম্পূর্ণ টাচ সোয়াইপ এবং রিয়েল কালার) */}
         <section className="w-full px-4 lg:px-8">
