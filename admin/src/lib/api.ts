@@ -496,6 +496,55 @@ export async function adminDeleteBanner(id: string) {
   }
 }
 
+// ── 🆕 New Isolated Feature: Bottom Promo Banners Engine ──────────────────────────
+
+export async function fetchPromoBanners() {
+  const snap = await getDocs(collection(db, 'promo_banners'));
+  let results: AnyRecord[] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  results = results.filter(b => b.is_active !== false);
+  results.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  return results;
+}
+
+export async function adminFetchPromoBanners() {
+  const snap = await getDocs(collection(db, 'promo_banners'));
+  const results: AnyRecord[] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  results.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  return results;
+}
+
+export async function adminCreatePromoBanner(banner: any) {
+  try {
+    const docRef = await addDoc(collection(db, 'promo_banners'), {
+      ...banner,
+      is_active: banner.is_active !== false,
+      priority: banner.priority || 0,
+      created_at: new Date().toISOString(),
+    });
+    return { data: { id: docRef.id }, error: null };
+  } catch (e: any) {
+    return { data: null, error: e.message };
+  }
+}
+
+export async function adminUpdatePromoBanner(id: string, updates: any) {
+  try {
+    await updateDoc(doc(db, 'promo_banners', id), updates);
+    return { error: null };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+export async function adminDeletePromoBanner(id: string) {
+  try {
+    await deleteDoc(doc(db, 'promo_banners', id));
+    return { error: null };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
 // ── Admin: Dashboard Stats ────────────────────────────────────────────────────────
 
 export async function adminGetStats() {
@@ -1265,7 +1314,7 @@ function getAnalyticsDateRange(period: AnalyticsPeriod): { start: Date; prevStar
   }
 }
 
-function buildTimeBuckets(period: AnalyticsPeriod) {
+loopBuckets: function buildTimeBuckets(period: AnalyticsPeriod) {
   const now = new Date();
   const buckets: { label: string; start: Date; end: Date }[] = [];
   if (period === 'daily') {
