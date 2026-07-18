@@ -30,6 +30,7 @@ interface DataState {
   products: Product[];
   categories: Category[];
   banners: Banner[];
+  promoBanners: Banner[]; // 🆕 Isolated Dynamic Promo Banners Type Support
   settings: Settings;
   loading: boolean;
   error: string | null;
@@ -102,6 +103,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [promoBanners, setPromoBanners] = useState<Banner[]>([]); // 🆕 Dynamic Bottom Banners Local State
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       completedCount++;
       if (completedCount >= activeCount) setLoading(false);
     };
-    activeCount = 4;
+    activeCount = 5; // 🆕 Increased to 5 to handle the new promo banners sync securely
 
     const unsubProducts = onSnapshot(
       collection(db, 'products'),
@@ -158,6 +160,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
       (err) => { setError(err.message); checkAllLoaded(); }
     );
 
+    // 🆕 New Isolated Realtime Listener for Bottom Promo Banners Engine
+    const unsubPromoBanners = onSnapshot(
+      collection(db, 'promo_banners'),
+      (snap) => {
+        const now = new Date();
+        const data = snap.docs
+          .map(d => mapBanner(d.id, d.data()))
+          .filter(b => {
+            if (b.is_active === false) return false;
+            if ((b as any).starts_at && new Date((b as any).starts_at) > now) return false;
+            if ((b as any).ends_at && new Date((b as any).ends_at) < now) return false;
+            return true;
+          })
+          .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+        setPromoBanners(data);
+        checkAllLoaded();
+      },
+      (err) => { setError(err.message); checkAllLoaded(); }
+    );
+
     const unsubSettings = onSnapshot(
       collection(db, 'settings'),
       (snap) => {
@@ -173,6 +195,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       unsubProducts();
       unsubCategories();
       unsubBanners();
+      unsubPromoBanners(); // 🆕 Securely clean up listener to prevent memory leaks
       unsubSettings();
       if (settingsUnsub) settingsUnsub();
     };
@@ -182,7 +205,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [productsSnap, categoriesSnap, bannersSnap, settingsSnap] = await Promise.all([
+      const [productsSnap, categoriesSnap, bannersSnap, promoBannersSnap, settingsSnap] = await Promise.all([
         new Promise<any[]>((resolve) => {
           const unsub = onSnapshot(collection(db, 'products'), (snap) => {
             const data = snap.docs.map(d => mapProduct(d.id, d.data())).filter(p => p.is_active);
@@ -213,6 +236,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
             unsub();
           });
         }),
+        // 🆕 Dynamic Static Refresh Sync for Promo Banners
+        new Promise<any[]>((resolve) => {
+          const unsub = onSnapshot(collection(db, 'promo_banners'), (snap) => {
+            const now = new Date();
+            const data = snap.docs
+              .map(d => mapBanner(d.id, d.data()))
+              .filter(b => {
+                if (b.is_active === false) return false;
+                if ((b as any).starts_at && new Date((b as any).starts_at) > now) return false;
+                if ((b as any).ends_at && new Date((b as any).ends_at) < now) return false;
+                return true;
+              })
+              .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+            resolve(data);
+            unsub();
+          });
+        }),
         new Promise<Settings>((resolve) => {
           const unsub = onSnapshot(collection(db, 'settings'), (snap) => {
             const data: Settings = {};
@@ -226,6 +266,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setProducts(productsSnap as Product[]);
       setCategories(categoriesSnap as Category[]);
       setBanners(bannersSnap as Banner[]);
+      setPromoBanners(promoBannersSnap as Banner[]); // 🆕 Hydrate state safely
       setSettings(settingsSnap);
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load data');
@@ -235,7 +276,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <DataContext.Provider value={{ products, categories, banners, settings, loading, error, refresh }}>
+    <DataContext.Provider value={{ products, categories, banners, promoBanners, settings, loading, error, refresh }}>
       {children}
     </DataContext.Provider>
   );
