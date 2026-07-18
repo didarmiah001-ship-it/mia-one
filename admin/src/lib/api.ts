@@ -649,6 +649,43 @@ export async function adminGetStats() {
   };
 }
 
+function buildTimeBuckets(period: AnalyticsPeriod) {
+  const now = new Date();
+  const buckets: { label: string; start: Date; end: Date }[] = [];
+  if (period === 'daily') {
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      buckets.push({
+        label: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+        start: d,
+        end: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1),
+      });
+    }
+  } else if (period === 'weekly') {
+    for (let i = 11; i >= 0; i--) {
+      const s = new Date(now.getTime() - i * 7 * 86400000);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date(s.getTime() + 7 * 86400000);
+      buckets.push({ label: s.toLocaleDateString('en', { month: 'short', day: 'numeric' }), start: s, end: e });
+    }
+  } else if (period === 'monthly') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({
+        label: d.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
+        start: d,
+        end: new Date(d.getFullYear(), d.getMonth() + 1, 1),
+      });
+    }
+  } else {
+    const y = now.getFullYear();
+    for (let yr = y - 4; yr <= y; yr++) {
+      buckets.push({ label: String(yr), start: new Date(yr, 0, 1), end: new Date(yr + 1, 0, 1) });
+    }
+  }
+  return buckets;
+}
+
 // ── Brands ────────────────────────────────────────────────────────────────────
 
 export async function fetchBrands() {
@@ -1312,43 +1349,6 @@ function getAnalyticsDateRange(period: AnalyticsPeriod): { start: Date; prevStar
     case 'yearly':
       return { start: new Date('2020-01-01T00:00:00Z'), prevStart: new Date('2015-01-01T00:00:00Z') };
   }
-}
-
-loopBuckets: function buildTimeBuckets(period: AnalyticsPeriod) {
-  const now = new Date();
-  const buckets: { label: string; start: Date; end: Date }[] = [];
-  if (period === 'daily') {
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-      buckets.push({
-        label: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
-        start: d,
-        end: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1),
-      });
-    }
-  } else if (period === 'weekly') {
-    for (let i = 11; i >= 0; i--) {
-      const s = new Date(now.getTime() - i * 7 * 86400000);
-      s.setHours(0, 0, 0, 0);
-      const e = new Date(s.getTime() + 7 * 86400000);
-      buckets.push({ label: s.toLocaleDateString('en', { month: 'short', day: 'numeric' }), start: s, end: e });
-    }
-  } else if (period === 'monthly') {
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      buckets.push({
-        label: d.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
-        start: d,
-        end: new Date(d.getFullYear(), d.getMonth() + 1, 1),
-      });
-    }
-  } else {
-    const y = now.getFullYear();
-    for (let yr = y - 4; yr <= y; yr++) {
-      buckets.push({ label: String(yr), start: new Date(yr, 0, 1), end: new Date(yr + 1, 0, 1) });
-    }
-  }
-  return buckets;
 }
 
 export async function adminGetAnalytics(period: AnalyticsPeriod) {
