@@ -311,7 +311,7 @@ export function HomePage() {
                 <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
                   style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
                 <h3 className="text-lg font-bold text-white mb-1.5">{t('home.freeDelivery')}</h3>
-                <p className="text-xs text-white/80 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+                <p className="text-xs text-white/85 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
                 <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
                   style={{
                     background: 'rgba(0,209,255,0.1)', color: '#00D1FF',
