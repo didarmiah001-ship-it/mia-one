@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '../lib/router';
 import { useTranslation } from 'react-i18next';
-import {
-  ArrowLeft, ArrowRight, Banknote, Smartphone, CreditCard, Building2, Globe,
-  MapPin, User, Phone, ChevronDown, Tag, CheckCircle2, Loader2, X, Lock,
-  ShieldCheck, Zap, AlertCircle, Edit3, Plus, Truck,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Banknote, Smartphone, CreditCard, Building2, Globe, MapPin, User, Phone, ChevronDown, Tag, CheckCircle2, Loader2, X, Lock, ShieldCheck, Zap, AlertCircle, CreditCard as Edit3, Plus, Truck } from 'lucide-react';
 import { useStore } from '../store/StoreContext';
 import { useAuth } from '../lib/auth';
 import { appConfig } from '../lib/config';

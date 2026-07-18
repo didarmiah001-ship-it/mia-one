@@ -401,7 +401,7 @@ export function MiaAgentFloatingButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="fixed z-[55] w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group"
+      className="fixed z-[55] w-[45px] h-[45px] rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group"
       style={{
         bottom: 'calc(128px + env(safe-area-inset-bottom, 0px))',
         right: '24px',
@@ -433,7 +433,7 @@ export function MiaAgentFloatingButton({ onClick }: { onClick: () => void }) {
       />
 
       {/* Inner container */}
-      <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden bg-black/20 flex items-center justify-center">
+      <div className="relative w-[36px] h-[36px] rounded-full overflow-hidden bg-black/20 flex items-center justify-center">
         <img
           src="/ChatGPT_Image_Jun_26,_2026,_11_55_37_PM.png"
           alt="MIA Agent"
@@ -443,11 +443,11 @@ export function MiaAgentFloatingButton({ onClick }: { onClick: () => void }) {
             e.currentTarget.nextElementSibling?.classList.remove('hidden');
           }}
         />
-        <Headphones size={28} className="text-white hidden" />
+        <Headphones size={20} className="text-white hidden" />
       </div>
 
       {/* Online indicator */}
-      <span className="absolute top-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0A0A0F] neon-pulse" />
+      <span className="absolute top-0 right-0 w-[11px] h-[11px] bg-green-500 rounded-full border-2 border-[#0A0A0F] neon-pulse" />
     </button>
   );
 }
