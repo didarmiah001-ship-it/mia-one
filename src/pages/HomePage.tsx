@@ -70,7 +70,7 @@ export function HomePage() {
     handleManualNav(idx);
   };
 
-  // হাত দিয়ে ব্যানার স্ক্রোল (Swipe) হ্যান্ডলার
+  // হাত দিয়ে ব্যানার স্ক্রোল (Swipe) হ্যান্ডলার
   const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -103,15 +103,15 @@ export function HomePage() {
   return (
     <div className="page-transition pb-32 bg-white dark:bg-zinc-950 min-h-screen text-slate-900 dark:text-zinc-50 antialiased w-full relative">
       
-      {/* ১. সম্পূর্ণ স্টপ ও লকড হেডার (স্ক্রোল করলেও সরবে না, লোগো, সার্চ, নোটিফিকেশন ও মিয়া ওয়ান নাম সবসময় থাকবে) */}
-      <header className="fixed top-0 left-0 right-0 z-[100] w-full bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-900 shadow-sm h-16">
+      {/* ১. সম্পূর্ণ স্টপ ও লকড হেডার (z-index বাড়িয়ে এবং backdrop-blur দিয়ে ফিক্স করা হয়েছে) */}
+      <header className="fixed top-0 left-0 right-0 z-[999] w-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-slate-100 dark:border-zinc-900 shadow-sm h-16">
         <div className="w-full h-full px-4 mx-auto flex items-center justify-between gap-3">
           
-          {/* লোগো এবং নাম (মোবাইলেও মিয়া ওয়ান নাম সবসময় দেখা যাবে) */}
+          {/* লোগো এবং নাম (i18n translation দিয়ে ডাইনামিক করা হয়েছে) */}
           <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
             <img src={appConfig.logo} alt="Logo" className="w-7 h-7 object-contain" />
             <h1 className="text-sm font-black tracking-tight text-slate-950 dark:text-white block">
-              মিয়া ওয়ান
+              {t('appName', 'মিয়া ওয়ান')} 
             </h1>
           </div>
 
@@ -119,7 +119,7 @@ export function HomePage() {
           <div className="flex-1 max-w-md relative">
             <input 
               type="text" 
-              placeholder="Search..." 
+              placeholder={t('home.searchPlaceholder', 'Search...')} 
               className="w-full h-9 pl-9 pr-3 rounded-full bg-slate-100 dark:bg-zinc-900 text-xs font-bold text-slate-950 dark:text-white focus:outline-none border border-transparent focus:border-slate-200"
             />
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -138,10 +138,10 @@ export function HomePage() {
         </div>
       </header>
 
-      {/* মেইন কন্টেন্ট এরিয়া (হেডারের জন্য টপ প্যাডিং ও ওপরে লক রাখার জন্য রিলেটিভ কন্টেন্ট পজিশনিং করা হয়েছে) */}
+      {/* মেইন কন্টেন্ট এরিয়া (হেডারের নিচে যাওয়ার জন্য z-index কমানো হয়েছে) */}
       <div className="w-full lg:max-w-none md:max-w-none max-w-lg mx-auto pt-20 space-y-10 relative z-10">
         
-        {/* ২. হিরো ব্যানার স্লাইডার (কোনো চেঞ্জিং আইকন/বাটন নেই, সম্পূর্ণ টাচ সোয়াইপ এবং রিয়েল কালার) */}
+        {/* ২. হিরো ব্যানার স্লাইডার */}
         <section className="w-full px-4 lg:px-8">
           <div 
             onTouchStart={onTouchStart}
@@ -178,7 +178,6 @@ export function HomePage() {
                         <img src={desktopImage} alt={banner.title} className="absolute inset-0 w-full h-full object-cover hidden md:block" />
                       )}
                       
-                      {/* কোনো ডার্ক ওভারলে বা গ্রেডিয়েন্ট কালার নেই, টেক্সটগুলো সম্পূর্ণ হাই-কনট্রাস্ট ও স্পষ্ট */}
                       <div className="absolute inset-0 flex flex-col justify-center px-8 z-10">
                         <span className="text-2xl md:text-4xl font-black mb-2 leading-tight text-slate-950 dark:text-white">
                           {banner.title}
@@ -285,7 +284,7 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* ৮. প্রোমো ব্যানার (মোবাইলে বড় সাইজ এবং ওপরে কোনো কালার ওভারলে বা চেঞ্জিং আইকন নেই) */}
+        {/* প্রোমো ব্যানার */}
         <section className="w-full px-4 lg:px-8 pt-4 pb-6">
           {promoBanners && promoBanners.length > 0 ? (
             <div className="flex flex-col gap-6">
@@ -297,8 +296,6 @@ export function HomePage() {
                     {pImg && (
                       <img src={ikBanner(pImg)} alt="" className="absolute inset-0 w-full h-full object-cover z-0" />
                     )}
-                    
-                    {/* কোনো ডার্ক ফিল্টার বা বাটন আইকন নেই - লেখা ও ছবি একদম ক্রিস্টাল ক্লিয়ার */}
                     <div className="relative z-10 px-6 md:px-12 flex items-center justify-between gap-6">
                       <div className="max-w-[70%]">
                         <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-950 dark:text-white mb-2 tracking-wide">{b.title}</h3>
@@ -315,7 +312,6 @@ export function HomePage() {
               })}
             </div>
           ) : (
-            /* ফলব্যাক প্রিমিয়াম ব্যানার - টাকার টেক্সট ও ফন্ট সাইজ অনেক বড় ও স্পষ্ট */
             <div className="rounded-[32px] p-6 md:p-12 relative overflow-hidden bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 aspect-[1200/400] md:aspect-[1200/260] flex items-center">
               <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full opacity-20 blur-2xl bg-cyan-500" />
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10 w-full">
@@ -333,7 +329,7 @@ export function HomePage() {
           )}
         </section>
 
-        {/* ৯. স্পেশাল ক্যাম্পেইন সেকশন */}
+        {/* স্পেশাল ক্যাম্পেইন সেকশন */}
         {campaigns.length > 0 && (
           <section className="w-full px-4 lg:px-8 pb-16">
             <div className="flex items-center gap-2 mb-4">
