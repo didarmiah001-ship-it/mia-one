@@ -614,7 +614,15 @@ export function CheckoutPage() {
                 )}
               </div>
             )}
-
+{paymentMethod === 'bangla_qr' && (
+  <div className="mt-3 flex justify-center">
+    <img 
+      src="https://ik.imagekit.io/i67rlxsde/bangla-qr_w9OHJ_8Sw.png" 
+      alt="Bangla QR Code" 
+      className="w-40 h-40 object-contain rounded-xl border border-white/10"
+    />
+  </div>
+)}
             {/* Premium Shipping Address Card */}
             <div className="glow-card p-5">
               <div className="flex items-center justify-between mb-5">
