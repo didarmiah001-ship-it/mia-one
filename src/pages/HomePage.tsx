@@ -1,38 +1,27 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, ChevronRight, ChevronLeft, Bell, Zap, TrendingUp, Sparkles, Megaphone, User } from 'lucide-react';
+import { ChevronRight, Zap, TrendingUp, Sparkles, Megaphone, Search, Bell, User } from 'lucide-react';
 import { useNavigate } from '../lib/router';
 import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../components/ProductCard';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { useData } from '../lib/data';
-import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
-import { ikThumb, ikBanner } from '../lib/imagekit';
+import { ikBanner } from '../lib/imagekit';
 import { fetchActiveCampaigns } from '../lib/api';
 
 export function HomePage() {
   const { t } = useTranslation();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [fadingOut, setFadingOut] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  
+  // টাচ স্ক্রোল (Swipe) ট্র্যাকিং স্টেট
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
-  const { state } = useStore();
   const { products, categories, banners, promoBanners } = useData();
   const [campaigns, setCampaigns] = useState<any[]>([]);
-
-  // মেসেঞ্জার স্টাইল স্মুথ স্ক্রোল ডিটেকশন
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     fetchActiveCampaigns().then(data => { if (data) setCampaigns(data); });
@@ -43,17 +32,8 @@ export function HomePage() {
     setTimeout(() => {
       setCurrentBanner(idx);
       setFadingOut(false);
-    }, 320);
+    }, 250);
   }, []);
-
-  const goNext = useCallback(() => {
-    if (banners.length === 0) return;
-    setCurrentBanner(prev => {
-      const next = (prev + 1) % banners.length;
-      goTo(next);
-      return prev;
-    });
-  }, [banners.length, goTo]);
 
   const startAutoplay = useCallback(() => {
     if (autoplayRef.current) clearInterval(autoplayRef.current);
@@ -62,8 +42,8 @@ export function HomePage() {
       setTimeout(() => {
         setCurrentBanner(prev => (prev + 1) % Math.max(banners.length, 1));
         setFadingOut(false);
-      }, 320);
-    }, 4500);
+      }, 250);
+    }, 5000);
   }, [banners.length]);
 
   useEffect(() => {
@@ -90,80 +70,92 @@ export function HomePage() {
     handleManualNav(idx);
   };
 
+  // হাত দিয়ে ব্যানার স্ক্রোল (Swipe) হ্যান্ডলার
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      handleNext();
+    } else if (isRightSwipe) {
+      handlePrev();
+    }
+  };
+
   const featured = products.filter(p => p.is_featured);
   const trending = products.filter(p => p.is_trending);
   const newArrivals = products.filter(p => p.is_new);
   const flashSale = products.filter(p => p.discount_price).slice(0, 4);
 
   return (
-    <div className="page-transition pb-32 bg-gray-50/50 dark:bg-zinc-950 min-h-screen text-gray-900 dark:text-zinc-50 antialiased w-full">
+    <div className="page-transition pb-32 bg-white dark:bg-zinc-950 min-h-screen text-slate-900 dark:text-zinc-50 antialiased w-full">
       
-      {/* ১. মেসেঞ্জারের মতো ট্রু-স্টিকি ফিক্সড হেডার */}
-      <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 border-b ${
-        isScrolled 
-          ? 'bg-white/95 dark:bg-zinc-950/95 border-gray-100 dark:border-zinc-900/80 shadow-sm' 
-          : 'bg-white dark:bg-zinc-950 border-transparent'
-      }`}>
-        <div className={`w-full px-4 mx-auto flex flex-col justify-center transition-all duration-300 ${isScrolled ? 'h-14' : 'h-28'}`}>
+      {/* ১. সম্পূর্ণ স্টপ ও ফিক্সড হেডার (লোগো, সার্চ, নোটিফিকেশন ও প্রোফাইল আইকনসহ) */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-900">
+        <div className="w-full h-16 px-4 mx-auto flex items-center justify-between gap-3">
           
-          {/* লোগো এবং বাটন রো - এটি সবসময় নিজস্ব জায়গায় লকড থাকবে */}
-          <div className="flex items-center justify-between w-full relative z-10">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-              <div className="relative w-8 h-8 shrink-0">
-                <img src={appConfig.logo} alt="Logo" className="w-full h-full object-contain" />
-              </div>
-              <h1 className="text-base font-black tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {appConfig.name}
-              </h1>
-            </div>
-
-            {/* অ্যাকশন বাটনসমূহ যেখানে ল্যাঙ্গুয়েজ আইকন সরিয়ে প্রোফাইল আইকন দেওয়া হয়েছে */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button 
-                onClick={() => navigate('/profile')} 
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800/80 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
-              >
-                <User size={15} className="text-gray-600 dark:text-white/70" />
-              </button>
-              
-              <button 
-                onClick={() => navigate('/notifications')} 
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800/80 relative transition-colors"
-              >
-                <Bell size={14} className="text-gray-600 dark:text-white/70" />
-                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-              </button>
-            </div>
+          {/* লোগো এবং নাম */}
+          <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
+            <img src={appConfig.logo} alt="Logo" className="w-7 h-7 object-contain" />
+            <h1 className="text-sm font-black tracking-tight text-slate-950 dark:text-white hidden sm:block">
+              {appConfig.name}
+            </h1>
           </div>
 
-          {/* সার্চ বার - স্ক্রোল করলে এটি মেসেঞ্জারের মতো উপরের দিকে স্লাইড হয়ে হাইড হয়ে যাবে */}
-          <div className={`w-full transition-all duration-300 origin-top overflow-hidden ${isScrolled ? 'h-0 opacity-0 mt-0 pointer-events-none' : 'h-10 opacity-100 mt-2'}`}>
-            <div className="w-full relative">
-              <button
-                onClick={() => navigate('/search')}
-                className="w-full flex items-center gap-3 pl-11 pr-4 py-2 rounded-full text-xs text-gray-400 dark:text-white/30 text-left bg-gray-100 dark:bg-zinc-900 border border-transparent hover:border-gray-200 dark:hover:border-white/5 transition-all duration-200"
-              >
-                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/25" />
-                <span className="truncate">{t('home.searchPlaceholder')}</span>
-              </button>
-            </div>
+          {/* সার্চ বার */}
+          <div className="flex-1 max-w-md relative">
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="w-full h-9 pl-9 pr-3 rounded-full bg-slate-100 dark:bg-zinc-900 text-xs font-bold text-slate-950 dark:text-white focus:outline-none border border-transparent focus:border-slate-200"
+            />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          {/* নোটিফিকেশন এবং প্রোফাইল আইকন */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-900 text-slate-950 dark:text-white">
+              <Bell size={16} />
+            </button>
+            <button className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-900 text-slate-950 dark:text-white">
+              <User size={16} />
+            </button>
           </div>
 
         </div>
       </header>
 
-      {/* কন্টেন্ট লেআউট (ডেস্কটপে ফুল স্ক্রিন এবং মোবাইলে সুইট বাউন্ডিং) */}
-      <div className="w-full lg:max-w-none md:max-w-none max-w-lg mx-auto pt-32 md:pt-36 space-y-10">
+      {/* মেইন কন্টেন্ট এরিয়া (হেডারের জন্য টপ প্যাডিং ফিক্সড) */}
+      <div className="w-full lg:max-w-none md:max-w-none max-w-lg mx-auto pt-20 space-y-10">
         
-        {/* ২. হিরো ব্যানার স্লাইডার */}
+        {/* ২. হিরো ব্যানার স্লাইডার (কোনো চেঞ্জিং আইকন/বাটন নেই, সম্পূর্ণ টাচ সোয়াইপ এবং রিয়েল কালার) */}
         <section className="w-full px-4 lg:px-8">
-          <div className="banner-slider relative overflow-hidden rounded-3xl border border-white/5 shadow-md bg-zinc-900" style={{ height: 'clamp(180px, 28vw, 360px)' }}>
+          <div 
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            className="banner-slider relative overflow-hidden rounded-3xl border border-slate-100 dark:border-white/5 bg-slate-50 cursor-grab active:cursor-grabbing" 
+            style={{ height: 'clamp(185px, 28vw, 360px)' }}
+          >
             {banners.length === 0 ? (
               <div className="absolute inset-0 flex flex-col justify-center px-8">
                 <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20 blur-3xl bg-orange-500" />
                 <span className="text-3xl font-extrabold mb-2 text-orange-500">{t('home.flashSaleTitle')}</span>
-                <p className="text-sm text-white/60 mb-5">{t('home.flashSaleDesc')}</p>
-                <button className="text-xs font-semibold px-6 py-2.5 rounded-xl w-fit bg-orange-500/10 text-orange-500 border border-orange-500/30">
+                <p className="text-sm text-slate-700 mb-5 font-bold">{t('home.flashSaleDesc')}</p>
+                <button className="text-xs font-bold px-6 py-2.5 rounded-xl w-fit bg-orange-500 text-white shadow-sm">
                   {t('home.shopNow')}
                 </button>
               </div>
@@ -176,7 +168,7 @@ export function HomePage() {
                   return (
                     <div
                       key={banner.id}
-                      className="absolute inset-0 transition-opacity duration-500"
+                      className="absolute inset-0 transition-opacity duration-300"
                       style={{ opacity: isActive ? (fadingOut ? 0 : 1) : 0, pointerEvents: isActive ? 'auto' : 'none' }}
                     >
                       {bgImage && (
@@ -185,65 +177,67 @@ export function HomePage() {
                       {desktopImage && (
                         <img src={desktopImage} alt={banner.title} className="absolute inset-0 w-full h-full object-cover hidden md:block" />
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-                      <div className="absolute inset-0 flex flex-col justify-center px-8">
-                        <span className="text-2xl md:text-4xl font-extrabold mb-2 leading-tight" style={{ color: banner.color, textShadow: `0 0 24px ${banner.color}50` }}>
+                      
+                      {/* কোনো ডার্ক ওভারলে বা গ্রেডিয়েন্ট কালার নেই, টেক্সটগুলো সম্পূর্ণ হাই-কনট্রাস্ট ও স্পষ্ট */}
+                      <div className="absolute inset-0 flex flex-col justify-center px-8 z-10">
+                        <span className="text-2xl md:text-4xl font-black mb-2 leading-tight text-slate-950 dark:text-white">
                           {banner.title}
                         </span>
-                        {banner.subtitle && <p className="text-xs md:text-base text-white/75 mb-5 max-w-md">{banner.subtitle}</p>}
+                        {banner.subtitle && <p className="text-xs md:text-base text-slate-800 dark:text-zinc-200 font-black max-w-md">{banner.subtitle}</p>}
                       </div>
                     </div>
                   );
                 })}
 
+                {/* ইন্ডিকেটর ডটস */}
                 {banners.length > 1 && (
-                  <>
-                    <button onClick={handlePrev} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center z-10 bg-black/40 border border-white/10 backdrop-blur-sm">
-                      <ChevronLeft size={18} className="text-white/80" />
-                    </button>
-                    <button onClick={handleNext} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center z-10 bg-black/40 border border-white/10 backdrop-blur-sm">
-                      <ChevronRight size={18} className="text-white/80" />
-                    </button>
-                  </>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                    {banners.map((_, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentBanner ? 'w-4 bg-slate-950 dark:bg-white' : 'w-1.5 bg-slate-300 dark:bg-white/30'}`} 
+                      />
+                    ))}
+                  </div>
                 )}
               </>
             )}
           </div>
         </section>
 
-        {/* ৩. ক্যাটাগরি সেকশন */}
+        {/* ক্যাটাগরি সেকশন */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-white/60">{t('home.categories')}</h2>
-            <button onClick={() => navigate('/categories')} className="text-xs text-orange-500 flex items-center gap-0.5 font-semibold">
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-950 dark:text-white/70">{t('home.categories')}</h2>
+            <button onClick={() => navigate('/categories')} className="text-xs text-orange-600 dark:text-orange-500 flex items-center gap-0.5 font-black">
               {t('common.seeAll')} <ChevronRight size={12} />
             </button>
           </div>
           <div className="grid grid-cols-5 md:grid-cols-5 lg:grid-cols-10 gap-4">
             {categories.slice(0, 10).map(cat => (
               <button key={cat.id} onClick={() => navigate(`/categories?selected=${cat.name}`)} className="flex flex-col items-center gap-2 group">
-                <div className="rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 border"
+                <div className="rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 border border-slate-200 dark:border-zinc-800"
                   style={{
                     width: '56px', height: '56px',
-                    backgroundColor: `${cat.color}08`, borderColor: `${cat.color}15`,
+                    backgroundColor: `${cat.color}08`,
                   }}
                 >
                   <CategoryIcon name={cat.icon} size={24} style={{ color: cat.color }} />
                 </div>
-                <span className="text-[11px] text-gray-600 dark:text-white/50 text-center leading-tight font-medium max-w-full truncate">{cat.name}</span>
+                <span className="text-[11px] text-slate-950 dark:text-white text-center leading-tight font-black max-w-full truncate">{cat.name}</span>
               </button>
             ))}
           </div>
         </section>
 
-        {/* ৪. ফ্ল্যাশ সেল */}
+        {/* ফ্ল্যাশ সেল */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-orange-500/10 border border-orange-500/20">
                 <Zap size={14} className="text-orange-500" />
               </div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-white/90">{t('home.flashSale')}</h2>
+              <h2 className="text-base font-black text-slate-950 dark:text-white">{t('home.flashSale')}</h2>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -251,24 +245,24 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* ৫. ফিচার্ড পণ্য */}
+        {/* ফিচার্ড পণ্য */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-800 dark:text-white/90">{t('home.featured')}</h2>
+            <h2 className="text-base font-black text-slate-950 dark:text-white">{t('home.featured')}</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {featured.slice(0, 6).map(p => <ProductCard key={p.id} product={p} />)}
           </div>
         </section>
 
-        {/* ৬. ট্রেন্ডিং পণ্য */}
+        {/* ট্রেন্ডিং পণ্য */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-pink-500/10 border border-pink-500/20">
                 <TrendingUp size={14} className="text-pink-500" />
               </div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-white/90">{t('home.trending')}</h2>
+              <h2 className="text-base font-black text-slate-950 dark:text-white">{t('home.trending')}</h2>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -276,14 +270,14 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* ৭. নতুন আগমন */}
+        {/* নতুন আগমন */}
         <section className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10 border border-purple-500/20">
                 <Sparkles size={14} className="text-purple-500" />
               </div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-white/90">{t('home.newArrivals')}</h2>
+              <h2 className="text-base font-black text-slate-950 dark:text-white">{t('home.newArrivals')}</h2>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -291,33 +285,27 @@ export function HomePage() {
           </div>
         </section>
 
-        {/* ৮. প্রোমো ব্যানার (মোবাইলে ২-৩ গুণ বড় সাইজ এবং টাকার টেক্সট ফন্ট সাইজ বৃদ্ধি করা হয়েছে) */}
+        {/* ৮. প্রোমো ব্যানার (মোবাইলে বড় সাইজ এবং ওপরে কোনো কালার ওভারলে বা চেঞ্জিং আইকন নেই) */}
         <section className="w-full px-4 lg:px-8 pt-4 pb-6">
           {promoBanners && promoBanners.length > 0 ? (
             <div className="flex flex-col gap-6">
               {promoBanners.map(b => {
                 const pImg = b.mobile_image || b.desktop_image || b.image_url || '';
                 return (
-                  <div key={b.id} className="rounded-[32px] relative overflow-hidden backdrop-blur-md bg-white/5 dark:bg-black/30 border border-white/10 dark:border-zinc-800/60 shadow-xl aspect-[1200/380] md:aspect-[1200/260] w-full flex flex-col justify-center cursor-pointer group transition-transform duration-300 active:scale-[0.99]"
+                  <div key={b.id} className="rounded-[32px] relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 aspect-[1200/400] md:aspect-[1200/260] w-full flex flex-col justify-center cursor-pointer group"
                     onClick={() => { if (b.button_link) navigate(b.button_link); }}>
                     {pImg && (
-                      <>
-                        <img src={ikBanner(pImg)} alt="" className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-500 group-hover:scale-102" />
-                        <div className="absolute inset-0 z-5 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
-                      </>
+                      <img src={ikBanner(pImg)} alt="" className="absolute inset-0 w-full h-full object-cover z-0" />
                     )}
+                    
+                    {/* কোনো ডার্ক ফিল্টার বা বাটন আইকন নেই - লেখা ও ছবি একদম ক্রিস্টাল ক্লিয়ার */}
                     <div className="relative z-10 px-6 md:px-12 flex items-center justify-between gap-6">
                       <div className="max-w-[70%]">
-                        <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white mb-2 truncate tracking-wide">{b.title}</h3>
-                        {b.subtitle && <p className="text-sm sm:text-base md:text-lg font-bold text-orange-400 mt-1 drop-shadow-md tracking-wider">{b.subtitle}</p>}
+                        <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-950 dark:text-white mb-2 tracking-wide">{b.title}</h3>
+                        {b.subtitle && <p className="text-base sm:text-lg md:text-xl font-black text-orange-600 dark:text-orange-400 mt-1 tracking-wider">{b.subtitle}</p>}
                       </div>
                       {b.button_text && (
-                        <button className="text-xs md:text-sm px-6 py-2.5 rounded-full font-bold shrink-0 transition-all shadow-md group-hover:brightness-110"
-                          style={{
-                            background: b.color ? `${b.color}22` : 'rgba(0,209,255,0.15)',
-                            color: b.color || '#00D1FF',
-                            border: `1px solid ${b.color ? b.color + '55' : 'rgba(0,209,255,0.4)'}`,
-                          }}>
+                        <button className="text-xs md:text-sm px-6 py-2.5 rounded-full font-black shrink-0 bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm">
                           {b.button_text}
                         </button>
                       )}
@@ -327,17 +315,17 @@ export function HomePage() {
               })}
             </div>
           ) : (
-            /* ফলব্যাক ডাইনামিক প্রিমিয়াম গ্লাস ব্যানার - টাকার টেক্সট সাইজ ফিক্সড */
-            <div className="rounded-[32px] p-6 md:p-12 relative overflow-hidden backdrop-blur-md bg-white/40 dark:bg-zinc-900/40 border border-white/20 dark:border-zinc-800/40 shadow-sm aspect-[1200/380] md:aspect-[1200/260] flex items-center">
-              <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full opacity-15 blur-2xl bg-cyan-500" />
+            /* ফলব্যাক প্রিমিয়াম ব্যানার - টাকার টেক্সট ও ফন্ট সাইজ অনেক বড় ও স্পষ্ট */
+            <div className="rounded-[32px] p-6 md:p-12 relative overflow-hidden bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/60 aspect-[1200/400] md:aspect-[1200/260] flex items-center">
+              <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full opacity-20 blur-2xl bg-cyan-500" />
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10 w-full">
                 <div>
-                  <h3 className="text-xl md:text-3xl font-black text-slate-800 dark:text-white mb-1.5">{t('home.freeDelivery')}</h3>
-                  <p className="text-sm md:text-lg text-orange-600 dark:text-orange-400 font-extrabold tracking-wide">
+                  <h3 className="text-2xl md:text-3xl font-black text-slate-950 dark:text-white mb-1.5">{t('home.freeDelivery')}</h3>
+                  <p className="text-xl md:text-3xl text-orange-600 dark:text-orange-400 font-black tracking-wide">
                     {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}
                   </p>
                 </div>
-                <button className="text-xs md:text-sm px-6 py-2.5 rounded-full font-bold transition-all bg-cyan-500/10 text-cyan-500 border border-cyan-500/25 shadow-sm w-fit">
+                <button className="text-xs md:text-sm px-6 py-3 rounded-full font-black bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-sm w-fit">
                   {t('home.shopNow')}
                 </button>
               </div>
@@ -350,13 +338,13 @@ export function HomePage() {
           <section className="w-full px-4 lg:px-8 pb-16">
             <div className="flex items-center gap-2 mb-4">
               <Megaphone size={16} className="text-orange-500" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-white/60">Special Campaigns</h3>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-950 dark:text-white/70">Special Campaigns</h3>
             </div>
             <div className="space-y-4">
               {campaigns.map(c => (
-                <div key={c.id} className="rounded-3xl overflow-hidden relative group cursor-pointer border border-orange-500/15" onClick={() => navigate('/')}>
+                <div key={c.id} className="rounded-3xl overflow-hidden relative group cursor-pointer border border-slate-200 dark:border-orange-500/15" onClick={() => navigate('/')}>
                   {c.banner_url && (
-                    <img src={ikBanner(c.banner_url)} alt={c.name} className="w-full h-36 sm:h-48 object-cover transition-transform duration-500 group-hover:scale-101" />
+                    <img src={ikBanner(c.banner_url)} alt={c.name} className="w-full h-36 sm:h-48 object-cover" />
                   )}
                 </div>
               ))}
