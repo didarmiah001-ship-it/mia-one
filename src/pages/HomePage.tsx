@@ -101,7 +101,7 @@ export function HomePage() {
   const flashSale = products.filter(p => p.discount_price).slice(0, 4);
 
   // কারেন্ট ল্যাঙ্গুয়েজ অনুযায়ী নাম নির্ধারণ (fallback সহ)
-  const appName = i18n.language === 'bn' ? 'মিয়া ওয়ান' : 'Miya One';
+  const appName = i18n.language === 'bn' ? 'মিয়া ওয়ান' : 'Mia One';
 
   return (
     <div className="page-transition pb-32 bg-white dark:bg-zinc-950 min-h-screen text-slate-900 dark:text-zinc-50 antialiased w-full relative">
