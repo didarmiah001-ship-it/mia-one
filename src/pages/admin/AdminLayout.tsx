@@ -4,8 +4,10 @@ import { useNavigate, useParams, useLocation } from '../../lib/router';
 import {
   LayoutDashboard, Package, Tag, Image, ShoppingCart, Users, LogOut, Shield,
   Ticket, Bell, Zap, BarChart2, Settings, Star, Menu, X, ChevronLeft,
-  ChevronRight as ChevronRightIcon, Store,
+  ChevronRight as ChevronRightIcon, Store, RotateCw,
 } from 'lucide-react';
+
+const COLLAPSE_KEY = 'mia-admin-sidebar-collapsed';
 import { AdminDashboard } from './AdminDashboard';
 import { AdminProducts } from './AdminProducts';
 import { AdminCategories } from './AdminCategories';
@@ -219,12 +221,26 @@ export function AdminLayout() {
   const sectionFromParam = params.section && params.section !== '' ? params.section : null;
   const [activeSection, setActiveSection] = useState(sectionFromParam || 'dashboard');
   const [drawerOpen, setDrawerOpen]       = useState(false);
-  const [collapsed, setCollapsed]         = useState(false);
+  const [collapsed, setCollapsed]         = useState(() => {
+    try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
+  });
+  const [refreshKey, setRefreshKey]       = useState(0);
+  const [refreshing, setRefreshing]       = useState(false);
 
   useEffect(() => {
     if (sectionFromParam) setActiveSection(sectionFromParam);
     else if (pathname === '/admin') setActiveSection('dashboard');
   }, [sectionFromParam, pathname]);
+
+  useEffect(() => {
+    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch {}
+  }, [collapsed]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setRefreshKey(k => k + 1);
+    setTimeout(() => setRefreshing(false), 600);
+  };
 
   // Close drawer on nav
   const handleNav = (id: string) => {
@@ -337,6 +353,14 @@ export function AdminLayout() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleRefresh}
+              className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/8 transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+              title="Refresh page data"
+            >
+              <RotateCw size={15} className={`text-white/40 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <button
               onClick={() => navigate('/')}
               className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/8 transition-colors"
               style={{ border: '1px solid rgba(255,255,255,0.07)' }}
@@ -369,6 +393,14 @@ export function AdminLayout() {
               <span className="text-xs text-white/40 font-medium">{profile.full_name}</span>
             )}
             <button
+              onClick={handleRefresh}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white/50 hover:text-white/80 transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+              title="Refresh page data"
+            >
+              <RotateCw size={13} className={refreshing ? 'animate-spin' : ''} /> Refresh
+            </button>
+            <button
               onClick={() => navigate('/')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white/50 hover:text-white/80 transition-colors"
               style={{ border: '1px solid rgba(255,255,255,0.07)' }}
@@ -381,7 +413,7 @@ export function AdminLayout() {
         {/* Page content */}
         <main className="flex-1 px-4 py-5 lg:px-6 lg:py-6 pb-28 lg:pb-8">
           <div className="max-w-6xl mx-auto">
-            <SectionContent section={activeSection} />
+            <SectionContent key={refreshKey} section={activeSection} />
           </div>
         </main>
 
