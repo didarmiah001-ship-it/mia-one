@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, User, Phone, MapPin, Calendar, Package, ChevronRight, X, Eye, CreditCard, FileText, Ban, Shield, Copy, Download } from 'lucide-react';
 import { adminFetchCustomersWithStats, adminFetchCustomerOrders, adminUpdateCustomerBlacklist } from '../lib/api';
 import { useToast } from '../components/Toast';
@@ -19,12 +19,79 @@ interface CustomerWithStats {
   lastOrderDate?: string;
 }
 
+interface OrderItem {
+  name?: string;
+  image?: string;
+  quantity?: number;
+  price?: number;
+}
+
+interface CustomerOrder {
+  id: string;
+  order_number?: string;
+  total?: number;
+  status?: string;
+  created_at: string;
+  items?: OrderItem[];
+  address?: { full_name?: string; phone?: string; address?: string };
+  payment_method?: string;
+  payment_status?: string;
+  payment_screenshot_url?: string;
+  payments?: { screenshot_url?: string; payment_screenshot_url?: string; status?: string }[];
+  payment?: { screenshot_url?: string; payment_screenshot_url?: string; status?: string };
+}
+
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function fmtDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function copyToClipboard(text: string | undefined, label: string, toast: ReturnType<typeof useToast>) {
+  if (!text) {
+    toast.error(`No ${label} to copy`);
+    return;
+  }
+  navigator.clipboard.writeText(text)
+    .then(() => toast.success(`${label} copied`))
+    .catch(() => toast.error(`Failed to copy ${label}`));
+}
+
+function exportCustomersCsv(rows: CustomerWithStats[], toast: ReturnType<typeof useToast>) {
+  if (rows.length === 0) {
+    toast.error('No customers to export');
+    return;
+  }
+  const header = ['Name', 'Email', 'Phone', 'Orders', 'Total Spent', 'LTV', 'Status', 'Joined'];
+  const escape = (v: unknown) => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [header.join(',')];
+  for (const c of rows) {
+    lines.push([
+      escape(c.full_name || 'Unknown'),
+      escape(c.email || ''),
+      escape(c.phone || ''),
+      escape(c.totalOrders),
+      escape(c.totalSpent),
+      escape(c.ltv || 0),
+      escape(c.is_blacklisted ? 'Blacklisted' : 'Active'),
+      escape(c.created_at ? fmtDate(c.created_at) : ''),
+    ].join(','));
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `customers-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast.success(`Exported ${rows.length} customers`);
 }
 
 // Customer Detail Drawer
@@ -38,9 +105,9 @@ function CustomerDrawer({
   onBlacklistToggle: (id: string, isBlacklisted: boolean, reason?: string) => Promise<void>;
 }) {
   const toast = useToast();
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
   const [showBlacklistModal, setShowBlacklistModal] = useState(false);
   const [blacklistReason, setBlacklistReason] = useState(customer.blacklist_reason || '');
   const [togglingBlacklist, setTogglingBlacklist] = useState(false);
@@ -49,7 +116,7 @@ function CustomerDrawer({
     const fetchOrders = async () => {
       setLoading(true);
       const data = await adminFetchCustomerOrders(customer.id);
-      setOrders(data);
+      setOrders(data as unknown as CustomerOrder[]);
       setLoading(false);
     };
     fetchOrders();
@@ -61,11 +128,6 @@ function CustomerDrawer({
     setTogglingBlacklist(false);
     setShowBlacklistModal(false);
     onClose();
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard!`);
   };
 
   return (
@@ -161,42 +223,31 @@ function CustomerDrawer({
             )}
           </div>
 
-          {/* Contact Info Inside Drawer */}
+          {/* Contact Info */}
           <div className="space-y-3 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
             <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Contact Info</p>
-            
-            <div className="flex items-center justify-between group/row">
-              <div className="flex items-center gap-2">
-                <Phone size={12} className="text-white/30 shrink-0" />
-                <span className="text-sm text-white/70">{customer.phone || '—'}</span>
-              </div>
-              {customer.phone && (
-                <button 
-                  onClick={() => copyToClipboard(customer.phone, 'Phone number')} 
-                  className="p-1 rounded bg-white/5 opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-white/10"
-                  title="Copy Phone"
-                >
-                  <Copy size={11} className="text-white/60" />
-                </button>
-              )}
+            <div className="flex items-center gap-2 group">
+              <Phone size={12} className="text-white/30 shrink-0" />
+              <span className="text-sm text-white/70 flex-1">{customer.phone || '—'}</span>
+              <button
+                onClick={() => copyToClipboard(customer.phone, 'phone', toast)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/10"
+                title="Copy phone"
+              >
+                <Copy size={11} className="text-white/40" />
+              </button>
             </div>
-
-            <div className="flex items-center justify-between group/row">
-              <div className="flex items-center gap-2">
-                <FileText size={12} className="text-white/30 shrink-0" />
-                <span className="text-sm text-white/70 truncate max-w-[240px]">{customer.email || '—'}</span>
-              </div>
-              {customer.email && (
-                <button 
-                  onClick={() => copyToClipboard(customer.email || '', 'Email address')} 
-                  className="p-1 rounded bg-white/5 opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-white/10"
-                  title="Copy Email"
-                >
-                  <Copy size={11} className="text-white/60" />
-                </button>
-              )}
+            <div className="flex items-center gap-2 group">
+              <FileText size={12} className="text-white/30 shrink-0" />
+              <span className="text-sm text-white/70 flex-1">{customer.email || '—'}</span>
+              <button
+                onClick={() => copyToClipboard(customer.email, 'email', toast)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/10"
+                title="Copy email"
+              >
+                <Copy size={11} className="text-white/40" />
+              </button>
             </div>
-
             <div className="flex items-center gap-2">
               <Calendar size={12} className="text-white/30 shrink-0" />
               <span className="text-xs text-white/50">Joined {fmtDate(customer.created_at)}</span>
@@ -259,14 +310,14 @@ function CustomerDrawer({
                             {items.length === 0 ? (
                               <p className="text-xs text-white/30 text-center py-2">No items found</p>
                             ) : (
-                              items.map((item: any, i: number) => (
+                              items.map((item: OrderItem, i: number) => (
                                 <div key={i} className="flex items-center gap-2.5">
                                   {item.image && <img src={item.image} alt={item.name} className="w-8 h-8 rounded-md object-cover shrink-0" />}
                                   <div className="flex-1 min-w-0">
                                     <p className="text-[11px] text-white/70 truncate">{item.name}</p>
                                     <p className="text-[10px] text-white/35">x{item.quantity} · ৳{item.price}</p>
                                   </div>
-                                  <span className="text-xs font-medium text-white/60">৳{(Number(item.price) * item.quantity).toLocaleString()}</span>
+                                  <span className="text-xs font-medium text-white/60">৳{((Number(item.price) * (item.quantity ?? 0))).toLocaleString()}</span>
                                 </div>
                               ))
                             )}
@@ -326,7 +377,7 @@ export function AdminCustomers() {
     const fetchCustomers = async () => {
       setLoading(true);
       const customersWithStats = await adminFetchCustomersWithStats();
-      setCustomers(customersWithStats as any);
+      setCustomers(customersWithStats as unknown as CustomerWithStats[]);
       setLoading(false);
     };
     fetchCustomers();
@@ -342,52 +393,17 @@ export function AdminCustomers() {
     }
   };
 
-  // Client-side Global fast search (Name, Email, Phone)
-  const filtered = customers.filter(c =>
-    (!search ||
-    (c.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.phone || '').includes(search)) &&
-    (!filterBlacklisted || c.is_blacklisted)
-  );
-
-  // Fast Client-side Read-only CSV Export functionality
-  const handleCSVExport = () => {
-    if (filtered.length === 0) {
-      toast.error('No customer data available to export.');
-      return;
-    }
-
-    const headers = ['Customer ID', 'Full Name', 'Email', 'Phone', 'Total Orders', 'Total Spent (BDT)', 'LTV (BDT)', 'Status', 'Joined Date'];
-    const rows = filtered.map(c => [
-      c.id,
-      c.full_name || 'Unknown',
-      c.email || '-',
-      c.phone || '-',
-      c.totalOrders,
-      c.totalSpent,
-      c.ltv,
-      c.is_blacklisted ? 'Blacklisted' : 'Active',
-      fmtDate(c.created_at)
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `MIA_Customers_Export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('CSV file exported successfully!');
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard!`);
-  };
+  const filtered = useMemo(() => customers.filter(c => {
+    if (filterBlacklisted && !c.is_blacklisted) return false;
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      (c.full_name || '').toLowerCase().includes(s) ||
+      (c.email || '').toLowerCase().includes(s) ||
+      (c.phone || '').toLowerCase().includes(s) ||
+      (c.id || '').toLowerCase().includes(s)
+    );
+  }), [customers, search, filterBlacklisted]);
 
   return (
     <div className="space-y-4">
@@ -402,16 +418,7 @@ export function AdminCustomers() {
             Total LTV: <span className="text-green-400 font-semibold">৳{filtered.reduce((s, c) => s + (c.ltv || 0), 0).toLocaleString()}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* CSV Export Trigger Action Button */}
-          <button
-            onClick={handleCSVExport}
-            className="px-3 py-2 rounded-xl text-xs font-medium bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all flex items-center gap-1.5 shrink-0"
-          >
-            <Download size={13} />
-            Export CSV
-          </button>
-
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
           <button
             onClick={() => setFilterBlacklisted(!filterBlacklisted)}
             className={`px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${filterBlacklisted ? 'text-red-400' : 'text-white/40'}`}
@@ -420,14 +427,23 @@ export function AdminCustomers() {
             <Ban size={12} />
             Blacklisted
           </button>
-          
-          <div className="relative flex-1 sm:flex-initial">
+          <button
+            onClick={() => exportCustomersCsv(filtered, toast)}
+            disabled={filtered.length === 0}
+            className="px-3 py-2 rounded-xl text-xs font-medium text-white/50 hover:text-white/80 transition-all flex items-center gap-1.5 disabled:opacity-40"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+            title="Export displayed customers to CSV"
+          >
+            <Download size={12} />
+            Export CSV
+          </button>
+          <div className="relative flex-1 sm:flex-initial min-w-[160px]">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, email, phone..."
-              className="w-full sm:w-60 pl-9 pr-3 py-2 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40"
+              placeholder="Search name, email, phone…"
+              className="w-full sm:w-64 pl-9 pr-3 py-2 bg-white/[0.03] border border-white/8 rounded-xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-mia-orange/40"
             />
           </div>
         </div>
@@ -438,75 +454,67 @@ export function AdminCustomers() {
           {Array.from({ length: 5 }).map((_, i) => <div key={i} className="glow-card h-20 shimmer" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glow-card py-16 text-center text-white/25 text-sm">No customers found</div>
+        <div className="glow-card py-16 text-center">
+          <User size={28} className="text-white/15 mx-auto mb-3" />
+          <p className="text-white/30 text-sm">
+            {search || filterBlacklisted ? 'No customers match your filters' : 'No customers found'}
+          </p>
+        </div>
       ) : (
         <>
-          {/* Mobile Card Responsive View Layout List */}
+          {/* Mobile card list */}
           <div className="lg:hidden space-y-2">
             {filtered.map(c => (
-              <div key={c.id} className="w-full glow-card p-3 flex flex-col gap-2 text-left relative">
-                <div onClick={() => setSelectedCustomer(c)} className="flex items-center gap-3 cursor-pointer">
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-                    style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.15)' }}
-                  >
-                    {c.avatar_url
-                      ? <img src={c.avatar_url} className="w-full h-full object-cover" alt="" />
-                      : <User size={16} className="text-mia-orange/60" />
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-semibold truncate">{c.full_name || 'Unknown'}</p>
-                    <p className="text-[11px] text-white/40 mt-0.5">{c.totalOrders} orders · <span className="text-mia-orange font-medium">৳{c.totalSpent.toLocaleString()}</span></p>
-                  </div>
-                  <ChevronRight size={14} className="text-white/30 ml-auto" />
+              <button key={c.id} onClick={() => setSelectedCustomer(c)}
+                className="w-full glow-card p-3 flex items-center gap-3 text-left hover:border-white/10 transition-colors">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                  style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.15)' }}
+                >
+                  {c.avatar_url
+                    ? <img src={c.avatar_url} className="w-full h-full object-cover" alt="" />
+                    : <User size={16} className="text-mia-orange/60" />
+                  }
                 </div>
-
-                {/* Mobile action inline clipboards details wrapper panel */}
-                <div className="flex flex-col gap-1.5 pt-2 border-t border-white/5 text-xs text-white/50">
-                  <div className="flex items-center justify-between bg-white/[0.01] px-2 py-1 rounded-lg">
-                    <span className="truncate pr-2">Phone: {c.phone || '—'}</span>
-                    {c.phone && (
-                      <button onClick={() => copyToClipboard(c.phone, 'Phone number')} className="p-1 hover:bg-white/10 rounded text-white/60">
-                        <Copy size={11} />
-                      </button>
-                    )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-semibold truncate">{c.full_name || 'Unknown'}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {c.phone && <span className="text-[11px] text-white/45">{c.phone}</span>}
+                    {c.email && <span className="text-[11px] text-white/35 truncate">{c.email}</span>}
                   </div>
-                  <div className="flex items-center justify-between bg-white/[0.01] px-2 py-1 rounded-lg">
-                    <span className="truncate pr-2">Email: {c.email || '-'}</span>
-                    {c.email && (
-                      <button onClick={() => copyToClipboard(c.email || '', 'Email address')} className="p-1 hover:bg-white/10 rounded text-white/60">
-                        <Copy size={11} />
-                      </button>
-                    )}
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[10px] text-white/40">{c.totalOrders} orders</span>
+                    <span className="text-[10px] text-mia-orange font-medium">৳{c.totalSpent.toLocaleString()}</span>
                   </div>
                 </div>
-              </div>
+                <ChevronRight size={14} className="text-white/30" />
+              </button>
             ))}
           </div>
 
-          {/* Desktop Table Responsive View Layout Design */}
+          {/* Desktop table */}
           <div className="hidden lg:block glow-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Customer</th>
-                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Email Address</th>
+                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Email</th>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Phone</th>
-                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Orders</th>
-                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Total Spent</th>
-                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">LTV</th>
+                    <th className="text-right text-[11px] font-semibold text-white/30 px-4 py-3">Orders</th>
+                    <th className="text-right text-[11px] font-semibold text-white/30 px-4 py-3">Total Spent</th>
+                    <th className="text-right text-[11px] font-semibold text-white/30 px-4 py-3">LTV</th>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Status</th>
                     <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3">Joined</th>
-                    <th className="text-left text-[11px] font-semibold text-white/30 px-4 py-3"></th>
+                    <th className="text-center text-[11px] font-semibold text-white/30 px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(c => (
-                    <tr key={c.id} className="hover:bg-white/[0.015] transition-colors group/row"
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+                    <tr key={c.id} className="hover:bg-white/[0.015] transition-colors cursor-pointer group"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                      onClick={() => setSelectedCustomer(c)}>
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
                             style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.15)' }}>
@@ -518,60 +526,65 @@ export function AdminCustomers() {
                           <span className="text-sm text-white/80 font-medium">{c.full_name || 'Unknown'}</span>
                         </div>
                       </td>
-                      
-                      {/* Customer Email Display Engine Panel Column Cell */}
-                      <td className="px-4 py-3 text-xs text-white/60">
-                        <div className="flex items-center justify-between gap-2 max-w-[170px]">
-                          <span className="truncate">{c.email || '-'}</span>
-                          {c.email && (
-                            <button 
-                              onClick={() => copyToClipboard(c.email || '', 'Email address')} 
-                              className="p-1 rounded bg-white/5 opacity-0 group-hover/row:opacity-100 hover:bg-white/10 text-white/40 hover:text-white transition-all shrink-0"
-                              title="Copy Email"
+                      <td className="px-4 py-3">
+                        {c.email ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-white/50 truncate max-w-[180px]">{c.email}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); copyToClipboard(c.email, 'email', toast); }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/10 shrink-0"
+                              title="Copy email"
                             >
-                              <Copy size={11} />
+                              <Copy size={11} className="text-white/40" />
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-white/25">—</span>
+                        )}
                       </td>
-
-                      {/* Phone Column Cell with dynamic copy clipboard action trigger feature */}
-                      <td className="px-4 py-3 text-xs text-white/50">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono">{c.phone || '—'}</span>
-                          {c.phone && (
-                            <button 
-                              onClick={() => copyToClipboard(c.phone, 'Phone number')} 
-                              className="p-1 rounded bg-white/5 opacity-0 group-hover/row:opacity-100 hover:bg-white/10 text-white/40 hover:text-white transition-all shrink-0"
-                              title="Copy Phone"
+                      <td className="px-4 py-3">
+                        {c.phone ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-white/50">{c.phone}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); copyToClipboard(c.phone, 'phone', toast); }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/10 shrink-0"
+                              title="Copy phone"
                             >
-                              <Copy size={11} />
+                              <Copy size={11} className="text-white/40" />
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-white/25">—</span>
+                        )}
                       </td>
-
-                      <td className="px-4 py-3 cursor-pointer text-xs text-white/70" onClick={() => setSelectedCustomer(c)}>
-                        {c.totalOrders}
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-xs text-white/70">{c.totalOrders}</span>
                       </td>
-                      <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+                      <td className="px-4 py-3 text-right">
                         <span className="text-xs font-semibold text-mia-orange">৳{c.totalSpent.toLocaleString()}</span>
                       </td>
-                      <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+                      <td className="px-4 py-3 text-right">
                         <span className="text-xs font-semibold text-green-400">৳{(c.ltv || 0).toLocaleString()}</span>
                       </td>
-                      <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+                      <td className="px-4 py-3">
                         {c.is_blacklisted
                           ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 font-bold">BLACKLISTED</span>
                           : <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-bold">ACTIVE</span>}
                       </td>
-                      <td className="px-4 py-3 text-xs text-white/40 cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+                      <td className="px-4 py-3 text-xs text-white/40">
                         {fmtDate(c.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => setSelectedCustomer(c)} className="p-1.5 rounded-lg hover:bg-white/8 transition-colors">
-                          <Eye size={13} className="text-white/30" />
-                        </button>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedCustomer(c); }}
+                            className="p-1.5 rounded-lg hover:bg-white/8 transition-colors"
+                            title="View details"
+                          >
+                            <Eye size={13} className="text-white/30" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
