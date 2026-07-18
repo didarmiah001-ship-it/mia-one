@@ -9,7 +9,7 @@ import { useData } from '../lib/data';
 import { useStore } from '../store/StoreContext';
 import { appConfig } from '../lib/config';
 import { ikThumb, ikBanner } from '../lib/imagekit';
-import { fetchActiveCampaigns, fetchPromoBanners } from '../lib/api';
+import { fetchActiveCampaigns } from '../lib/api';
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -20,12 +20,9 @@ export function HomePage() {
   const { state } = useStore();
   const { products, categories, banners } = useData();
   const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [promoBanners, setPromoBanners] = useState<any[]>([]);
 
   useEffect(() => {
     fetchActiveCampaigns().then(data => { if (data) setCampaigns(data); });
-    // Fetch dynamic bottom promo banners from the new Firestore stream engine
-    fetchPromoBanners().then(data => { if (data) setPromoBanners(data); }).catch(() => {});
   }, []);
 
   const goTo = useCallback((idx: number) => {
@@ -270,58 +267,24 @@ export function HomePage() {
             </div>
           </section>
 
-          {/* ── Dynamic Slidable Bottom Promo Banners Engine ───────────────── */}
+          {/* Offer Banner */}
           <section className="px-4 mt-9">
-            {promoBanners.length > 0 ? (
-              <div className="flex flex-col gap-4">
-                {promoBanners.map(b => {
-                  const pImg = b.mobile_image || b.desktop_image || b.image_url || '';
-                  return (
-                    <div key={b.id} className="rounded-3xl p-6 relative overflow-hidden banner-glass min-h-[110px] flex flex-col justify-center cursor-pointer"
-                      onClick={() => { if (b.button_link) navigate(b.button_link); }}
-                      style={{ border: `1px solid ${b.color ? b.color + '25' : 'rgba(0,209,255,0.15)'}` }}>
-                      {pImg && (
-                        <>
-                          <img src={ikBanner(pImg)} alt="" className="absolute inset-0 w-full h-full object-cover z-0" />
-                          <div className="absolute inset-0 z-5" style={{ background: 'linear-gradient(to right, rgba(9,11,20,0.85) 0%, rgba(9,11,20,0.4) 60%, transparent 100%)' }} />
-                        </>
-                      )}
-                      <div className="relative z-10">
-                        <h3 className="text-base font-bold text-white mb-1 leading-tight">{b.title}</h3>
-                        {b.subtitle && <p className="text-xs text-white/80 mb-3 max-w-[75%] leading-normal">{b.subtitle}</p>}
-                        {b.button_text && (
-                          <button className="text-[10px] px-4 py-1.5 rounded-xl font-bold transition-all active:scale-95"
-                            style={{
-                              background: b.color ? `${b.color}22` : 'rgba(0,209,255,0.1)',
-                              color: b.color || '#00D1FF',
-                              border: `1px solid ${b.color ? b.color + '44' : 'rgba(0,209,255,0.3)'}`,
-                            }}>
-                            {b.button_text}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              /* Fallback static banner with text alignment fixes when no promo banners configured */
-              <div className="rounded-3xl p-6 relative overflow-hidden banner-glass"
-                style={{ border: '1px solid rgba(0,209,255,0.12)' }}>
-                <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
-                  style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
-                <h3 className="text-lg font-bold text-white mb-1.5">{t('home.freeDelivery')}</h3>
-                <p className="text-xs text-white/85 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
-                <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
-                  style={{
-                    background: 'rgba(0,209,255,0.1)', color: '#00D1FF',
-                    border: '1px solid rgba(0,209,255,0.25)',
-                    boxShadow: '0 4px 12px rgba(0,209,255,0.1)',
-                  }}>
-                  {t('home.shopNow')}
-                </button>
-              </div>
-            )}
+            <div className="rounded-3xl p-6 relative overflow-hidden banner-glass"
+              style={{ border: '1px solid rgba(0,209,255,0.12)' }}>
+              <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl"
+                style={{ background: 'radial-gradient(circle, #00D1FF, transparent)' }} />
+              <h3 className="text-lg font-bold text-white mb-1.5">{t('home.freeDelivery')}</h3>
+              <p className="text-xs text-white/90 mb-4">{t('home.freeDeliveryDesc')} {appConfig.delivery.currency}{appConfig.delivery.freeDeliveryThreshold}</p>
+              <button className="text-xs px-5 py-2 rounded-xl font-semibold transition-all hover:scale-105"
+                style={{
+                  background: 'rgba(0,209,255,0.1)',
+                  color: '#00D1FF',
+                  border: '1px solid rgba(0,209,255,0.25)',
+                  boxShadow: '0 4px 12px rgba(0,209,255,0.1)',
+                }}>
+                {t('home.shopNow')}
+              </button>
+            </div>
           </section>
 
           {/* Active Campaigns */}
