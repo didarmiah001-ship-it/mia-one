@@ -125,12 +125,14 @@ function ManualPaymentForm({
   orderNumber,
   amount,
   onSuccess,
+  banglaQRUrl,
 }: {
   method: string;
   paymentId: string;
   orderNumber: string;
   amount: number;
   onSuccess: () => void;
+  banglaQRUrl: string | null;
 }) {
   const meta = METHOD_META[method];
   const Icon = meta?.icon || Smartphone;
@@ -536,6 +538,7 @@ export function PaymentPage() {
                 orderNumber={orderNumber}
                 amount={total}
                 onSuccess={handleSuccess}
+                banglaQRUrl={banglaQRUrl}
               />
             )}
           </>

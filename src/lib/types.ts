@@ -35,7 +35,7 @@ export interface Product {
 
 export interface PaymentMethod {
   id: string;
-  payment_type: 'bkash' | 'nagad' | 'rocket' | 'bank_transfer' | 'cash_on_delivery' | 'stripe' | 'sslcommerz';
+  payment_type: 'bkash' | 'nagad' | 'rocket' | 'bank_transfer' | 'cash_on_delivery' | 'stripe' | 'sslcommerz' | 'bangla_qr';
   account_name: string;
   account_number: string;
   account_type: 'personal' | 'agent' | 'merchant' | 'bank' | 'none';

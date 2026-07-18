@@ -14,7 +14,7 @@ import { useToast } from '../components/Toast';
 
 interface PaymentMethod {
   id: string;
-  payment_type: 'bkash' | 'nagad' | 'rocket' | 'bank_transfer' | 'cash_on_delivery' | 'stripe' | 'sslcommerz';
+  payment_type: 'bkash' | 'nagad' | 'rocket' | 'bank_transfer' | 'cash_on_delivery' | 'stripe' | 'sslcommerz' | 'bangla_qr';
   account_name: string;
   account_number: string;
   account_type: 'personal' | 'agent' | 'merchant' | 'bank' | 'none';
@@ -38,6 +38,7 @@ const PAYMENT_TYPES = [
   { value: 'cash_on_delivery', label: 'ক্যাশ অন ডেলিভারি', icon: DollarSign, color: '#22C55E' },
   { value: 'stripe', label: 'Stripe (কার্ড)', icon: CreditCard, color: '#635BFF' },
   { value: 'sslcommerz', label: 'SSLCommerz', icon: CreditCard, color: '#00A651' },
+  { value: 'bangla_qr', label: 'বাংলা কিউআর (Bangla QR)', icon: QrCode, color: '#00D1FF' },
 ];
 
 const ACCOUNT_TYPES = [

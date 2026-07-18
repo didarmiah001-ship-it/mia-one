@@ -593,7 +593,11 @@ export async function fetchActivePaymentMethods(methodType?: string): Promise<an
 export async function fetchBanglaQR(): Promise<string | null> {
   try {
     const snap = await getDoc(doc(db, 'settings', 'bangla_qr'));
-    if (snap.exists() && snap.data()?.qr_image_url) return snap.data().qr_image_url;
+    if (snap.exists()) {
+      const data = snap.data();
+      const url = (data as any)?.value?.qr_image_url || (data as any)?.qr_image_url;
+      if (url) return url as string;
+    }
     return null;
   } catch {
     return null;
