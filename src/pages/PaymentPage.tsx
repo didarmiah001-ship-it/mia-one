@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, CreditCard, Smartphone, Building2, CheckCircle2, XCircle,
-  Loader2, Copy, AlertCircle, Lock, RefreshCw, Clock, Check, Upload, Image as ImageIcon, X, QrCode,
+  Loader2, Copy, AlertCircle, Lock, RefreshCw, Clock, Check, QrCode,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from '../lib/router';
 import { submitManualPayment, initiateStripePayment, createPayment, fetchActivePaymentMethods, updatePaymentGatewayRef, markPaymentPaid, fetchBanglaQR } from '../lib/api';
@@ -16,6 +16,7 @@ const METHOD_META: Record<string, {
   nagad: { label: 'Nagad', color: '#F6921E', icon: Smartphone },
   rocket: { label: 'Rocket', color: '#8B5CF6', icon: Smartphone },
   bank_transfer: { label: 'Bank Transfer', color: '#00D1FF', icon: Building2 },
+  bangla_qr: { label: 'Bangla QR', color: '#00D1FF', icon: QrCode },
   stripe: { label: 'Card Payment', color: '#6772E5', icon: CreditCard },
   sslcommerz: { label: 'SSLCommerz', color: '#00AEEF', icon: CreditCard },
   cash_on_delivery: { label: 'Cash on Delivery', color: '#22C55E', icon: Smartphone },
@@ -136,14 +137,9 @@ function ManualPaymentForm({
   const [txId, setTxId] = useState('');
   const [senderNumber, setSenderNumber] = useState('');
   const [customerNote, setCustomerNote] = useState('');
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
-  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<'number' | 'order' | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
   // Fetch payment method details from database
@@ -180,108 +176,21 @@ function ManualPaymentForm({
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError(t('payment.errInvalidFile') || 'Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError(t('payment.errFileTooLarge') || 'File size must be less than 5MB');
-      return;
-    }
-
-    setScreenshotFile(file);
-    setScreenshotUrl(null);
-    setError('');
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setScreenshotPreview(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const removeScreenshot = () => {
-    setScreenshotFile(null);
-    setScreenshotPreview(null);
-    setScreenshotUrl(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const uploadScreenshot = async (): Promise<string | null> => {
-    if (!screenshotFile) return null;
-
-    setUploadingScreenshot(true);
-    try {
-      const fileExt = screenshotFile.name.split('.').pop();
-      const fileName = `payment-proof-${orderNumber}-${Date.now()}.${fileExt}`;
-
-      const authRes = await fetch('https://ljtwvmgxrhwrwaaovlbi.supabase.co/functions/v1/imagekit-auth');
-      if (!authRes.ok) {
-        console.error(`[ImageKit] Auth failed: ${authRes.status} ${authRes.statusText}`);
-        return null;
-      }
-      const { token, expire, signature, publicKey } = await authRes.json();
-
-      const formData = new FormData();
-      formData.append('file', screenshotFile);
-      formData.append('fileName', fileName);
-      formData.append('publicKey', publicKey);
-      formData.append('signature', signature);
-      formData.append('expire', String(expire));
-      formData.append('token', token);
-
-      const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', { method: 'POST', body: formData });
-      if (!uploadRes.ok) {
-        console.error(`[ImageKit] Upload failed: ${uploadRes.status}`, await uploadRes.text().catch(() => ''));
-        return null;
-      }
-      const uploadData = await uploadRes.json();
-      return uploadData.url || null;
-    } catch (err) {
-      console.error('Upload failed:', err);
-      return null;
-    } finally {
-      setUploadingScreenshot(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!txId.trim()) { setError(t('payment.errTxId')); return; }
-    if ((method === 'bkash' || method === 'nagad' || method === 'rocket') && !senderNumber.trim()) {
+    if (!senderNumber.trim()) {
       setError(t('payment.errSenderNumber')); return;
     }
     setError('');
     setSubmitting(true);
 
-    // Upload screenshot if selected
-    let uploadedUrl: string | null = null;
-    if (screenshotFile) {
-      uploadedUrl = await uploadScreenshot();
-      if (!uploadedUrl) {
-        setError(t('payment.errUploadFailed') || 'Failed to upload screenshot. Please try again.');
-        setSubmitting(false);
-        return;
-      }
-      setScreenshotUrl(uploadedUrl);
-    }
-
     const { error: apiErr } = await submitManualPayment(
       paymentId,
       txId.trim(),
       senderNumber.trim(),
-      customerNote.trim() || undefined,
-      uploadedUrl || undefined
+      method,
+      customerNote.trim() || undefined
     );
     setSubmitting(false);
     if (apiErr) setError(apiErr);
@@ -333,6 +242,26 @@ function ManualPaymentForm({
               </div>
             </div>
           </>
+        )}
+
+        {method === 'bangla_qr' && banglaQRUrl && (
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              <img
+                src={banglaQRUrl}
+                alt="Bangla QR"
+                className="w-56 h-56 rounded-2xl object-contain"
+                style={{ background: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-mia-orange">৳{amount}</p>
+              <p className="text-[11px] text-white/40 mt-0.5">Amount to pay</p>
+            </div>
+            <p className="text-[11px] text-white/30 text-center max-w-xs leading-relaxed">
+              Scan with bKash, Nagad, Rocket, or any banking app that supports Bangla QR. After paying, enter your transaction id below.
+            </p>
+          </div>
         )}
 
         {method === 'bank_transfer' && paymentMethodDetails && (
@@ -400,57 +329,15 @@ function ManualPaymentForm({
             style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)', focus: 'border-color: rgba(255,138,0,0.4)' }} />
         </div>
 
-        {(method === 'bkash' || method === 'nagad' || method === 'rocket') && (
-          <div>
-            <label className="text-[11px] text-white/40 mb-1.5 block font-medium uppercase tracking-wider">
-              {t('payment.senderNumberLabel')}
-            </label>
-            <input type="tel" value={senderNumber}
-              onChange={e => setSenderNumber(e.target.value)}
-              placeholder={t('payment.senderNumberPlaceholder')}
-              className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none transition-all"
-              style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }} />
-          </div>
-        )}
-
-        {/* Payment Screenshot Upload */}
         <div>
           <label className="text-[11px] text-white/40 mb-1.5 block font-medium uppercase tracking-wider">
-            {t('payment.screenshotLabel') || 'Payment Screenshot'} <span className="text-white/25">({t('common.optional')})</span>
+            {t('payment.senderNumberLabel')}
           </label>
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          {!screenshotPreview ? (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full px-4 py-4 rounded-2xl text-sm text-white/50 flex flex-col items-center justify-center gap-2 transition-all hover:border-mia-orange/30"
-              style={{ background: 'var(--bg-input)', border: '1px dashed rgba(255,255,255,0.15)' }}
-            >
-              <Upload size={22} className="text-white/30" />
-              <span>{t('payment.uploadScreenshot') || 'Upload payment screenshot'}</span>
-              <span className="text-[10px] text-white/25">JPG, PNG (max 5MB)</span>
-            </button>
-          ) : (
-            <div className="relative rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-              <img src={screenshotPreview} alt="Payment proof" className="w-full h-40 object-cover" />
-              <button
-                type="button"
-                onClick={removeScreenshot}
-                className="absolute top-2 right-2 w-8 h-8 rounded-xl flex items-center justify-center bg-black/60 hover:bg-red-500/80 transition-colors"
-              >
-                <X size={14} className="text-white" />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent">
-                <p className="text-[10px] text-white/60 truncate">{screenshotFile?.name}</p>
-              </div>
-            </div>
-          )}
+          <input type="tel" value={senderNumber}
+            onChange={e => setSenderNumber(e.target.value)}
+            placeholder={t('payment.senderNumberPlaceholder')}
+            className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none transition-all"
+            style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.07)' }} />
         </div>
 
         {/* Customer Note */}
@@ -468,11 +355,11 @@ function ManualPaymentForm({
           />
         </div>
 
-        <button type="submit" disabled={submitting || uploadingScreenshot}
+        <button type="submit" disabled={submitting}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-50 glow-btn"
           style={{ background: `linear-gradient(135deg, ${meta?.color}, ${meta?.color}99)` }}>
-          {submitting || uploadingScreenshot ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
-          {uploadingScreenshot ? (t('payment.uploading') || 'Uploading...') : submitting ? t('payment.submitting') : t('payment.submitForVerification')}
+          {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
+          {submitting ? t('payment.submitting') : t('payment.submitForVerification')}
         </button>
       </form>
     </div>
@@ -642,46 +529,14 @@ export function PaymentPage() {
               </div>
             )}
 
-            {(method === 'bkash' || method === 'nagad' || method === 'bank_transfer') && (
-              <>
-                {banglaQRUrl && (
-                  <div className="glow-card p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,209,255,0.1)', border: '1px solid rgba(0,209,255,0.2)' }}>
-                        <QrCode size={14} className="text-[#00D1FF]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-white">Scan & Pay with Bangla QR</p>
-                        <p className="text-[11px] text-white/30">Open your banking app and scan this QR to pay ৳{total}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="relative">
-                        <img
-                          src={banglaQRUrl}
-                          alt="Bangla QR"
-                          className="w-56 h-56 rounded-2xl object-contain"
-                          style={{ background: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-                        />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-mia-orange">৳{total}</p>
-                        <p className="text-[11px] text-white/40 mt-0.5">Amount to pay</p>
-                      </div>
-                      <p className="text-[11px] text-white/30 text-center max-w-xs leading-relaxed">
-                        Scan with bKash, Nagad, Rocket, or any banking app that supports Bangla QR. After paying, enter your transaction ID below.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <ManualPaymentForm
-                  method={method}
-                  paymentId={paymentId}
-                  orderNumber={orderNumber}
-                  amount={total}
-                  onSuccess={handleSuccess}
-                />
-              </>
+            {(method === 'bkash' || method === 'nagad' || method === 'rocket' || method === 'bank_transfer' || method === 'bangla_qr') && (
+              <ManualPaymentForm
+                method={method}
+                paymentId={paymentId}
+                orderNumber={orderNumber}
+                amount={total}
+                onSuccess={handleSuccess}
+              />
             )}
           </>
         )}

@@ -255,6 +255,7 @@
     "submitTxDetails": "Submit Transaction Details",
     "errTxId": "Please enter the Transaction ID",
     "errSenderNumber": "Please enter your sender number",
+    "errDuplicateTxId": "This Transaction ID has already been used. Please enter a valid Transaction ID.",
     "txIdLabel": "Transaction ID *",
     "txIdPlaceholder": "e.g. 8N7A6B5C4D",
     "senderPlaceholder": "e.g. ABD1234567",

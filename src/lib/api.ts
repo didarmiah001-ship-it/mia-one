@@ -478,17 +478,44 @@ export async function createPayment(payment: {
   } catch (e: any) { return { data: null, error: e.message }; }
 }
 
-export async function submitManualPayment(paymentId: string, txId: string, senderNumber: string, customerNote?: string, screenshotUrl?: string) {
-  const updates: any = {
-    transaction_id: txId,
-    sender_number: senderNumber,
-    status: 'submitted',
-    submitted_at: new Date().toISOString(),
-  };
-  if (customerNote) updates.customer_note = customerNote;
-  if (screenshotUrl) updates.screenshot_url = screenshotUrl;
-  try { await updateDoc(doc(db, 'payments', paymentId), updates); return { error: null }; }
-  catch (e: any) { return { error: e.message }; }
+export async function checkTransactionIdExists(txId: string): Promise<boolean> {
+  try {
+    const snap = await getDocs(query(collection(db, 'payments'), where('transaction_id', '==', txId.trim())));
+    return !snap.empty;
+  } catch {
+    return false;
+  }
+}
+
+export async function submitManualPayment(
+  paymentId: string,
+  txId: string,
+  senderNumber: string,
+  method: string,
+  customerNote?: string,
+) {
+  try {
+    const normalizedTxId = txId.trim();
+    if (!normalizedTxId) return { error: 'Please enter a Transaction ID' };
+    if (!senderNumber.trim()) return { error: 'Please enter your sender number' };
+
+    // Fraud prevention: reject duplicate transaction IDs across ALL manual methods
+    const exists = await checkTransactionIdExists(normalizedTxId);
+    if (exists) {
+      return { error: 'This Transaction ID has already been used. Please enter a valid Transaction ID.' };
+    }
+
+    const updates: any = {
+      transaction_id: normalizedTxId,
+      sender_number: senderNumber.trim(),
+      method,
+      status: 'submitted',
+      submitted_at: new Date().toISOString(),
+    };
+    if (customerNote) updates.customer_note = customerNote;
+    await updateDoc(doc(db, 'payments', paymentId), updates);
+    return { error: null };
+  } catch (e: any) { return { error: e.message }; }
 }
 
 export async function updatePaymentGatewayRef(paymentId: string, gatewayRef: string) {
