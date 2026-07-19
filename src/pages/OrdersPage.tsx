@@ -58,20 +58,21 @@ function OrderDetailModal({
   const [cancelError, setCancelError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const items = order.items || [];
-  const addr = order.address || {};
-  const stepIdx = STATUS_INDEX[order.status] ?? 0;
-  const isCancelled = order.status === 'cancelled';
-  const canCancel = CANCELLABLE.has(order.status);
+  const items = order?.items || [];
+  const addr = order?.address || {};
+  const orderStatus = order?.status || 'pending';
+  const stepIdx = STATUS_INDEX[orderStatus] ?? 0;
+  const isCancelled = orderStatus === 'cancelled';
+  const canCancel = CANCELLABLE.has(orderStatus);
 
   useEffect(() => {
-    if (user) {
+    if (user && order?.id) {
       fetchOrderTimeline(order.id).then(setTimeline);
     }
-  }, [order.id, user]);
+  }, [order?.id, user]);
 
   const handleCancel = async () => {
-    if (!user) return;
+    if (!user || !order?.id) return;
     setCancelling(true);
     setCancelError('');
     const { error } = await cancelOrder(order.id, user.id);
@@ -85,7 +86,7 @@ function OrderDetailModal({
   };
 
   const copyOrderNumber = () => {
-    const num = order.order_number || order.id.slice(-8).toUpperCase();
+    const num = order?.order_number || String(order?.id || '').slice(-8).toUpperCase();
     navigator.clipboard.writeText(num).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
@@ -103,13 +104,13 @@ function OrderDetailModal({
           style={{ background: 'var(--bg-card)', borderBottom: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)' }}>
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-sm font-bold text-white font-mono">{order.order_number || '#' + order.id.slice(-8).toUpperCase()}</p>
+              <p className="text-sm font-bold text-white font-mono">{order?.order_number || '#' + String(order?.id || '').slice(-8).toUpperCase()}</p>
               <button onClick={copyOrderNumber} className="w-6 h-6 rounded flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors">
                 {copied ? <CheckCircle size={10} className="text-green-400" /> : <Copy size={10} className="text-white/40" />}
               </button>
             </div>
             <p className="text-[10px] text-white/30 mt-0.5">
-              {new Date(order.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              {new Date(order?.created_at || Date.now()).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
@@ -126,11 +127,11 @@ function OrderDetailModal({
               </span>
             ) : (
               <span className="text-sm px-3 py-1.5 rounded-xl font-semibold capitalize text-mia-orange" style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.2)' }}>
-                {order.status.replace(/_/g, ' ')}
+                {String(orderStatus).replace(/_/g, ' ')}
               </span>
             )}
             <div className="text-right">
-              <p className="text-xl font-bold text-mia-orange">৳{Number(order.total).toLocaleString()}</p>
+              <p className="text-xl font-bold text-mia-orange">৳{Number(order?.total || 0).toLocaleString()}</p>
               <p className="text-[10px] text-white/30">{t('orders.inclDelivery')}</p>
             </div>
           </div>
@@ -172,7 +173,7 @@ function OrderDetailModal({
               </div>
               {/* Current step label */}
               <p className="text-xs text-center mt-3 font-medium" style={{ color: '#FF8A00' }}>
-                {STATUS_STEPS[stepIdx] ? t(STATUS_STEPS[stepIdx].labelKey) : order.status}
+                {STATUS_STEPS[stepIdx] ? t(STATUS_STEPS[stepIdx].labelKey) : String(orderStatus)}
               </p>
             </div>
           )}
@@ -181,26 +182,27 @@ function OrderDetailModal({
           {timeline.length > 0 && (
             <div className="space-y-2.5">
               <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{t('orders.history')}</p>
-              {[...timeline].reverse().map((t, i) => {
-                const idx = STATUS_INDEX[t.status] ?? 0;
+              {[...timeline].reverse().map((tItem, i) => {
+                const itemStatus = tItem?.status || 'pending';
+                const idx = STATUS_INDEX[itemStatus] ?? 0;
                 const step = STATUS_STEPS[idx] ?? STATUS_STEPS[0];
-                const Icon = t.status === 'cancelled' ? XCircle : step.icon;
-                const color = t.status === 'cancelled' ? '#ef4444' : '#22c55e';
+                const Icon = itemStatus === 'cancelled' ? XCircle : step.icon;
+                const color = itemStatus === 'cancelled' ? '#ef4444' : '#22c55e';
                 return (
-                  <div key={t.id || i} className="flex items-start gap-3">
+                  <div key={tItem?.id || i} className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${color}12`, border: `1px solid ${color}25` }}>
                       <Icon size={10} style={{ color }} />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold capitalize" style={{ color }}>
-                          {t.status.replace(/_/g, ' ')}
+                          {String(itemStatus).replace(/_/g, ' ')}
                         </span>
                         <span className="text-[10px] text-white/25">
-                          {new Date(t.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          {new Date(tItem?.created_at || Date.now()).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      {t.note && <p className="text-[10px] text-white/40 mt-0.5">{t.note}</p>}
+                      {tItem?.note && <p className="text-[10px] text-white/40 mt-0.5">{tItem.note}</p>}
                     </div>
                   </div>
                 );
@@ -215,7 +217,7 @@ function OrderDetailModal({
             <div className="flex items-start gap-2 text-xs text-white/60"><MapPin size={12} className="text-white/30 shrink-0 mt-0.5" /> {addr.address}{addr.area ? `, ${addr.area}` : ''}</div>
             <div className="flex items-center gap-2 text-xs text-white/50">
               <CreditCard size={12} className="text-white/30" />
-              {PAYMENT_LABEL_KEYS[order.payment_method] ? t(PAYMENT_LABEL_KEYS[order.payment_method]) : order.payment_method}
+              {PAYMENT_LABEL_KEYS[order?.payment_method] ? t(PAYMENT_LABEL_KEYS[order.payment_method]) : (order?.payment_method || 'cod')}
             </div>
           </div>
 
@@ -224,26 +226,26 @@ function OrderDetailModal({
             <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{t('orders.items')} ({items.length})</p>
             {items.map((item: any, i: number) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                {item.image && <img src={item.image} alt={item.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />}
+                {item?.image && <img src={item.image} alt={item?.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white/80 truncate">{item.name}</p>
-                  <p className="text-xs text-white/35 mt-0.5">x{item.quantity} · ৳{item.price}</p>
+                  <p className="text-sm text-white/80 truncate">{item?.name || 'Item'}</p>
+                  <p className="text-xs text-white/35 mt-0.5">x{item?.quantity || 1} · ৳{Number(item?.price || 0).toLocaleString()}</p>
                 </div>
-                <span className="text-sm font-semibold text-white/70">৳{(Number(item.price) * item.quantity).toLocaleString()}</span>
+                <span className="text-sm font-semibold text-white/70">৳{(Number(item?.price || 0) * (item?.quantity || 1)).toLocaleString()}</span>
               </div>
             ))}
 
             {/* Price breakdown */}
             <div className="pt-2 space-y-1.5 border-t border-white/5">
-              <div className="flex justify-between text-xs"><span className="text-white/40">{t('orders.subtotal')}</span><span className="text-white/60">৳{Number(order.subtotal || 0).toLocaleString()}</span></div>
-              {Number(order.discount) > 0 && (
+              <div className="flex justify-between text-xs"><span className="text-white/40">{t('orders.subtotal')}</span><span className="text-white/60">৳{Number(order?.subtotal || 0).toLocaleString()}</span></div>
+              {Number(order?.discount) > 0 && (
                 <div className="flex justify-between text-xs">
-                  <span className="text-green-400 flex items-center gap-1"><Tag size={9} />{t('orders.coupon')} {order.coupon_code && `(${order.coupon_code})`}</span>
-                  <span className="text-green-400">-৳{Number(order.discount).toLocaleString()}</span>
+                  <span className="text-green-400 flex items-center gap-1"><Tag size={9} />{t('orders.coupon')} {order?.coupon_code && `(${order.coupon_code})`}</span>
+                  <span className="text-green-400">-৳{Number(order?.discount).toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xs"><span className="text-white/40">{t('orders.delivery')}</span><span className={Number(order.delivery_charge) === 0 ? 'text-green-400' : 'text-white/60'}>{Number(order.delivery_charge) === 0 ? t('orders.free') : `৳${Number(order.delivery_charge).toLocaleString()}`}</span></div>
-              <div className="flex justify-between text-sm font-bold pt-1 border-t border-white/5"><span className="text-white">{t('orders.total')}</span><span className="text-mia-orange">৳{Number(order.total).toLocaleString()}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-white/40">{t('orders.delivery')}</span><span className={Number(order?.delivery_charge) === 0 ? 'text-green-400' : 'text-white/60'}>{Number(order?.delivery_charge) === 0 ? t('orders.free') : `৳${Number(order?.delivery_charge || 0).toLocaleString()}`}</span></div>
+              <div className="flex justify-between text-sm font-bold pt-1 border-t border-white/5"><span className="text-white">{t('orders.total')}</span><span className="text-mia-orange">৳{Number(order?.total || 0).toLocaleString()}</span></div>
             </div>
           </div>
 
@@ -314,20 +316,26 @@ export function OrdersPage() {
     return () => unsub();
   }, [user]);
 
+  // Safe mapping with fallbacks to prevent mapping undefined items
   const rawOrders: any[] = user
-    ? dbOrders
-    : state.orders.map(o => ({
-        id: o.id,
-        order_number: o.id,
-        items: o.items.map(i => ({ name: i.product.name, image: i.product.image, quantity: i.quantity, price: i.product.discount_price || i.product.price })),
-        subtotal: o.total - o.delivery_charge,
-        delivery_charge: o.delivery_charge,
-        discount: 0,
-        total: o.total,
-        status: o.status,
-        payment_method: o.payment_method,
-        address: { ...o.address, phone: o.address.mobile },
-        created_at: o.created_at,
+    ? (dbOrders || [])
+    : (state.orders || []).map(o => ({
+        id: o.id || '',
+        order_number: o.order_number || o.id || '',
+        items: (o.items || []).map((i: any) => ({ 
+          name: i?.product?.name || 'Item', 
+          image: i?.product?.image, 
+          quantity: i?.quantity || 1, 
+          price: i?.product?.discount_price || i?.product?.price || 0 
+        })),
+        subtotal: (o.total || 0) - (o.delivery_charge || 0),
+        delivery_charge: o.delivery_charge || 0,
+        discount: o.discount || 0,
+        total: o.total || 0,
+        status: o.status || 'pending',
+        payment_method: o.payment_method || 'cod',
+        address: { ...(o.address || {}), phone: o.address?.mobile || o.address?.phone || '' },
+        created_at: o.created_at || new Date().toISOString(),
       }));
 
   const FILTER_TABS = [
@@ -338,16 +346,20 @@ export function OrdersPage() {
   ];
 
   const allOrders = rawOrders.filter(o => {
+    const oStatus = o?.status || 'pending';
     if (filterStatus === 'all') return true;
-    if (filterStatus === 'delivered') return o.status === 'delivered';
-    if (filterStatus === 'cancelled') return o.status === 'cancelled';
-    if (filterStatus === 'active') return !['delivered', 'cancelled'].includes(o.status);
+    if (filterStatus === 'delivered') return oStatus === 'delivered';
+    if (filterStatus === 'cancelled') return oStatus === 'cancelled';
+    if (filterStatus === 'active') return !['delivered', 'cancelled'].includes(oStatus);
     return true;
   });
 
   const handleCancelled = (orderId: string) => {
     setDbOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
-    dispatch({ type: 'ADD_ORDER', order: { ...state.orders.find(o => o.id === orderId)!, status: 'cancelled' as any } });
+    const localOrder = state.orders?.find(o => o.id === orderId);
+    if (localOrder) {
+      dispatch({ type: 'ADD_ORDER', order: { ...localOrder, status: 'cancelled' as any } });
+    }
   };
 
   if (loading) {
@@ -394,9 +406,9 @@ export function OrdersPage() {
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {FILTER_TABS.map(tab => {
             const count = tab.key === 'all' ? rawOrders.length
-              : tab.key === 'delivered' ? rawOrders.filter(o => o.status === 'delivered').length
-              : tab.key === 'cancelled' ? rawOrders.filter(o => o.status === 'cancelled').length
-              : rawOrders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length;
+              : tab.key === 'delivered' ? rawOrders.filter(o => o?.status === 'delivered').length
+              : tab.key === 'cancelled' ? rawOrders.filter(o => o?.status === 'cancelled').length
+              : rawOrders.filter(o => !['delivered', 'cancelled'].includes(o?.status || 'pending')).length;
             return (
               <button key={tab.key} onClick={() => setFilterStatus(tab.key)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all shrink-0"
@@ -420,26 +432,27 @@ export function OrdersPage() {
         {allOrders.length === 0 ? (
           <p className="text-center text-sm text-white/30 py-8">{t('orders.noOrdersInCategory')}</p>
         ) : allOrders.map(order => {
-          const stepIdx = STATUS_INDEX[order.status] ?? 0;
-          const isCancelled = order.status === 'cancelled';
-          const items = order.items || [];
+          const orderStatus = order?.status || 'pending';
+          const stepIdx = STATUS_INDEX[orderStatus] ?? 0;
+          const isCancelled = orderStatus === 'cancelled';
+          const items = order?.items || [];
 
           return (
             <button
-              key={order.id}
+              key={order?.id}
               onClick={() => setSelectedOrder(order)}
               className="w-full glow-card p-4 text-left transition-all hover:border-white/12 active:scale-[0.99]"
             >
               {/* Top row */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="text-xs font-mono text-white/40">{order.order_number || '#' + order.id.slice(-8).toUpperCase()}</p>
+                  <p className="text-xs font-mono text-white/40">{order?.order_number || '#' + String(order?.id || '').slice(-8).toUpperCase()}</p>
                   <p className="text-xs text-white/25 mt-0.5">
-                    {new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(order?.created_at || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-mia-orange">৳{Number(order.total).toLocaleString()}</span>
+                  <span className="text-lg font-bold text-mia-orange">৳{Number(order?.total || 0).toLocaleString()}</span>
                   <ChevronRight size={14} className="text-white/20" />
                 </div>
               </div>
@@ -451,7 +464,7 @@ export function OrdersPage() {
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium capitalize text-mia-orange" style={{ background: 'rgba(255,138,0,0.08)', border: '1px solid rgba(255,138,0,0.2)' }}>
-                  {order.status.replace(/_/g, ' ')}
+                  {String(orderStatus).replace(/_/g, ' ')}
                 </span>
               )}
 
@@ -483,13 +496,13 @@ export function OrdersPage() {
               {/* Item images */}
               <div className="flex items-center gap-1.5 mt-3">
                 {items.slice(0, 4).map((item: any, i: number) => (
-                  item.image ? <img key={i} src={item.image} alt="" className="w-9 h-9 rounded-lg object-cover border border-white/8" /> : null
+                  item?.image ? <img key={i} src={item.image} alt="" className="w-9 h-9 rounded-lg object-cover border border-white/8" /> : null
                 ))}
                 <span className="text-xs text-white/30 ml-1">
                   {items.length} {items.length !== 1 ? t('common.items') : t('common.item')}
                   {items.length > 4 && ` · +${items.length - 4} ${t('common.more')}`}
                 </span>
-                <span className="ml-auto text-[10px] text-white/25 capitalize">{PAYMENT_LABEL_KEYS[order.payment_method] ? t(PAYMENT_LABEL_KEYS[order.payment_method]) : order.payment_method}</span>
+                <span className="ml-auto text-[10px] text-white/25 capitalize">{PAYMENT_LABEL_KEYS[order?.payment_method] ? t(PAYMENT_LABEL_KEYS[order.payment_method]) : (order?.payment_method || 'cod')}</span>
               </div>
             </button>
           );
